@@ -11,6 +11,10 @@ data class WakeUpState(
     val stoppedWithoutCard: Boolean = false,
     /** Words answered this morning, for the "You're up!" screen. */
     val learned: List<LearnedItem> = emptyList(),
+    /** Seconds of stillness left before the soft re-ring; null when no wake-up check is running. */
+    val wakeCheckSecondsLeft: Int? = null,
+    /** The wake-up check fired: the alarm is ringing softly again. */
+    val ringingAgain: Boolean = false,
 )
 
 enum class WakePhase { LOADING, SILENCING, BONUS_OFFER, BONUS, DONE }
@@ -42,6 +46,18 @@ sealed interface WakeUpAction {
     data object OnSkipBonus : WakeUpAction
     data object OnEmergencyStop : WakeUpAction
     data object OnFinish : WakeUpAction
+
+    /** Any touch on the screen. Resets the wake-up check. */
+    data object OnUserActive : WakeUpAction
+
+    /** Whether an alarm is ringing right now, as the platform reports it. */
+    data class OnRingingChanged(val ringing: Boolean) : WakeUpAction
+
+    /** "I'm up" on the soft re-ring. */
+    data object OnStillAwake : WakeUpAction
+
+    /** The user switched to another app with the screen on. */
+    data object OnLeftApp : WakeUpAction
 }
 
 sealed interface WakeUpEvent {

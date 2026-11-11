@@ -16,9 +16,10 @@ class AlarmReceiver : BroadcastReceiver(), KoinComponent {
     override fun onReceive(context: Context, intent: Intent) {
         val alarmId = intent.getStringExtra(AlarmIntents.EXTRA_ALARM_ID) ?: return
         val expectedAt = intent.getLongExtra(AlarmIntents.EXTRA_EXPECTED_AT, 0L)
+        val soft = intent.getBooleanExtra(AlarmIntents.EXTRA_SOFT, false)
 
         // Sound first. Nothing below is allowed to delay it.
-        AlarmRingingService.start(context, alarmId, expectedAt)
+        AlarmRingingService.start(context, alarmId, expectedAt, soft)
 
         val pending = goAsync()
         scope.launch {

@@ -2,10 +2,13 @@ package dev.victorc.sunup.alarm
 
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import dev.victorc.sunup.core.alarm.AlarmRingingService
 import dev.victorc.sunup.core.alarm.RingingState
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
@@ -34,12 +37,15 @@ class AlarmRingingActivity : ComponentActivity() {
         setContent {
             // No escaping with Back: the alarm stops by answering, or with the emergency stop.
             BackHandler {}
+            val ringing by RingingState.current.collectAsState()
 
             SunupTheme {
                 WakeUpRoot(
                     alarmId = id,
+                    ringing = ringing != null,
                     onStopAlarm = { AlarmRingingService.stop(this) },
                     onClose = { finish() },
+                    userLeftApp = { userLeftWithScreenOn() },
                 )
             }
         }
@@ -49,6 +55,13 @@ class AlarmRingingActivity : ComponentActivity() {
         super.onSaveInstanceState(outState)
         alarmId?.let { outState.putString(KEY_ALARM_ID, it) }
     }
+
+    /**
+     * Pressing power turns the screen off (maybe falling back asleep: keep the wake-up check).
+     * Switching apps leaves it on (clearly awake: end the check). Rotation doesn't count.
+     */
+    private fun userLeftWithScreenOn(): Boolean =
+        !isChangingConfigurations && getSystemService(PowerManager::class.java).isInteractive
 
     private fun showOverLockScreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {

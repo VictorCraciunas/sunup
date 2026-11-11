@@ -51,8 +51,9 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [x] Part 1: Gentle (1 card), Normal (1 card + bonus), Heavy sleeper (3 cards); emergency stop
 - [x] Part 1: games Pick the meaning, True or false, Quick math (fallback when nothing is learned yet)
 - [x] Wrong-answer shake, right-answer bounce, result panel slides up
-- [ ] Part 2: 60 s wake-up check that rings again softly if the phone sits still
-- [ ] Part 2: Heavy sleeper rings again if idle
+- [x] Part 2: 60 s wake-up check after the alarm stops, Normal and Heavy sleeper. Every touch pushes a soft follow-up alarm 60 s ahead; turning the screen off doesn't; switching apps or "Start my day" ends it. When it fires: soft ring and "Still with me?"
+- [ ] Later: count phone movement (accelerometer) as activity, not only touches
+- [ ] Later: a check that survives tapping "Start my day" and going back to bed
 - [ ] Later parts: Flip & rate, Type it, Match pairs → Build the sentence → Listen & pick → Say it
 - [ ] More motion: Pip rising between screens, new-card pop, haptics
 

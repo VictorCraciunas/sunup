@@ -7,6 +7,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.feature.wakeup.domain)
+            implementation(projects.core.alarm)
             implementation(projects.core.designSystem)
 
             implementation(libs.androidx.lifecycle.viewmodelCompose)

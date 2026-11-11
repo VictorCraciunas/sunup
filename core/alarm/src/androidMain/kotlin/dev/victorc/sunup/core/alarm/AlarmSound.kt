@@ -16,20 +16,24 @@ import co.touchlab.kermit.Logger
  * starting soft and getting louder. If that sound can't play (e.g. media isn't available
  * yet after a reboot), it falls back to plain beeps so the alarm is never silent.
  */
-internal class AlarmSound(private val context: Context) {
+internal class AlarmSound(
+    private val context: Context,
+    /** 1 = the phone's alarm volume. Lower for soft rings. */
+    private val maxVolume: Float = 1f,
+) {
 
     private val handler = Handler(Looper.getMainLooper())
     private val log = Logger.withTag("AlarmSound")
 
     private var player: MediaPlayer? = null
     private var tone: ToneGenerator? = null
-    private var volume = START_VOLUME
+    private var volume = START_VOLUME.coerceAtMost(maxVolume)
 
     private val ramp = object : Runnable {
         override fun run() {
-            volume = (volume + VOLUME_STEP).coerceAtMost(1f)
+            volume = (volume + VOLUME_STEP).coerceAtMost(maxVolume)
             player?.setVolume(volume, volume)
-            if (volume < 1f) handler.postDelayed(this, STEP_MILLIS)
+            if (volume < maxVolume) handler.postDelayed(this, STEP_MILLIS)
         }
     }
 
@@ -87,7 +91,9 @@ internal class AlarmSound(private val context: Context) {
         if (tone != null) return
         player?.release()
         player = null
-        tone = runCatching { ToneGenerator(AudioManager.STREAM_ALARM, ToneGenerator.MAX_VOLUME) }.getOrNull()
+        tone = runCatching {
+            ToneGenerator(AudioManager.STREAM_ALARM, (maxVolume * ToneGenerator.MAX_VOLUME).toInt())
+        }.getOrNull()
         handler.removeCallbacks(ramp)
         handler.post(beep)
     }

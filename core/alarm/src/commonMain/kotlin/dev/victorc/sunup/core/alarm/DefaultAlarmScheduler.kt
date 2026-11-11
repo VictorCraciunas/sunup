@@ -45,6 +45,26 @@ class DefaultAlarmScheduler(
         }
     }
 
+    override suspend fun scheduleFollowUp(followUpId: String, at: Instant): Result<Instant, ScheduleError> {
+        val now = clock.now()
+        return when (val result = platform.set(followUpId, at, soft = true)) {
+            is Result.Success -> {
+                store.record(RingEvent(followUpId, RingEvent.Type.SCHEDULED, at = now, expected = at, note = "follow-up"))
+                Result.Success(at)
+            }
+            is Result.Error -> {
+                store.record(
+                    RingEvent(followUpId, RingEvent.Type.SCHEDULE_FAILED, at = now, expected = at, note = result.error.name),
+                )
+                result
+            }
+        }
+    }
+
+    override suspend fun cancelFollowUp(followUpId: String) {
+        platform.cancel(followUpId)
+    }
+
     private suspend fun register(alarm: Alarm): Result<Instant?, ScheduleError> {
         val now = clock.now()
         val next = NextRingTime.after(alarm, now, timeZone())

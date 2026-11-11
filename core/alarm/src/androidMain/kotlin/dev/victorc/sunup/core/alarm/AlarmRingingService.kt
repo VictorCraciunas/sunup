@@ -47,13 +47,14 @@ class AlarmRingingService : Service(), KoinComponent {
             return START_NOT_STICKY
         }
         val expectedAt = intent.getLongExtra(AlarmIntents.EXTRA_EXPECTED_AT, 0L)
-        startRinging(alarmId, expectedAt, redelivered = (flags and START_FLAG_REDELIVERY) != 0)
+        val soft = intent.getBooleanExtra(AlarmIntents.EXTRA_SOFT, false)
+        startRinging(alarmId, expectedAt, soft, redelivered = (flags and START_FLAG_REDELIVERY) != 0)
 
         // If the system kills us mid-ring, start again and keep ringing.
         return START_REDELIVER_INTENT
     }
 
-    private fun startRinging(alarmId: String, expectedAt: Long, redelivered: Boolean) {
+    private fun startRinging(alarmId: String, expectedAt: Long, soft: Boolean, redelivered: Boolean) {
         val now = Clock.System.now()
         // Before the notification goes up, so the ringing screen sees it straight away.
         RingingState.set(Ringing(alarmId, now))
@@ -68,14 +69,14 @@ class AlarmRingingService : Service(), KoinComponent {
         acquireWakeLock()
 
         sound?.stop()
-        sound = AlarmSound(this).also { it.start() }
+        sound = AlarmSound(this, maxVolume = if (soft) SOFT_MAX_VOLUME else 1f).also { it.start() }
         vibration?.stop()
         vibration = AlarmVibration(this).also { it.start() }
 
         handler.removeCallbacks(timeout)
         handler.postDelayed(timeout, MAX_RING_MILLIS)
 
-        val note = ringProblems(redelivered).joinToString(", ")
+        val note = (listOfNotNull("soft".takeIf { soft }) + ringProblems(redelivered)).joinToString(", ")
         scope.launch {
             store.record(
                 RingEvent(
@@ -152,10 +153,14 @@ class AlarmRingingService : Service(), KoinComponent {
         /** Safety net: stop on our own after this long, and log it as TIMED_OUT. */
         private const val MAX_RING_MILLIS = 15 * 60 * 1000L
 
-        fun start(context: Context, alarmId: String, expectedAt: Long) {
+        /** A soft ring (the wake-up check) never gets louder than this. */
+        private const val SOFT_MAX_VOLUME = 0.45f
+
+        fun start(context: Context, alarmId: String, expectedAt: Long, soft: Boolean = false) {
             val intent = Intent(context, AlarmRingingService::class.java)
                 .putExtra(AlarmIntents.EXTRA_ALARM_ID, alarmId)
                 .putExtra(AlarmIntents.EXTRA_EXPECTED_AT, expectedAt)
+                .putExtra(AlarmIntents.EXTRA_SOFT, soft)
             ContextCompat.startForegroundService(context, intent)
         }
 

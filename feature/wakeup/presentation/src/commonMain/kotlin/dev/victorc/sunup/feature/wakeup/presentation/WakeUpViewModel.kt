@@ -2,6 +2,7 @@ package dev.victorc.sunup.feature.wakeup.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.victorc.sunup.core.alarm.AlarmScheduler
 import dev.victorc.sunup.core.domain.learning.CardContent
 import dev.victorc.sunup.core.domain.learning.ReviewContext
 import dev.victorc.sunup.core.domain.learning.ReviewRecord
@@ -15,10 +16,13 @@ import dev.victorc.sunup.feature.wakeup.domain.WakeSessionPlanner
 import dev.victorc.sunup.feature.wakeup.domain.gradeFor
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +37,7 @@ class WakeUpViewModel(
     private val planner: WakeSessionPlanner,
     private val alarms: WakeAlarmRepository,
     private val reviews: ReviewRepository,
+    private val scheduler: AlarmScheduler,
     private val clock: Clock,
     private val timeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) : ViewModel() {
@@ -46,6 +51,14 @@ class WakeUpViewModel(
     private var plan: WakePlan? = null
     private var cards: List<MorningCard> = emptyList()
     private var shownAt: Instant = clock.now()
+
+    // Wake-up check: after the alarm stops, a soft re-ring is always scheduled 60 s ahead.
+    // Every touch pushes it back, so it only rings if the phone is left alone for a minute.
+    private val followUpId = "$alarmId$FOLLOW_UP_SUFFIX"
+    private var checkActive = false
+    private var checkDeadline: Instant? = null
+    private var lastScheduledAt: Instant? = null
+    private var tickerJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -73,8 +86,54 @@ class WakeUpViewModel(
                 _state.update { it.copy(alarmStopped = true, stoppedWithoutCard = true, phase = WakePhase.DONE) }
                 viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
             }
-            WakeUpAction.OnFinish -> viewModelScope.launch { _events.send(WakeUpEvent.Close) }
+            WakeUpAction.OnFinish -> viewModelScope.launch {
+                // Cancel first: the screen (and this scope) goes away right after Close.
+                endWakeCheck()
+                _events.send(WakeUpEvent.Close)
+            }
+            WakeUpAction.OnUserActive -> if (checkActive && !_state.value.ringingAgain) pushWakeCheck(force = false)
+            is WakeUpAction.OnRingingChanged -> if (checkActive) _state.update { it.copy(ringingAgain = action.ringing) }
+            WakeUpAction.OnStillAwake -> {
+                _state.update { it.copy(ringingAgain = false) }
+                viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
+                pushWakeCheck(force = true)
+            }
+            // Switched to another app with the screen on: clearly awake.
+            WakeUpAction.OnLeftApp -> if (checkActive) viewModelScope.launch { endWakeCheck() }
         }
+    }
+
+    private fun startWakeCheck() {
+        if (checkActive || plan?.mode == WakeMode.GENTLE) return
+        checkActive = true
+        pushWakeCheck(force = true)
+        tickerJob = viewModelScope.launch {
+            while (checkActive) {
+                val left = checkDeadline?.let { (it - clock.now()).inWholeSeconds.coerceAtLeast(0).toInt() }
+                _state.update { it.copy(wakeCheckSecondsLeft = left) }
+                delay(1_000)
+            }
+        }
+    }
+
+    private fun pushWakeCheck(force: Boolean) {
+        if (!checkActive) return
+        val now = clock.now()
+        val last = lastScheduledAt
+        // Touches come in bursts; rescheduling every few seconds is plenty.
+        if (!force && last != null && now - last < RESCHEDULE_EVERY) return
+        lastScheduledAt = now
+        val at = now + WAKE_CHECK
+        checkDeadline = at
+        viewModelScope.launch { scheduler.scheduleFollowUp(followUpId, at) }
+    }
+
+    private suspend fun endWakeCheck() {
+        if (!checkActive) return
+        checkActive = false
+        tickerJob?.cancel()
+        _state.update { it.copy(wakeCheckSecondsLeft = null, ringingAgain = false) }
+        scheduler.cancelFollowUp(followUpId)
     }
 
     private fun pick(index: Int) {
@@ -97,7 +156,10 @@ class WakeUpViewModel(
             )
         }
         record(cards[current.position], wrongAttempts = card.wrongPicks.size, phase = current.phase)
-        if (stopsAlarm) viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
+        if (stopsAlarm) {
+            viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
+            startWakeCheck()
+        }
     }
 
     private fun continueOn() {
@@ -155,6 +217,10 @@ class WakeUpViewModel(
         viewModelScope.launch { reviews.recordReview(record, nextState) }
     }
 }
+
+private val WAKE_CHECK = 60.seconds
+private val RESCHEDULE_EVERY = 5.seconds
+private const val FOLLOW_UP_SUFFIX = ":check"
 
 // TODO(M4): move user-facing text to string resources once localization is set up.
 private fun MorningCard.toUi(): CardUi = when (val c = content) {

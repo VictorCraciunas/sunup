@@ -17,6 +17,15 @@ interface AlarmScheduler {
 
     /** Registers every saved alarm again, e.g. after a reboot or a time zone change. */
     suspend fun rescheduleAll(reason: String)
+
+    /**
+     * A one-time, soft ring at an exact moment, e.g. the 60-second wake-up check.
+     * Not saved as an alarm, so it doesn't come back after a reboot. Calling it again with
+     * the same [followUpId] moves it.
+     */
+    suspend fun scheduleFollowUp(followUpId: String, at: Instant): Result<Instant, ScheduleError>
+
+    suspend fun cancelFollowUp(followUpId: String)
 }
 
 enum class ScheduleError : Error {
@@ -27,6 +36,7 @@ enum class ScheduleError : Error {
 
 /** The thin native part: hand one exact ring time to the OS, or take it back. */
 interface PlatformAlarmClock {
-    fun set(alarmId: String, at: Instant): EmptyResult<ScheduleError>
+    /** @param soft ring quietly, e.g. for the wake-up check after the user is already up. */
+    fun set(alarmId: String, at: Instant, soft: Boolean = false): EmptyResult<ScheduleError>
     fun cancel(alarmId: String)
 }

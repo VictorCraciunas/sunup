@@ -20,11 +20,13 @@ import kotlinx.datetime.toInstant
 
 private class FakePlatformAlarmClock : PlatformAlarmClock {
     val registered = mutableMapOf<String, Instant>()
+    val soft = mutableSetOf<String>()
     var failWith: ScheduleError? = null
 
-    override fun set(alarmId: String, at: Instant): EmptyResult<ScheduleError> {
+    override fun set(alarmId: String, at: Instant, soft: Boolean): EmptyResult<ScheduleError> {
         failWith?.let { return Result.Error(it) }
         registered[alarmId] = at
+        if (soft) this.soft += alarmId else this.soft -= alarmId
         return Result.Success(Unit)
     }
 
@@ -136,6 +138,39 @@ class DefaultAlarmSchedulerTest {
 
         assertThat(platform.registered.isEmpty()).isTrue()
         assertThat(store.alarms().isEmpty()).isTrue()
+    }
+
+    @Test
+    fun followUpRingsSoftlyAtTheExactSecondAndIsNotSavedAsAnAlarm() = runTest {
+        val at = local("2026-11-03T07:01:23")
+
+        val result = scheduler.scheduleFollowUp("morning:check", at)
+
+        assertThat(result).isEqualTo(Result.Success(at))
+        assertThat(platform.registered["morning:check"]).isEqualTo(at)
+        assertThat(platform.soft.contains("morning:check")).isTrue()
+        assertThat(store.alarms().isEmpty()).isTrue()
+    }
+
+    @Test
+    fun followUpCanBeMovedAndCancelled() = runTest {
+        scheduler.scheduleFollowUp("morning:check", local("2026-11-03T07:01:00"))
+        scheduler.scheduleFollowUp("morning:check", local("2026-11-03T07:02:00"))
+
+        assertThat(platform.registered["morning:check"]).isEqualTo(local("2026-11-03T07:02:00"))
+
+        scheduler.cancelFollowUp("morning:check")
+
+        assertThat(platform.registered.containsKey("morning:check")).isFalse()
+    }
+
+    @Test
+    fun followUpRingingDoesNotTouchSavedAlarms() = runTest {
+        scheduler.schedule(weekdays)
+
+        scheduler.onAlarmRang("morning:check")
+
+        assertThat(store.alarm("weekdays")!!.enabled).isTrue()
     }
 
     @Test

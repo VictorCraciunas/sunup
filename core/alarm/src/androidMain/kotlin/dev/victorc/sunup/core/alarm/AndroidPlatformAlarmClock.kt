@@ -18,13 +18,13 @@ internal class AndroidPlatformAlarmClock(private val context: Context) : Platfor
 
     private val alarmManager = context.getSystemService(AlarmManager::class.java)
 
-    override fun set(alarmId: String, at: Instant): EmptyResult<ScheduleError> {
+    override fun set(alarmId: String, at: Instant, soft: Boolean): EmptyResult<ScheduleError> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
             return Result.Error(ScheduleError.EXACT_ALARMS_NOT_ALLOWED)
         }
         return try {
             val info = AlarmManager.AlarmClockInfo(at.toEpochMilliseconds(), openAppIntent())
-            alarmManager.setAlarmClock(info, ringIntent(alarmId, at))
+            alarmManager.setAlarmClock(info, ringIntent(alarmId, at, soft))
             Result.Success(Unit)
         } catch (e: SecurityException) {
             Result.Error(ScheduleError.EXACT_ALARMS_NOT_ALLOWED)
@@ -32,14 +32,15 @@ internal class AndroidPlatformAlarmClock(private val context: Context) : Platfor
     }
 
     override fun cancel(alarmId: String) {
-        alarmManager.cancel(ringIntent(alarmId, at = null))
+        alarmManager.cancel(ringIntent(alarmId, at = null, soft = false))
     }
 
     /** One PendingIntent per alarm: the data URI makes them distinct, extras don't. */
-    private fun ringIntent(alarmId: String, at: Instant?): PendingIntent {
+    private fun ringIntent(alarmId: String, at: Instant?, soft: Boolean): PendingIntent {
         val intent = Intent(context, AlarmReceiver::class.java)
             .setData(Uri.parse("sunup://alarm/${Uri.encode(alarmId)}"))
             .putExtra(AlarmIntents.EXTRA_ALARM_ID, alarmId)
+            .putExtra(AlarmIntents.EXTRA_SOFT, soft)
         if (at != null) intent.putExtra(AlarmIntents.EXTRA_EXPECTED_AT, at.toEpochMilliseconds())
         return PendingIntent.getBroadcast(
             context,

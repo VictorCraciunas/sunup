@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -49,15 +55,25 @@ import org.koin.core.parameter.parametersOf
 /**
  * The whole morning flow for one ringing alarm.
  *
- * @param onStopAlarm silence the alarm (the card was answered, or the emergency stop was used)
+ * @param ringing whether an alarm is ringing right now (the first ring, or the wake-up check's soft re-ring)
+ * @param onStopAlarm silence the alarm (a card was answered, "I'm up", or the emergency stop)
  * @param onClose the user is done; close the screen
+ * @param userLeftApp asked when the screen goes to the background: true if the user switched
+ *   away with the screen on (awake), false if the screen just turned off (maybe asleep again)
  */
 @Composable
-fun WakeUpRoot(alarmId: String, onStopAlarm: () -> Unit, onClose: () -> Unit) {
+fun WakeUpRoot(
+    alarmId: String,
+    ringing: Boolean,
+    onStopAlarm: () -> Unit,
+    onClose: () -> Unit,
+    userLeftApp: () -> Boolean,
+) {
     val viewModel = koinViewModel<WakeUpViewModel> { parametersOf(alarmId) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val stopAlarm by rememberUpdatedState(onStopAlarm)
     val close by rememberUpdatedState(onClose)
+    val leftApp by rememberUpdatedState(userLeftApp)
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -67,13 +83,42 @@ fun WakeUpRoot(alarmId: String, onStopAlarm: () -> Unit, onClose: () -> Unit) {
             }
         }
     }
+    LaunchedEffect(ringing) {
+        viewModel.onAction(WakeUpAction.OnRingingChanged(ringing))
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && leftApp()) viewModel.onAction(WakeUpAction.OnLeftApp)
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
-    WakeUpScreen(state = state, onAction = viewModel::onAction)
+    Box(
+        Modifier
+            .fillMaxSize()
+            // Watch every touch without taking it from the buttons underneath.
+            .pointerInput(viewModel) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(PointerEventPass.Initial)
+                        viewModel.onAction(WakeUpAction.OnUserActive)
+                    }
+                }
+            },
+    ) {
+        WakeUpScreen(state = state, onAction = viewModel::onAction)
+    }
 }
 
 // TODO(M4): move user-facing text to string resources once localization is set up.
 @Composable
 fun WakeUpScreen(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
+    if (state.ringingAgain) {
+        StillWithMe(onAction)
+        return
+    }
     when (state.phase) {
         WakePhase.LOADING -> Page(Palette.night()) {
             Spacer(Modifier.weight(1f))
@@ -81,7 +126,7 @@ fun WakeUpScreen(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
             Spacer(Modifier.weight(1f))
         }
         WakePhase.SILENCING -> CardPage(state, Palette.night(), onAction)
-        WakePhase.BONUS_OFFER -> BonusOffer(onAction)
+        WakePhase.BONUS_OFFER -> BonusOffer(state, onAction)
         WakePhase.BONUS -> CardPage(state, Palette.dawn(), onAction)
         WakePhase.DONE -> Done(state, onAction)
     }
@@ -139,6 +184,7 @@ private fun CardPage(state: WakeUpState, palette: Palette, onAction: (WakeUpActi
         } else if (state.total > 1) {
             Text("${state.position + 1} / ${state.total}", style = SunupTheme.typography.title, color = palette.muted)
         }
+        state.wakeCheckSecondsLeft?.let { WakeCheckChip(it) }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
             Pip(if (silencing && !state.alarmStopped) PipMood.SLEEPY else PipMood.AWAKE, size = 88.dp)
@@ -310,9 +356,10 @@ private fun Feedback(card: CardUi, stopsAlarm: Boolean, onAction: (WakeUpAction)
 }
 
 @Composable
-private fun BonusOffer(onAction: (WakeUpAction) -> Unit) {
+private fun BonusOffer(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
     val palette = Palette.dawn()
     Page(palette) {
+        state.wakeCheckSecondsLeft?.let { WakeCheckChip(it) }
         Spacer(Modifier.weight(1f))
         Pip(PipMood.AWAKE, modifier = Modifier.align(Alignment.CenterHorizontally), size = 140.dp)
         Text("Bonus round", style = SunupTheme.typography.headline, color = palette.text, modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -342,6 +389,7 @@ private fun BonusOffer(onAction: (WakeUpAction) -> Unit) {
 private fun Done(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
     val palette = Palette.day()
     Page(palette) {
+        state.wakeCheckSecondsLeft?.let { WakeCheckChip(it) }
         Spacer(Modifier.weight(0.5f))
         Pip(PipMood.HAPPY, modifier = Modifier.align(Alignment.CenterHorizontally), size = 140.dp)
         Text("You're up!", style = SunupTheme.typography.display, color = palette.text, modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -374,6 +422,48 @@ private fun Done(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
         }
         Spacer(Modifier.weight(1f))
         SunupButton(text = "Start my day", onClick = { onAction(WakeUpAction.OnFinish) })
+    }
+}
+
+/** "Wake-up check · 0:42": time left before a soft re-ring if the phone is left alone. */
+@Composable
+private fun WakeCheckChip(secondsLeft: Int) {
+    Row(
+        modifier = Modifier
+            .background(SunupTheme.colors.indigoContainer, SunupTheme.shapes.pill)
+            .padding(horizontal = SunupTheme.spacing.md, vertical = SunupTheme.spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Wake-up check · 0:${secondsLeft.toString().padStart(2, '0')} · tap anything to stay",
+            style = SunupTheme.typography.bodySmall,
+            color = SunupTheme.colors.indigo,
+        )
+    }
+}
+
+/** The wake-up check fired: soft ring, one big button. */
+@Composable
+private fun StillWithMe(onAction: (WakeUpAction) -> Unit) {
+    val palette = Palette.night()
+    Page(palette) {
+        Spacer(Modifier.weight(1f))
+        Pip(PipMood.SLEEPY, modifier = Modifier.align(Alignment.CenterHorizontally), size = 140.dp)
+        Text(
+            "Still with me?",
+            style = SunupTheme.typography.headline,
+            color = palette.text,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Text(
+            "Your phone sat still for a minute, so I'm ringing softly to check you're up.",
+            style = SunupTheme.typography.body,
+            color = palette.muted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.weight(1f))
+        SunupButton(text = "I'm up", onClick = { onAction(WakeUpAction.OnStillAwake) })
     }
 }
 
