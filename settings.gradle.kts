@@ -34,6 +34,10 @@ include(":androidApp")
 include(":shared")
 
 include(":core:alarm")
+include(":core:data")
 include(":core:database")
 include(":core:domain")
 include(":core:design-system")
+
+include(":feature:wakeup:domain")
+include(":feature:wakeup:presentation")

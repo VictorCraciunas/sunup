@@ -8,6 +8,8 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(libs.kotlinx.datetime)
+            // Repository interfaces expose Flow.
+            api(libs.kotlinx.coroutines.core)
         }
     }
 }

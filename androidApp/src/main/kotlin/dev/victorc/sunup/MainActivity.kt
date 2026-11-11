@@ -16,6 +16,8 @@ import dev.victorc.sunup.core.alarm.AlarmPermissions
 import dev.victorc.sunup.core.alarm.AlarmScheduler
 import dev.victorc.sunup.core.alarm.AlarmStore
 import dev.victorc.sunup.core.alarm.RingingState
+import dev.victorc.sunup.core.data.SampleDeckSeeder
+import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
@@ -23,6 +25,8 @@ class MainActivity : ComponentActivity() {
     private val scheduler: AlarmScheduler by inject()
     private val store: AlarmStore by inject()
     private val permissions: AlarmPermissions by inject()
+    private val wakeAlarms: WakeAlarmRepository by inject()
+    private val seeder: SampleDeckSeeder by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -41,7 +45,13 @@ class MainActivity : ComponentActivity() {
             App(
                 extraContent = {
                     // TODO(M4): remove, or hide behind a debug menu, once real alarm screens exist.
-                    AlarmTestBench(scheduler = scheduler, store = store, permissions = permissions)
+                    AlarmTestBench(
+                        scheduler = scheduler,
+                        store = store,
+                        permissions = permissions,
+                        wakeAlarms = wakeAlarms,
+                        seeder = seeder,
+                    )
                 },
             )
         }

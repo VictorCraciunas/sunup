@@ -37,6 +37,10 @@ import dev.victorc.sunup.core.alarm.AlarmScheduler
 import dev.victorc.sunup.core.alarm.AlarmStore
 import dev.victorc.sunup.core.alarm.RingEvent
 import dev.victorc.sunup.core.alarm.RingingState
+import dev.victorc.sunup.core.data.SampleDeckSeeder
+import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
+import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
+import dev.victorc.sunup.core.domain.wakeup.WakeMode
 import dev.victorc.sunup.core.designsystem.components.SunupButton
 import dev.victorc.sunup.core.designsystem.components.SunupButtonStyle
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
@@ -59,10 +63,13 @@ fun AlarmTestBench(
     scheduler: AlarmScheduler,
     store: AlarmStore,
     permissions: AlarmPermissions,
+    wakeAlarms: WakeAlarmRepository,
+    seeder: SampleDeckSeeder,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    var mode by remember { mutableStateOf(WakeMode.NORMAL) }
     var refresh by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf<String?>(null) }
     var alarms by remember { mutableStateOf(emptyList<Alarm>()) }
@@ -84,6 +91,8 @@ fun AlarmTestBench(
 
     fun schedule(alarm: Alarm) {
         scope.launch {
+            // The morning flow reads the wake-up mode from the app's own alarm record.
+            wakeAlarms.save(WakeAlarm(id = alarm.id, time = alarm.time, label = alarm.label, mode = mode))
             val scheduled = when (val result = scheduler.schedule(alarm)) {
                 is Result.Success -> result.data?.let { "\"${alarm.label}\" rings at ${it.localTime()}" } ?: "Alarm is off"
                 is Result.Error -> "Couldn't schedule: ${result.error}"
@@ -143,6 +152,35 @@ fun AlarmTestBench(
             style = SunupTheme.typography.bodySmall,
             color = SunupTheme.colors.inkMuted,
         )
+
+        // Morning flow
+        Text("MORNING FLOW", style = SunupTheme.typography.label, color = SunupTheme.colors.inkMuted)
+        SunupButton(
+            text = "Load sample Spanish deck",
+            style = SunupButtonStyle.Secondary,
+            onClick = {
+                scope.launch {
+                    val deck = seeder.seedSpanish()
+                    message = "Loaded \"${deck.name}\": 12 words, 6 already learned"
+                }
+            },
+        )
+        Text(
+            "Without a deck, the alarm uses Quick math.",
+            style = SunupTheme.typography.bodySmall,
+            color = SunupTheme.colors.inkMuted,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Mode", style = SunupTheme.typography.body, color = SunupTheme.colors.ink, modifier = Modifier.weight(1f))
+            WakeMode.entries.forEach { option ->
+                TextButton(onClick = { mode = option }) {
+                    Text(
+                        text = (if (option == mode) "● " else "") + option.label(),
+                        color = if (option == mode) SunupTheme.colors.indigo else SunupTheme.colors.inkMuted,
+                    )
+                }
+            }
+        }
 
         // Test alarms
         SunupButton(text = "Ring in 1 minute", onClick = { ringIn(1) })
@@ -230,6 +268,12 @@ private fun CheckRow(label: String, ok: Boolean, onFix: () -> Unit) {
             TextButton(onClick = onFix) { Text("Fix") }
         }
     }
+}
+
+private fun WakeMode.label(): String = when (this) {
+    WakeMode.GENTLE -> "Gentle"
+    WakeMode.NORMAL -> "Normal"
+    WakeMode.HEAVY_SLEEPER -> "Heavy"
 }
 
 private val logTime = DateTimeFormatter.ofPattern("EEE HH:mm:ss", Locale.US)

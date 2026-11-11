@@ -29,8 +29,10 @@ android {
 dependencies {
     implementation(projects.shared)
     implementation(projects.core.alarm)
+    implementation(projects.core.data)
     implementation(projects.core.database)
     implementation(projects.core.designSystem)
+    implementation(projects.feature.wakeup.presentation)
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core)
