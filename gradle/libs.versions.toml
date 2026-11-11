@@ -67,6 +67,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 compose-gradlePlugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composeMultiplatform" }
+room-gradlePlugin = { module = "androidx.room:room-gradle-plugin", version.ref = "androidx-room" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -82,3 +83,4 @@ room = { id = "androidx.room", version.ref = "androidx-room" }
 sunup-android-application = { id = "sunup.android.application" }
 sunup-kmp-library = { id = "sunup.kmp.library" }
 sunup-kmp-compose = { id = "sunup.kmp.compose" }
+sunup-room = { id = "sunup.room" }

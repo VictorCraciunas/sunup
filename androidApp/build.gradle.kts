@@ -29,6 +29,7 @@ android {
 dependencies {
     implementation(projects.shared)
     implementation(projects.core.alarm)
+    implementation(projects.core.database)
     implementation(projects.core.designSystem)
 
     implementation(libs.androidx.activity.compose)

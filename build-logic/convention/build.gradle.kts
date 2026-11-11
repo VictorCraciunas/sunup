@@ -21,6 +21,7 @@ dependencies {
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.compose.gradlePlugin)
+    compileOnly(libs.room.gradlePlugin)
 }
 
 gradlePlugin {
@@ -36,6 +37,10 @@ gradlePlugin {
         register("kmpCompose") {
             id = libs.plugins.sunup.kmp.compose.get().pluginId
             implementationClass = "KmpComposeConventionPlugin"
+        }
+        register("room") {
+            id = libs.plugins.sunup.room.get().pluginId
+            implementationClass = "RoomConventionPlugin"
         }
     }
 }

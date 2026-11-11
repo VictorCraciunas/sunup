@@ -1,0 +1,28 @@
+package dev.victorc.sunup.core.domain.learning
+
+import kotlinx.datetime.LocalDate
+
+data class Deck(
+    val id: String,
+    val name: String,
+    val kind: DeckKind,
+    /** Language being learned, e.g. "es". Language decks only. */
+    val targetLanguage: String? = null,
+    /** The user's own language, e.g. "en". */
+    val nativeLanguage: String? = null,
+    /** Language decks: also test meaning → word, not only word → meaning. */
+    val bothDirections: Boolean = false,
+    val newCardsPerDay: Int = DEFAULT_NEW_CARDS_PER_DAY,
+    /** Which games Pip may use for this deck. */
+    val allowedGames: Set<Game> = Game.entries.toSet(),
+    /** Study decks: Pip spaces cards so each is seen again before this date. */
+    val examDate: LocalDate? = null,
+    /** Set when the deck came from a built-in pack. */
+    val builtInPackId: String? = null,
+) {
+    companion object {
+        const val DEFAULT_NEW_CARDS_PER_DAY = 3
+    }
+}
+
+enum class DeckKind { LANGUAGE, STUDY, TRIVIA }

@@ -25,10 +25,25 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [ ] Real-device test matrix (Xiaomi, Samsung): reboot, app killed, Doze, silent, Do Not Disturb
 - [ ] Later: ring right away after a reboot if an alarm was missed in the last few minutes
 
+### Device test results
+| Date | Phone | Test | Result |
+|---|---|---|---|
+| 2026-11-11 | Samsung | Locked, app swiped away, 2 runs | ✅ Rang 0.1 s and 1.3 s late, ringing screen shown (battery not unrestricted) |
+| 2026-11-11 | Samsung | Locked, app swiped away, with the M2 build | ✅ Rang and showed the ringing screen |
+| | Samsung | Silent mode / Do Not Disturb | not yet |
+| | Samsung | Reboot, left locked | not yet |
+| | Samsung | Overnight | not yet |
+| | Xiaomi | All of the above | not yet |
+
 ## M2 · Data and logic
-- [ ] `:core:database` (Room) with the data model: decks, notes, review state, review log, alarms, streaks
-- [ ] Spaced repetition rules, with unit tests
-- [ ] Built-in pack format and loading
+- [x] Domain models in `:core:domain`: Deck, Note (Word / Question), ReviewState, ReviewRecord, Game, WakeAlarm
+- [x] `:core:database` (Room KMP) with entities, DAOs and mappers; `sunup.room` convention plugin; schema exported to `core/database/schemas`
+- [x] Spaced repetition: ladder 1 → 3 → 8 → 21 → 45 → 90 days, exam dates, level-up path, with tests
+- [x] Forgiving answer checking (case, punctuation, articles, accents, small typos), with tests
+- [x] Which games each note can play, and which can stop the alarm, with tests
+- [ ] Repositories: added with the first feature that uses them (M3)
+- [ ] Streaks: moved to M4, once wake sessions exist
+- [ ] Built-in pack format and loading: waiting on the built-in pack decision
 
 ## M3 · Morning flow
 - [ ] Silencing card → 60 s wake-up check → quiet bonus round → "You're up!"

@@ -30,11 +30,15 @@ fun SunupTheme(content: @Composable () -> Unit) {
         LocalSunupSizes provides SunupSizes(),
     ) {
         MaterialTheme(
+            // Indigo, not sun, drives Material components: yellow text buttons, cursors and
+            // focus lines on white fail contrast. Sun stays on SunupButton, with dark text on it.
             colorScheme = lightColorScheme(
-                primary = colors.sun,
-                onPrimary = colors.onSun,
-                secondary = colors.indigo,
-                onSecondary = colors.onIndigo,
+                primary = colors.indigo,
+                onPrimary = colors.onIndigo,
+                primaryContainer = colors.indigoContainer,
+                onPrimaryContainer = colors.indigo,
+                secondary = colors.sun,
+                onSecondary = colors.onSun,
                 background = colors.background,
                 onBackground = colors.ink,
                 surface = colors.surface,
