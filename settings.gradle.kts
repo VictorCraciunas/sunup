@@ -1,6 +1,7 @@
 rootProject.name = "SunUp"
 
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             mavenContent {
@@ -27,5 +28,10 @@ dependencyResolutionManagement {
     }
 }
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 include(":androidApp")
 include(":shared")
+
+include(":core:domain")
+include(":core:design-system")

@@ -1,0 +1,14 @@
+# Keep line endings stable across Windows and macOS.
+* text=auto
+
+# Shell scripts must keep LF or they won't run on macOS.
+gradlew text eol=lf
+*.sh text eol=lf
+
+*.bat text eol=crlf
+
+*.jar binary
+*.png binary
+*.ttf binary
+*.otf binary
+*.woff2 binary
