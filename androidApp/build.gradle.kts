@@ -28,9 +28,18 @@ android {
 
 dependencies {
     implementation(projects.shared)
+    implementation(projects.core.alarm)
+    implementation(projects.core.designSystem)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core)
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.android)
 
+    implementation(libs.compose.runtime)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
 }

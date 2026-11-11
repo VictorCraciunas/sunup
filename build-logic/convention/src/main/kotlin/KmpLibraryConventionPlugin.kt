@@ -22,6 +22,11 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
             iosArm64()
             iosSimulatorArm64()
 
+            compilerOptions {
+                // kotlin.time.Instant and Clock, used with kotlinx-datetime.
+                optIn.add("kotlin.time.ExperimentalTime")
+            }
+
             extensions.configure<KotlinMultiplatformAndroidLibraryTarget> {
                 namespace = pathNamespace
                 compileSdk = libs.versionInt("android-compileSdk")

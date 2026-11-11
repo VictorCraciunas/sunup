@@ -49,5 +49,5 @@ Convention plugins (apply these, don't repeat config):
 iOS targets are skipped on Windows (`kotlin.native.ignoreDisabledTargets`). Build and run iOS from the Mac.
 
 ## Working here
-- Verify with Gradle builds and tests. Don't start the emulator or install the app; the user runs it.
+- Don't run Gradle builds or tests, and don't start the emulator. The user builds and tests; finish each change by telling them what to run and what to check.
 - Work on a branch per milestone or feature, with small commits that each build.

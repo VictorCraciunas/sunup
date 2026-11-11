@@ -14,14 +14,16 @@ One codebase, released step by step. The MVP is the first public release, not a 
 - [ ] CI on GitHub Actions, with a macOS runner for the iOS build
 
 ## M1 · Android alarm engine
-- [ ] `:core:alarm` with the shared `AlarmScheduler` interface
+Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's tested on a real phone.
+- [ ] `:core:alarm` with the shared `AlarmScheduler` interface and `NextRingTime` (weekdays, daylight saving)
 - [ ] `setAlarmClock()` scheduling, `USE_EXACT_ALARM` (Android 13+)
-- [ ] Foreground service that starts the sound first, then the full-screen alarm screen
-- [ ] Full-screen intent declaration, with a fallback when it isn't granted
-- [ ] Reschedule after reboot, time or time zone change, and app update
-- [ ] Direct boot: alarm times and one card in device-protected storage, so a reboot overnight still rings before unlock
-- [ ] Log scheduled time vs. actual ring time
+- [ ] Foreground service (`systemExempted`) that starts the sound first, ramping from soft to loud, with a beep fallback
+- [ ] Full-screen ringing screen over the lock screen; without that permission it rings as a notification
+- [ ] Reschedule after reboot, time or time zone change, and app update; a one-off alarm missed while the phone was off is turned off
+- [ ] Direct boot: alarms and the ring log live in device-protected storage (one card for the ringing screen comes in M3)
+- [ ] Ring log of scheduled vs. actual ring time, shown in the temporary Alarm test bench
 - [ ] Real-device test matrix (Xiaomi, Samsung): reboot, app killed, Doze, silent, Do Not Disturb
+- [ ] Later: ring right away after a reboot if an alarm was missed in the last few minutes
 
 ## M2 · Data and logic
 - [ ] `:core:database` (Room) with the data model: decks, notes, review state, review log, alarms, streaks

@@ -4,6 +4,7 @@ android-compileSdk = "37"
 android-minSdk = "26"
 android-targetSdk = "37"
 androidx-activity = "1.13.0"
+androidx-core = "1.19.1"
 androidx-lifecycle = "2.11.0"
 androidx-navigation = "2.10.0"
 androidx-room = "2.8.5"
@@ -30,6 +31,7 @@ assertk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assert
 
 # Android
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 
 # Compose Multiplatform
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
