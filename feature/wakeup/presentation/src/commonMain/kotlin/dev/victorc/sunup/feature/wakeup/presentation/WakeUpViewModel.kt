@@ -16,6 +16,7 @@ import dev.victorc.sunup.feature.wakeup.domain.WakeSessionPlanner
 import dev.victorc.sunup.feature.wakeup.domain.gradeFor
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlin.uuid.ExperimentalUuidApi
@@ -53,14 +54,29 @@ class WakeUpViewModel(
     private var shownAt: Instant = clock.now()
 
     // Wake-up check: after the alarm stops, a soft re-ring is always scheduled 60 s ahead.
-    // Every touch pushes it back, so it only rings if the phone is left alone for a minute.
-    private val followUpId = "$alarmId$FOLLOW_UP_SUFFIX"
+    // Every touch on this screen pushes it back. If the user leaves Sunup, the alarm engine
+    // decides when it fires: busy in another app means awake for now (look again in a minute,
+    // until checkUntil); screen off or locked means maybe asleep again, so it rings.
+    private val isFollowUpRing = alarmId.endsWith(FOLLOW_UP_SUFFIX)
+    private val followUpId = if (isFollowUpRing) alarmId else "$alarmId$FOLLOW_UP_SUFFIX"
     private var checkActive = false
+    private var checkUntil: Instant? = null
     private var checkDeadline: Instant? = null
     private var lastScheduledAt: Instant? = null
     private var tickerJob: Job? = null
 
     init {
+        if (isFollowUpRing) {
+            // Opened by the wake-up check's soft re-ring after Sunup was closed (e.g. swiped
+            // away): no new card, just "Still with me?", then "You're up!".
+            _state.update { it.copy(phase = WakePhase.DONE, alarmStopped = true, ringingAgain = true) }
+            activateWakeCheck()
+        } else {
+            loadPlan()
+        }
+    }
+
+    private fun loadPlan() {
         viewModelScope.launch {
             // The alarm's settings live in the database, which can be locked right after a reboot.
             val alarm = try {
@@ -88,7 +104,7 @@ class WakeUpViewModel(
             }
             WakeUpAction.OnFinish -> viewModelScope.launch {
                 // Cancel first: the screen (and this scope) goes away right after Close.
-                endWakeCheck()
+                endWakeCheck(reason = "start my day")
                 _events.send(WakeUpEvent.Close)
             }
             WakeUpAction.OnUserActive -> if (checkActive && !_state.value.ringingAgain) pushWakeCheck(force = false)
@@ -96,17 +112,22 @@ class WakeUpViewModel(
             WakeUpAction.OnStillAwake -> {
                 _state.update { it.copy(ringingAgain = false) }
                 viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
+                checkUntil = clock.now() + CHECK_WINDOW
                 pushWakeCheck(force = true)
             }
-            // Switched to another app with the screen on: clearly awake.
-            WakeUpAction.OnLeftApp -> if (checkActive) viewModelScope.launch { endWakeCheck() }
         }
     }
 
     private fun startWakeCheck() {
         if (checkActive || plan?.mode == WakeMode.GENTLE) return
-        checkActive = true
+        activateWakeCheck()
         pushWakeCheck(force = true)
+    }
+
+    private fun activateWakeCheck() {
+        checkActive = true
+        checkUntil = clock.now() + CHECK_WINDOW
+        tickerJob?.cancel()
         tickerJob = viewModelScope.launch {
             while (checkActive) {
                 val left = checkDeadline?.let { (it - clock.now()).inWholeSeconds.coerceAtLeast(0).toInt() }
@@ -125,15 +146,16 @@ class WakeUpViewModel(
         lastScheduledAt = now
         val at = now + WAKE_CHECK
         checkDeadline = at
-        viewModelScope.launch { scheduler.scheduleFollowUp(followUpId, at) }
+        val until = maxOf(checkUntil ?: at, at)
+        viewModelScope.launch { scheduler.scheduleFollowUp(followUpId, at, recheckWhileInUseUntil = until) }
     }
 
-    private suspend fun endWakeCheck() {
+    private suspend fun endWakeCheck(reason: String) {
         if (!checkActive) return
         checkActive = false
         tickerJob?.cancel()
         _state.update { it.copy(wakeCheckSecondsLeft = null, ringingAgain = false) }
-        scheduler.cancelFollowUp(followUpId)
+        scheduler.cancelFollowUp(followUpId, reason)
     }
 
     private fun pick(index: Int) {
@@ -220,6 +242,9 @@ class WakeUpViewModel(
 
 private val WAKE_CHECK = 60.seconds
 private val RESCHEDULE_EVERY = 5.seconds
+
+/** How long the wake-up check keeps watching once the user is busy in another app. */
+private val CHECK_WINDOW = 5.minutes
 private const val FOLLOW_UP_SUFFIX = ":check"
 
 // TODO(M4): move user-facing text to string resources once localization is set up.

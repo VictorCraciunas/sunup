@@ -18,13 +18,13 @@ internal class AndroidPlatformAlarmClock(private val context: Context) : Platfor
 
     private val alarmManager = context.getSystemService(AlarmManager::class.java)
 
-    override fun set(alarmId: String, at: Instant, soft: Boolean): EmptyResult<ScheduleError> {
+    override fun set(alarmId: String, at: Instant, options: RingOptions): EmptyResult<ScheduleError> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
             return Result.Error(ScheduleError.EXACT_ALARMS_NOT_ALLOWED)
         }
         return try {
             val info = AlarmManager.AlarmClockInfo(at.toEpochMilliseconds(), openAppIntent())
-            alarmManager.setAlarmClock(info, ringIntent(alarmId, at, soft))
+            alarmManager.setAlarmClock(info, ringIntent(alarmId, at, options))
             Result.Success(Unit)
         } catch (e: SecurityException) {
             Result.Error(ScheduleError.EXACT_ALARMS_NOT_ALLOWED)
@@ -32,16 +32,19 @@ internal class AndroidPlatformAlarmClock(private val context: Context) : Platfor
     }
 
     override fun cancel(alarmId: String) {
-        alarmManager.cancel(ringIntent(alarmId, at = null, soft = false))
+        alarmManager.cancel(ringIntent(alarmId, at = null, options = RingOptions()))
     }
 
     /** One PendingIntent per alarm: the data URI makes them distinct, extras don't. */
-    private fun ringIntent(alarmId: String, at: Instant?, soft: Boolean): PendingIntent {
+    private fun ringIntent(alarmId: String, at: Instant?, options: RingOptions): PendingIntent {
         val intent = Intent(context, AlarmReceiver::class.java)
             .setData(Uri.parse("sunup://alarm/${Uri.encode(alarmId)}"))
             .putExtra(AlarmIntents.EXTRA_ALARM_ID, alarmId)
-            .putExtra(AlarmIntents.EXTRA_SOFT, soft)
+            .putExtra(AlarmIntents.EXTRA_SOFT, options.soft)
         if (at != null) intent.putExtra(AlarmIntents.EXTRA_EXPECTED_AT, at.toEpochMilliseconds())
+        options.recheckWhileInUseUntil?.let {
+            intent.putExtra(AlarmIntents.EXTRA_RECHECK_UNTIL, it.toEpochMilliseconds())
+        }
         return PendingIntent.getBroadcast(
             context,
             0,

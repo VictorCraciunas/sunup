@@ -22,10 +22,18 @@ interface AlarmScheduler {
      * A one-time, soft ring at an exact moment, e.g. the 60-second wake-up check.
      * Not saved as an alarm, so it doesn't come back after a reboot. Calling it again with
      * the same [followUpId] moves it.
+     *
+     * @param recheckWhileInUseUntil if set and, when it fires, the user is busy in another app
+     *   (screen on, unlocked), don't ring yet: look again a minute later, until this moment.
      */
-    suspend fun scheduleFollowUp(followUpId: String, at: Instant): Result<Instant, ScheduleError>
+    suspend fun scheduleFollowUp(
+        followUpId: String,
+        at: Instant,
+        recheckWhileInUseUntil: Instant? = null,
+    ): Result<Instant, ScheduleError>
 
-    suspend fun cancelFollowUp(followUpId: String)
+    /** @param reason written to the ring log, so a missing re-ring can be explained. */
+    suspend fun cancelFollowUp(followUpId: String, reason: String = "")
 }
 
 enum class ScheduleError : Error {
@@ -34,9 +42,26 @@ enum class ScheduleError : Error {
     UNKNOWN,
 }
 
+/** How a scheduled alarm should behave when it fires. */
+data class RingOptions(
+    /** Ring quietly, e.g. the wake-up check after the user is already up. */
+    val soft: Boolean = false,
+    /** See [AlarmScheduler.scheduleFollowUp]. */
+    val recheckWhileInUseUntil: Instant? = null,
+)
+
 /** The thin native part: hand one exact ring time to the OS, or take it back. */
 interface PlatformAlarmClock {
-    /** @param soft ring quietly, e.g. for the wake-up check after the user is already up. */
-    fun set(alarmId: String, at: Instant, soft: Boolean = false): EmptyResult<ScheduleError>
+    fun set(alarmId: String, at: Instant, options: RingOptions = RingOptions()): EmptyResult<ScheduleError>
     fun cancel(alarmId: String)
+}
+
+/**
+ * Whether the wake-up screen is showing right now. The platform's ringing screen keeps this
+ * up to date; a follow-up that fires while it's visible always rings, because the morning
+ * flow's own touch tracking already decided the user went quiet.
+ */
+object WakeUpScreenState {
+    @kotlin.concurrent.Volatile
+    var isVisible: Boolean = false
 }

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,9 +32,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -58,8 +54,6 @@ import org.koin.core.parameter.parametersOf
  * @param ringing whether an alarm is ringing right now (the first ring, or the wake-up check's soft re-ring)
  * @param onStopAlarm silence the alarm (a card was answered, "I'm up", or the emergency stop)
  * @param onClose the user is done; close the screen
- * @param userLeftApp asked when the screen goes to the background: true if the user switched
- *   away with the screen on (awake), false if the screen just turned off (maybe asleep again)
  */
 @Composable
 fun WakeUpRoot(
@@ -67,13 +61,11 @@ fun WakeUpRoot(
     ringing: Boolean,
     onStopAlarm: () -> Unit,
     onClose: () -> Unit,
-    userLeftApp: () -> Boolean,
 ) {
     val viewModel = koinViewModel<WakeUpViewModel> { parametersOf(alarmId) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val stopAlarm by rememberUpdatedState(onStopAlarm)
     val close by rememberUpdatedState(onClose)
-    val leftApp by rememberUpdatedState(userLeftApp)
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -85,14 +77,6 @@ fun WakeUpRoot(
     }
     LaunchedEffect(ringing) {
         viewModel.onAction(WakeUpAction.OnRingingChanged(ringing))
-    }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && leftApp()) viewModel.onAction(WakeUpAction.OnLeftApp)
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Box(
@@ -435,7 +419,7 @@ private fun WakeCheckChip(secondsLeft: Int) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Wake-up check · 0:${secondsLeft.toString().padStart(2, '0')} · tap anything to stay",
+            text = "Wake-up check · 0:${secondsLeft.toString().padStart(2, '0')} · tap Start my day when you're up",
             style = SunupTheme.typography.bodySmall,
             color = SunupTheme.colors.indigo,
         )

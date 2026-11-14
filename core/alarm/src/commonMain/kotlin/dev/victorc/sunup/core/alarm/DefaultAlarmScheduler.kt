@@ -45,9 +45,14 @@ class DefaultAlarmScheduler(
         }
     }
 
-    override suspend fun scheduleFollowUp(followUpId: String, at: Instant): Result<Instant, ScheduleError> {
+    override suspend fun scheduleFollowUp(
+        followUpId: String,
+        at: Instant,
+        recheckWhileInUseUntil: Instant?,
+    ): Result<Instant, ScheduleError> {
         val now = clock.now()
-        return when (val result = platform.set(followUpId, at, soft = true)) {
+        val options = RingOptions(soft = true, recheckWhileInUseUntil = recheckWhileInUseUntil)
+        return when (val result = platform.set(followUpId, at, options)) {
             is Result.Success -> {
                 store.record(RingEvent(followUpId, RingEvent.Type.SCHEDULED, at = now, expected = at, note = "follow-up"))
                 Result.Success(at)
@@ -61,8 +66,9 @@ class DefaultAlarmScheduler(
         }
     }
 
-    override suspend fun cancelFollowUp(followUpId: String) {
+    override suspend fun cancelFollowUp(followUpId: String, reason: String) {
         platform.cancel(followUpId)
+        store.record(RingEvent(followUpId, RingEvent.Type.CANCELLED, at = clock.now(), note = reason))
     }
 
     private suspend fun register(alarm: Alarm): Result<Instant?, ScheduleError> {

@@ -22,6 +22,12 @@ data class RingEvent(
         STOPPED,
         TIMED_OUT,
         RESCHEDULED_ALL,
+
+        /** A follow-up (e.g. the wake-up check) was taken back before it rang. */
+        CANCELLED,
+
+        /** A follow-up fired but didn't ring, e.g. the user was busy in another app. */
+        SKIPPED,
     }
 
     /** How late the alarm rang. Only meaningful for [Type.RANG]. */

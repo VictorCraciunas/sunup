@@ -55,9 +55,6 @@ sealed interface WakeUpAction {
 
     /** "I'm up" on the soft re-ring. */
     data object OnStillAwake : WakeUpAction
-
-    /** The user switched to another app with the screen on. */
-    data object OnLeftApp : WakeUpAction
 }
 
 sealed interface WakeUpEvent {

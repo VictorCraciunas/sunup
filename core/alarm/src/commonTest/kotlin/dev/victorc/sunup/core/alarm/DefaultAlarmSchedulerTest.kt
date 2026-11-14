@@ -20,13 +20,14 @@ import kotlinx.datetime.toInstant
 
 private class FakePlatformAlarmClock : PlatformAlarmClock {
     val registered = mutableMapOf<String, Instant>()
-    val soft = mutableSetOf<String>()
+    val options = mutableMapOf<String, RingOptions>()
+    val soft: Set<String> get() = options.filterValues { it.soft }.keys
     var failWith: ScheduleError? = null
 
-    override fun set(alarmId: String, at: Instant, soft: Boolean): EmptyResult<ScheduleError> {
+    override fun set(alarmId: String, at: Instant, options: RingOptions): EmptyResult<ScheduleError> {
         failWith?.let { return Result.Error(it) }
         registered[alarmId] = at
-        if (soft) this.soft += alarmId else this.soft -= alarmId
+        this.options[alarmId] = options
         return Result.Success(Unit)
     }
 
@@ -150,6 +151,26 @@ class DefaultAlarmSchedulerTest {
         assertThat(platform.registered["morning:check"]).isEqualTo(at)
         assertThat(platform.soft.contains("morning:check")).isTrue()
         assertThat(store.alarms().isEmpty()).isTrue()
+    }
+
+    @Test
+    fun followUpCarriesItsRecheckWindowToThePlatform() = runTest {
+        val until = local("2026-11-03T07:06:00")
+
+        scheduler.scheduleFollowUp("morning:check", local("2026-11-03T07:02:00"), recheckWhileInUseUntil = until)
+
+        assertThat(platform.options["morning:check"]).isEqualTo(RingOptions(soft = true, recheckWhileInUseUntil = until))
+    }
+
+    @Test
+    fun cancellingAFollowUpIsLoggedWithItsReason() = runTest {
+        scheduler.scheduleFollowUp("morning:check", local("2026-11-03T07:01:00"))
+
+        scheduler.cancelFollowUp("morning:check", reason = "start my day")
+
+        val last = store.events().last()
+        assertThat(last.type).isEqualTo(RingEvent.Type.CANCELLED)
+        assertThat(last.note).isEqualTo("start my day")
     }
 
     @Test
