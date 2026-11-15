@@ -111,7 +111,8 @@ class WakeUpViewModel(
             val playable = withMapLoaded(loaded)
             plan = playable
             if (countsForStreak) startSession()
-            startPhase(WakePhase.SILENCING, playable.silencing)
+            // The ringing screen first; its button shows the first card.
+            _state.update { it.copy(phase = WakePhase.RINGING, silencingCount = playable.silencing.size, isPreview = isPreview) }
         }
     }
 
@@ -162,6 +163,7 @@ class WakeUpViewModel(
             is WakeUpAction.OnMapTap -> mapTap(action.countryId, action.countryName)
 
             WakeUpAction.OnContinue -> continueOn()
+            WakeUpAction.OnWakeUp -> if (_state.value.phase == WakePhase.RINGING) startPhase(WakePhase.SILENCING, plan?.silencing.orEmpty())
             WakeUpAction.OnStartBonus -> startPhase(WakePhase.BONUS, plan?.bonus.orEmpty())
             WakeUpAction.OnSkipBonus -> _state.update { it.copy(phase = WakePhase.DONE) }
             WakeUpAction.OnEmergencyStop -> {
@@ -301,6 +303,7 @@ class WakeUpViewModel(
                 card = solved,
                 alarmStopped = it.alarmStopped || stopsAlarm,
                 learned = it.learned + learned,
+                alarmOffAt = if (stopsAlarm) clockText(clock.now()) else it.alarmOffAt,
             )
         }
         record(cards[current.position], grades, current.phase)
@@ -334,12 +337,17 @@ class WakeUpViewModel(
             show(current.phase, next)
             return
         }
+        val bonusCount = if (plan?.mode == WakeMode.NORMAL) plan?.bonus.orEmpty().size else 0
         val nextPhase = when (current.phase) {
-            WakePhase.SILENCING ->
-                if (plan?.mode == WakeMode.NORMAL && !plan?.bonus.isNullOrEmpty()) WakePhase.BONUS_OFFER else WakePhase.DONE
+            WakePhase.SILENCING -> when {
+                // A2: the wake-up check gets its own screen, which also offers the bonus round.
+                checkActive -> WakePhase.WAKE_CHECK
+                bonusCount > 0 -> WakePhase.BONUS_OFFER
+                else -> WakePhase.DONE
+            }
             else -> WakePhase.DONE
         }
-        _state.update { it.copy(phase = nextPhase, card = null) }
+        _state.update { it.copy(phase = nextPhase, card = null, bonusCount = bonusCount) }
     }
 
     private fun startPhase(phase: WakePhase, phaseCards: List<MorningCard>) {
@@ -418,10 +426,16 @@ class WakeUpViewModel(
             }
             val local = now.toLocalDateTime(timeZone())
             val streak = Streaks.current(saved.filter { it.id != mine.id } + mine, local.date)
-            val time = "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+            val time = clockText(now)
             val line = if (streak <= 1) "Up at $time · day 1 of your streak" else "Up at $time · $streak sunrises in a row"
             _state.update { it.copy(upLine = line) }
         }
+    }
+
+    /** "07:01" in the phone's time zone. */
+    private fun clockText(at: Instant): String {
+        val local = at.toLocalDateTime(timeZone())
+        return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
     }
 
     // Wake-up check

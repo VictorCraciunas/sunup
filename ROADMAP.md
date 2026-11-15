@@ -59,6 +59,9 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [x] Part 4: geography, Find on the map. `:core:geo` (map file loader, projection, pinch/drag/tap map), built-in region decks (Europe, Africa, Asia, North and Central America, South America, Oceania, World), map file from Natural Earth via `tools/geo/build_countries.py`. Test bench: region picker, Load geography deck, deck for test alarms.
 - [x] Part 5: Name the country. One country highlighted and zoomed in on, pick its name from 4, the wrong ones being its neighbours (from the map file's nearby list). New countries are named, known ones are found.
 - [ ] Later: Build the sentence → Listen & pick → Say it (Plus)
+- [x] Ringing screen (mockup 6) before the first card: day and time, Pip rising from behind a hill and wiggling, rays turning, rings pulsing, twinkling stars, sound bars, "I'm up, let's go" (no snooze). Pip can turn its rays (`rayTurn`); `typography.clockHero`
+- [x] A2 wake-up check screen ("first light"): Alarm off pill with the time, Pip peeking over the horizon with a breathing glow, countdown ring, Play bonus cards / I'm up. Replaces the bonus offer screen when the check runs
+- [ ] Morning screens in the improvements' look: A1 card, A3 bonus round, A4 "You're up!"
 - [ ] More motion: Pip rising between screens, new-card pop, haptics
 
 ## M4 · The rest of the app

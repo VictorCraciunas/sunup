@@ -28,6 +28,8 @@ fun Pip(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
     contentDescription: String? = null,
+    /** Turns the rays, in degrees, so they can spin as in the mockups. */
+    rayTurn: Float = 0f,
 ) {
     val colors = SunupTheme.colors
     val ray = Color(0xFFFFB020)
@@ -43,7 +45,7 @@ fun Pip(
 
         // Rays
         for (i in 0 until 8) {
-            val angle = i * PI / 4
+            val angle = i * PI / 4 + rayTurn * PI / 180
             val inner = p(60f + 44f * cos(angle).toFloat(), 60f + 44f * sin(angle).toFloat())
             val outer = p(60f + 55f * cos(angle).toFloat(), 60f + 55f * sin(angle).toFloat())
             drawLine(ray, inner, outer, strokeWidth = 7f * unit, cap = StrokeCap.Round)

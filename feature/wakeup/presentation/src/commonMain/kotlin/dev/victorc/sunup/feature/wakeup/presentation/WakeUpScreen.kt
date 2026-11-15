@@ -109,7 +109,9 @@ fun WakeUpScreen(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
             Pip(PipMood.SLEEPY, modifier = Modifier.align(Alignment.CenterHorizontally), size = 140.dp)
             Spacer(Modifier.weight(1f))
         }
+        WakePhase.RINGING -> RingingScreen(state, onAction)
         WakePhase.SILENCING -> CardPage(state, Palette.night(), onAction)
+        WakePhase.WAKE_CHECK -> WakeCheckScreen(state, onAction)
         WakePhase.BONUS_OFFER -> BonusOffer(state, onAction)
         WakePhase.BONUS -> CardPage(state, Palette.dawn(), onAction)
         WakePhase.DONE -> Done(state, onAction)
@@ -341,7 +343,7 @@ private val CardUi.isMapCard: Boolean
     get() = this is CardUi.FindOnMap || (this is CardUi.Choice && map != null)
 
 @Composable
-private fun currentTime(): String = remember {
+internal fun currentTime(): String = remember {
     val time = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
     "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}"
 }

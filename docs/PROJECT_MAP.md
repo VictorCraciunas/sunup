@@ -244,6 +244,8 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `presentation/WakeUpState.kt` | MVI State, `CardUi` (Choice, Typing, Match, FindOnMap), Actions, Events; `PREVIEW_ALARM_ID`, `PREVIEW_ALARM_PREFIX` |
 | `presentation/WakeUpViewModel.kt` | Answers, grading, saving reviews, stopping the alarm, the wake-up check, loading the map; plays `TEST_ALARM_ID` as Gentle; `preview:<alarm id>` as practice; writes this morning's `WakeSession` and the "Up at 07:03" streak line |
 | `presentation/WakeUpScreen.kt` | `WakeUpRoot` and the screens: card page, bonus offer, "You're up!", "Still with me?", palettes |
+| `presentation/WakeUpCheck.kt` | The wake-up check screen (improvement A2, phase WAKE_CHECK): "Alarm off" pill, Pip peeking over the horizon, countdown ring, Play bonus cards / I'm up |
+| `presentation/WakeUpRinging.kt` | The ringing screen (mockup 6, phase RINGING): stars, Pip rising with pulsing rings, the message, "I'm up, let's go" |
 | `presentation/WakeUpCards.kt` | Card pieces: prompt card, options, match grid, typing input, map areas, feedback panel |
 | `presentation/WakeUpModule.kt` | Koin `wakeUpModule` (planner, ViewModel, map source) |
 

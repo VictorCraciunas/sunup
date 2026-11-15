@@ -14,6 +14,14 @@ const val PREVIEW_ALARM_PREFIX = "preview:"
 
 data class WakeUpState(
     val phase: WakePhase = WakePhase.LOADING,
+    /** How many cards stop the alarm this morning, for the ringing screen. */
+    val silencingCount: Int = 0,
+    /** A preview: no sound, nothing saved. */
+    val isPreview: Boolean = false,
+    /** "07:01": when the last silencing card stopped the alarm. */
+    val alarmOffAt: String? = null,
+    /** Bonus cards on offer after the wake-up check (Normal only); 0 hides "Play bonus cards". */
+    val bonusCount: Int = 0,
     val card: CardUi? = null,
     /** 0-based position of [card] in the current phase. */
     val position: Int = 0,
@@ -33,7 +41,12 @@ data class WakeUpState(
     val upLine: String? = null,
 )
 
-enum class WakePhase { LOADING, SILENCING, BONUS_OFFER, BONUS, DONE }
+/**
+ * RINGING: mockup 6, before the first card ("I'm up, let's go").
+ * WAKE_CHECK: improvement A2, "Stay with me for a minute", right after the alarm stops (Normal and Heavy sleeper).
+ * BONUS_OFFER: only when there's no wake-up check but a bonus round (previews).
+ */
+enum class WakePhase { LOADING, RINGING, SILENCING, WAKE_CHECK, BONUS_OFFER, BONUS, DONE }
 
 /** One card on screen. Each game keeps its own progress. */
 sealed interface CardUi {
@@ -151,6 +164,9 @@ sealed interface WakeUpAction {
     data class OnMapTap(val countryId: String, val countryName: String) : WakeUpAction
 
     data object OnContinue : WakeUpAction
+
+    /** "I'm up, let's go" on the ringing screen: show the first card. */
+    data object OnWakeUp : WakeUpAction
     data object OnStartBonus : WakeUpAction
     data object OnSkipBonus : WakeUpAction
     data object OnEmergencyStop : WakeUpAction

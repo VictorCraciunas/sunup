@@ -60,10 +60,10 @@ If Android doesn't allow exact alarms, saving fails with a message pointing to "
 
 ## The morning, step by step
 
-1. **The alarm rings.** Starts soft and gets louder over about 50 seconds, on the alarm volume (rings in silent mode). Vibrates. Shows the ringing screen over the lock screen.
+1. **The alarm rings.** Starts soft and gets louder over about 50 seconds, on the alarm volume (rings in silent mode). Vibrates. Shows the ringing screen over the lock screen (mockup 6): the day and time, Pip rising from behind a hill with rings pulsing around it and stars twinkling, "Good morning! 1 quick card and the day is yours." (3 for Heavy sleeper), and **I'm up, let's go**, which opens the first card. No snooze. Previews and the test alarm show it too (previews say "no sound, nothing saved"); the wake-up check's re-ring skips it.
 2. **Silencing card(s).** Answer right to stop the alarm. A wrong answer keeps it ringing; try again.
-3. **Wake-up check** starts (Normal and Heavy sleeper only). See below.
-4. **Bonus round** offer (Normal only): 2 quiet cards, or "Not today".
+3. **Wake-up check** starts (Normal and Heavy sleeper only), on its own screen (improvement A2, "first light"): "✓ Alarm off · 07:01", Pip peeking over the horizon, "Stay with me for a minute", and a ring counting down the 60 seconds. See below.
+4. **Bonus round** (Normal only): **Play 2 bonus cards** on the wake-up check screen, or **I'm up, skip** (Heavy sleeper: just **I'm up**). Previews have no check, so they ask "Bonus round?" with Let's go / Not today instead.
 5. **"You're up!"**: Pip, and the words answered this morning. **Start my day** closes it.
 
 There is **no snooze**. The only other way to stop the alarm is **Emergency stop** (small button under the first card): stops it at once, goes to "You're up!", no wake-up check. Whether to add a real snooze is an open question.
@@ -78,7 +78,7 @@ There is **no snooze**. The only other way to stop the alarm is **Emergency stop
 
 ## The 60-second wake-up check
 
-After the alarm stops, a soft re-ring (45% volume at most) is always scheduled 1 minute ahead. A chip shows "Wake-up check · 0:42".
+After the alarm stops, a soft re-ring (45% volume at most) is always scheduled 1 minute ahead. The wake-up check screen shows it as a countdown ring; after that, a chip on the other screens shows "Wake-up check · 0:42". Only touches and typing count as moving; phone movement (the motion sensor) doesn't yet.
 
 | What the user does | What happens |
 |---|---|

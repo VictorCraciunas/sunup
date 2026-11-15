@@ -22,6 +22,14 @@ data class SunupTypography(
         lineHeight = 64.sp,
         letterSpacing = (-0.03).em,
     ),
+    /** The ringing screen's time, the biggest text in the app. */
+    val clockHero: TextStyle = TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Black,
+        fontSize = 88.sp,
+        lineHeight = 88.sp,
+        letterSpacing = (-0.04).em,
+    ),
     val display: TextStyle = TextStyle(
         fontFamily = fontFamily,
         fontWeight = FontWeight.Black,
