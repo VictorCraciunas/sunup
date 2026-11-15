@@ -174,7 +174,7 @@ private fun CardPage(state: WakeUpState, palette: Palette, onAction: (WakeUpActi
             // The map needs the room, so Pip sits smaller above it.
             Pip(
                 if (silencing && !state.alarmStopped) PipMood.SLEEPY else PipMood.AWAKE,
-                size = if (card is CardUi.FindOnMap) 56.dp else 88.dp,
+                size = if (card.isMapCard) 56.dp else 88.dp,
             )
             Text(
                 text = when {
@@ -194,10 +194,10 @@ private fun CardPage(state: WakeUpState, palette: Palette, onAction: (WakeUpActi
         PromptCard(card, palette)
         if (card is CardUi.Match) MatchGrid(card, palette, onAction)
 
-        if (card is CardUi.FindOnMap) {
-            MapArea(card, state.atlas, palette, onAction, Modifier.weight(1f))
-        } else {
-            Spacer(Modifier.weight(1f))
+        when {
+            card is CardUi.FindOnMap -> MapArea(card, state.atlas, palette, onAction, Modifier.weight(1f))
+            card is CardUi.Choice && card.map != null -> NameMapArea(card, state.atlas, palette, Modifier.weight(1f))
+            else -> Spacer(Modifier.weight(1f))
         }
 
         if (card.solved) {
@@ -327,6 +327,9 @@ private fun StillWithMe(onAction: (WakeUpAction) -> Unit) {
         SunupButton(text = "I'm up", onClick = { onAction(WakeUpAction.OnStillAwake) })
     }
 }
+
+private val CardUi.isMapCard: Boolean
+    get() = this is CardUi.FindOnMap || (this is CardUi.Choice && map != null)
 
 @Composable
 private fun currentTime(): String = remember {

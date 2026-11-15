@@ -38,7 +38,7 @@ sealed interface CardUi {
     /** Shown once solved, e.g. the right meaning after a false statement. */
     val explanation: String?
 
-    /** Pick the meaning, True or false, Fill the gap, Quick math: tap one option. */
+    /** Pick the meaning, True or false, Fill the gap, Quick math, Name the country: tap one option. */
     data class Choice(
         val kind: ChoiceKind,
         override val label: String,
@@ -53,6 +53,8 @@ sealed interface CardUi {
         val learned: LearnedItem? = null,
         val wrongPicks: Set<Int> = emptySet(),
         override val solved: Boolean = false,
+        /** Name the country: the map to show above the options. */
+        val map: MapHighlight? = null,
     ) : CardUi {
         override val struggled: Boolean get() = wrongPicks.isNotEmpty()
     }
@@ -121,7 +123,10 @@ sealed interface CardUi {
     }
 }
 
-enum class ChoiceKind { MEANING, TRUE_FALSE, GAP, MATH }
+enum class ChoiceKind { MEANING, TRUE_FALSE, GAP, MATH, MAP }
+
+/** The country to highlight, and each option's country code so a wrong pick shows on the map. */
+data class MapHighlight(val countryId: String, val region: GeoRegion, val optionIds: List<String>)
 
 enum class TypingResult { CORRECT, CLOSE_ACCENTS, CLOSE_TYPO, REVEALED }
 

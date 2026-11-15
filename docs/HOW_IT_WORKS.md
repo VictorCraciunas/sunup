@@ -47,6 +47,7 @@ After the alarm stops, a soft re-ring (45% volume at most) is always scheduled 1
 | Quick math | "7 × 8", 4 options. Needs no deck | Free | yes (fallback only) |
 | Fill the gap | Example sentence with the word missing, 4 options | Free | no |
 | Match pairs | 4 words, 4 shuffled meanings; tap a word, then its meaning. All 4 words count as reviewed | Free | no |
+| Name the country | Geography decks only. One country is shown in indigo and the map starts zoomed in on it; pick its name from 4. The wrong options are its **neighbours** (3 of the 4 closest in the deck; for islands, the nearest coasts), so you have to know the shape and place. If the region has too few, countries of a similar size fill in. A wrong pick shows that country on the map in orange with its name; the right one turns green | Free | yes |
 | Find on the map | Geography decks only. "Find: Portugal" above a map of the region; pinch to zoom, drag to move, tap the country. Wrong tap turns that country orange with its name ("That's Spain"); right turns it green. Tiny countries (Luxembourg and smaller) get a circle you can tap. After 3 wrong countries the right one glows | Free | yes |
 | Type it | Type the answer. Forgives capitals, punctuation, a leading article, missing accents and small typos (with a note). Accent keys for es/fr/de/it/pt. **Show answer** after one wrong try | Free | no |
 | Build the sentence | Not built yet | Plus | no |
@@ -59,7 +60,7 @@ Feedback in every game: wrong shakes and turns orange ("Not quite. Have another 
 
 **Silencing card:** a word the user already knows (reviewed at least once and not just forgotten), in **Pick the meaning** or **True or false**, picked at random. Heavy sleeper gets 3 different known words.
 
-**Geography decks** (a region: Europe, Africa, Asia, North and Central America, South America, Oceania, or the World) always play **Find on the map**, with the same counts as other decks: 1 country stops the alarm and 2 more in the bonus round (Normal), 3 to stop it (Heavy sleeper), 1 and no bonus (Gentle). Any country can stop the alarm, not only known ones: first those due today, then new ones **biggest first** (Russia before Andorra), then the rest. Tapping the same wrong country twice counts as one mistake. If the map can't be read, map cards that would stop the alarm become Quick math and bonus map cards are skipped.
+**Geography decks** (a region: Europe, Africa, Asia, North and Central America, South America, Oceania, or the World) play on the map, with the same counts as other decks: 1 country stops the alarm and 2 more in the bonus round (Normal), 3 to stop it (Heavy sleeper), 1 and no bonus (Gentle). Any country can stop the alarm, not only known ones. Countries are picked **at random** from the whole region, and never twice in one morning. Spaced repetition only decides the game (named while new or just missed, found once known), not which country comes up. A country that is new, or was just forgotten, is **Name the country** (pick from 4); once it is known it becomes **Find on the map** (no options). Tapping the same wrong country twice counts as one mistake. If the map can't be read, map cards that would stop the alarm become Quick math and bonus map cards are skipped.
 
 **Quick math instead** when: no deck, the deck has fewer than 4 notes, nothing learned yet, or the database can't be read (e.g. right after a reboot, before the first unlock).
 
@@ -92,7 +93,7 @@ A brand-new word answered right comes back in 3 days. With an exam date, cards a
 Users don't build games; they write **notes** and Sunup turns each note into the games.
 - **Word note** (language decks): word, meaning, optional example sentence, hint, accepted answers, own wrong answers.
 - **Question note** (study / trivia): question, answer, optional one-line "why", own wrong answers.
-- **Geography decks** are built in, not written: one note per country (name, and its two-letter code), all new when loaded. The map comes with the app (Natural Earth, public domain), so it works offline.
+- **Geography decks** are built in, not written: one note per country (name, its two-letter code, and its closest neighbours in the region as wrong answers), all new when loaded. Loading a deck again updates the notes and keeps what was learned. The map comes with the app (Natural Earth, public domain), so it works offline.
 - Wrong options come from the user's own wrong answers first, then other notes in the same deck.
 - A deck is used by alarms only once it has **at least 4 notes**.
 
@@ -107,6 +108,6 @@ Users don't build games; they write **notes** and Sunup turns each note into the
 
 ## Testing without waiting for an alarm
 
-Test bench (below the home placeholder): **Load sample Spanish deck** (12 words; 3 at Match level, 3 at Type it level, 6 new), or pick a **Map** region and **Load geography deck**. Choose the **Deck for test alarms** (loading a deck selects it) and a **Mode**, then **Ring in 1 minute**, or **Preview all games** (plays each game once, no alarm, saves nothing; Find on the map is added when a geography deck exists).
+Test bench (below the home placeholder): **Load sample Spanish deck** (12 words; 3 at Match level, 3 at Type it level, 6 new), or pick a **Map** region and **Load geography deck**. Choose the **Deck for test alarms** (loading a deck selects it) and a **Mode**, then **Ring in 1 minute**, or **Preview all games** (plays each game once, no alarm, saves nothing; Name the country and Find on the map are added when a geography deck exists).
 
-The map file is built from Natural Earth's countries file with `python tools/geo/build_countries.py <ne_50m_admin_0_countries.geojson>`; it writes `core/geo/src/commonMain/composeResources/files/geo/countries.json`. The **ring log** shows scheduled vs. actual ring times, skips and cancels.
+The map file (outlines, plus each country's nearby countries) is built from Natural Earth's countries file with `python tools/geo/build_countries.py <ne_50m_admin_0_countries.geojson>`; it writes `core/geo/src/commonMain/composeResources/files/geo/countries.json`. `--update-nearby` recomputes just the nearby countries in that file, without the download. The **ring log** shows scheduled vs. actual ring times, skips and cancels.

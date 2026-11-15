@@ -19,9 +19,9 @@ object GameEligibility {
         notesInDeck: Int,
         hasPlus: Boolean,
     ): Set<Game> {
-        // Geography decks play one game: find the country on the map.
+        // Geography decks play on the map: name the highlighted country, or find the named one.
         if (deck.kind == DeckKind.GEOGRAPHY) {
-            return setOf(Game.FIND_ON_MAP).filter { it in deck.allowedGames }.toSet()
+            return setOf(Game.NAME_ON_MAP, Game.FIND_ON_MAP).filter { it in deck.allowedGames }.toSet()
         }
 
         val hasChoices = notesInDeck >= MIN_NOTES_FOR_CHOICES
@@ -53,9 +53,10 @@ object GameEligibility {
     /** The game that fits where the user is on the level-up path, if it's allowed. */
     fun preferredGame(state: ReviewState, eligible: Set<Game>): Game? {
         val order = when (state.level) {
-            MasteryLevel.RECOGNIZE -> listOf(Game.PICK_MEANING, Game.TRUE_FALSE)
-            MasteryLevel.MATCH -> listOf(Game.MATCH_PAIRS, Game.FILL_THE_GAP, Game.PICK_MEANING)
-            MasteryLevel.RECALL -> listOf(Game.TYPE_IT, Game.FILL_THE_GAP, Game.MATCH_PAIRS)
+            // Geography: recognise a country from four names first, then find it with no help.
+            MasteryLevel.RECOGNIZE -> listOf(Game.PICK_MEANING, Game.TRUE_FALSE, Game.NAME_ON_MAP)
+            MasteryLevel.MATCH -> listOf(Game.MATCH_PAIRS, Game.FILL_THE_GAP, Game.PICK_MEANING, Game.FIND_ON_MAP)
+            MasteryLevel.RECALL -> listOf(Game.TYPE_IT, Game.FILL_THE_GAP, Game.MATCH_PAIRS, Game.FIND_ON_MAP)
         }
         return order.firstOrNull { it in eligible } ?: eligible.firstOrNull()
     }

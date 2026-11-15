@@ -16,7 +16,8 @@ class GeoAtlasTest {
     private val text = """
         {"scale":100,"countries":[
           {"id":"AA","name":"Bigland","continent":"Europe","area":500000,"askable":true,"small":false,
-           "label":[500,4500],"rings":[[0,4000,1000,4000,1000,5000,0,5000],[400,4400,600,4400,600,4600,400,4600]]},
+           "label":[500,4500],"rings":[[0,4000,1000,4000,1000,5000,0,5000],[400,4400,600,4400,600,4600,400,4600]],
+           "near":["BB","CC","DD"]},
           {"id":"BB","name":"Enclavia","continent":"Europe","area":30000,"askable":true,"small":false,
            "label":[500,4500],"rings":[[400,4400,600,4400,600,4600,400,4600]]},
           {"id":"CC","name":"Tiny","continent":"Europe","area":60,"askable":true,"small":true,
@@ -37,6 +38,12 @@ class GeoAtlasTest {
         assertThat(bigland.minLon).isEqualTo(0f)
         assertThat(bigland.maxLat).isEqualTo(50f)
         assertThat(bigland.labelLon).isEqualTo(5f)
+    }
+
+    @Test
+    fun countriesKnowTheirNeighbours() {
+        assertThat(atlas.countries(GeoRegion.EUROPE).first().nearby).containsExactly("BB", "CC", "DD")
+        assertThat(atlas.shape("BB")!!.nearby).isEqualTo(emptyList())
     }
 
     @Test

@@ -105,7 +105,7 @@ class WakeSessionPlanner(
         val notesById = deckNotes.associateBy { it.id }
         val today = clock.now().toLocalDateTime(timeZone()).date
         val states = reviews.statesInDeck(deck.id).filter { it.noteId in notesById }
-        if (deck.kind == DeckKind.GEOGRAPHY) return geographyPlan(deck, mode, deckNotes, states, today)
+        if (deck.kind == DeckKind.GEOGRAPHY) return geographyPlan(deck, mode, deckNotes, states)
         val used = mutableSetOf<ReviewState>()
 
         // Silencing: easy, known cards in a fast game. Most overdue first.
@@ -147,9 +147,11 @@ class WakeSessionPlanner(
 
     private suspend fun previewFromDeck(): WakePlan? {
         val allDecks = decks.observeDecks().first()
-        val mapCard = allDecks.firstOrNull { it.kind == DeckKind.GEOGRAPHY }?.let { previewMapCard(it) }
+        val mapCards = allDecks.firstOrNull { it.kind == DeckKind.GEOGRAPHY }?.let { previewMapCards(it) }.orEmpty()
         val deck = allDecks.firstOrNull { it.kind != DeckKind.GEOGRAPHY }
-            ?: return mapCard?.let { WakePlan(WakeMode.NORMAL, deck = null, silencing = listOf(it), bonus = emptyList()) }
+            ?: return mapCards.takeIf { it.isNotEmpty() }?.let {
+                WakePlan(WakeMode.NORMAL, deck = null, silencing = it.take(1), bonus = it.drop(1))
+            }
         val deckNotes = notes.notesInDeck(deck.id)
         if (deckNotes.size < CardBuilder.MATCH_SIZE) return null
         val direction = Direction.FORWARD
@@ -181,44 +183,44 @@ class WakeSessionPlanner(
                 typed.state,
             ),
             MorningCard(match, "Preview · Match pairs", first.note, first.state, extraItems = items.drop(1)),
-            mapCard,
-        )
+        ) + mapCards
         return WakePlan(mode = WakeMode.NORMAL, deck = deck, silencing = silencing, bonus = bonus)
     }
 
-    private suspend fun previewMapCard(deck: Deck): MorningCard? {
+    /** Name the country, then Find on the map, each with a random country from the deck. */
+    private suspend fun previewMapCards(deck: Deck): List<MorningCard> {
         val region = GeoRegion.fromPackId(deck.builtInPackId) ?: GeoRegion.WORLD
-        val note = notes.notesInDeck(deck.id).randomOrNull(random) ?: return null
-        return MorningCard(mapContent(note, region), "Preview · Find on the map", note, ReviewState(note.id, Direction.FORWARD))
+        val deckNotes = notes.notesInDeck(deck.id)
+        val (named, found) = deckNotes.shuffled(random).take(2).takeIf { it.size == 2 } ?: return emptyList()
+        fun state(note: Note) = ReviewState(note.id, Direction.FORWARD)
+        return listOfNotNull(
+            cards.nameOnMap(named, deckNotes, region)?.let { MorningCard(it, "Preview · Name the country", named, state(named)) },
+            MorningCard(findContent(found, region), "Preview · Find on the map", found, state(found)),
+        )
     }
 
     /**
-     * Geography decks: every card is Find on the map. Same counts as the other decks
-     * (1 to stop the alarm and 2 bonus, or 3 to stop it for heavy sleepers), but any country
-     * can stop the alarm: countries due today first, then new ones biggest first (easy before
-     * hard), then the rest of the known ones.
+     * Geography decks: every card is on the map. Same counts as the other decks (1 to stop
+     * the alarm and 2 bonus, or 3 to stop it for heavy sleepers), but any country can stop the
+     * alarm. Countries are picked at random from the whole region, never twice in one
+     * morning. New countries are named from four; known ones are found.
      */
     private fun geographyPlan(
         deck: Deck,
         mode: WakeMode,
         deckNotes: List<Note>,
         states: List<ReviewState>,
-        today: LocalDate,
     ): WakePlan {
         val region = GeoRegion.fromPackId(deck.builtInPackId) ?: GeoRegion.WORLD
         val stateOf = states.filter { it.direction == Direction.FORWARD }.associateBy { it.noteId }
         fun state(note: Note) = stateOf[note.id] ?: ReviewState(note.id, Direction.FORWARD)
 
-        val (newNotes, seen) = deckNotes.partition { state(it).isNew }
-        val (due, later) = seen
-            .sortedWith(compareBy(nullsLast<LocalDate>()) { state(it).due })
-            .partition { (state(it).due ?: today) <= today }
-        // Note ids carry the size rank (see GeoDeckSeeder), so this is biggest first.
-        val order = due + newNotes.sortedBy { it.id } + later
+        // Each country appears once in this list, so nothing repeats within the morning.
+        val order = deckNotes.shuffled(random)
 
         val wanted = silencingCount(mode) + if (mode == WakeMode.NORMAL) BONUS_COUNT else 0
         val picked = order.take(wanted).map { note ->
-            MorningCard(mapContent(note, region), "${region.title} · find it on the map", note, state(note))
+            mapCard(note, state(note), deck, deckNotes, region)
         }
         val silencing = picked.take(silencingCount(mode))
         if (silencing.size < silencingCount(mode)) return quickMathPlan(mode)
@@ -229,16 +231,31 @@ class WakeSessionPlanner(
      * For when the map can't be shown (file missing or broken, country not on it): map cards
      * that would stop the alarm become Quick math, bonus map cards are dropped.
      */
-    fun withoutUnplayableMaps(plan: WakePlan, isPlayable: (CardContent.FindOnMap) -> Boolean): WakePlan {
-        fun MorningCard.unplayable() = (content as? CardContent.FindOnMap)?.let { !isPlayable(it) } ?: false
+    fun withoutUnplayableMaps(plan: WakePlan, isPlayable: (CardContent.OnMap) -> Boolean): WakePlan {
+        fun MorningCard.unplayable() = (content as? CardContent.OnMap)?.let { !isPlayable(it) } ?: false
         return plan.copy(
             silencing = plan.silencing.map { if (it.unplayable()) quickMath() else it },
             bonus = plan.bonus.filterNot { it.unplayable() },
         )
     }
 
+    /** Name the country while it's new, Find on the map once it's known (see GameEligibility). */
+    private fun mapCard(note: Note, state: ReviewState, deck: Deck, deckNotes: List<Note>, region: GeoRegion): MorningCard {
+        val eligible = GameEligibility.eligibleGames(note, state.direction, deck, deckNotes.size, hasPlus = false)
+        val named = if (GameEligibility.preferredGame(state, eligible) == Game.NAME_ON_MAP) {
+            cards.nameOnMap(note, deckNotes, region)
+        } else {
+            null
+        }
+        return if (named != null) {
+            MorningCard(named, "${region.title} · name the country", note, state)
+        } else {
+            MorningCard(findContent(note, region), "${region.title} · find it on the map", note, state)
+        }
+    }
+
     /** Geography notes: front = country name, back = country code. */
-    private fun mapContent(note: Note, region: GeoRegion) =
+    private fun findContent(note: Note, region: GeoRegion) =
         CardContent.FindOnMap(countryId = note.back, countryName = note.front, region = region)
 
     /** Silencing games: Pick the meaning or True or false, mixed for variety. */

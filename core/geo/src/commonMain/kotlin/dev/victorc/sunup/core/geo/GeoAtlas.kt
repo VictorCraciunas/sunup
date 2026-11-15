@@ -19,6 +19,8 @@ class GeoShape(
     val labelLat: Float,
     /** Each ring is lon, lat, lon, lat… in degrees. Holes are just more rings (even-odd). */
     val rings: List<FloatArray>,
+    /** Closest askable countries by border, closest first. Empty for territories. */
+    val nearby: List<String> = emptyList(),
 ) {
     val minLon: Float
     val maxLon: Float
@@ -47,7 +49,31 @@ class GeoShape(
         maxLat = maxY
     }
 
-    val country: Country get() = Country(id = id, name = name, continent = continent, areaKm2 = areaKm2)
+    /**
+     * Bounds of the biggest ring only, for zooming to a country: France without French Guiana,
+     * the US without Hawaii. [minLon, maxLon, minLat, maxLat].
+     */
+    val mainBounds: FloatArray by lazy {
+        rings
+            .map { ring ->
+                var minX = Float.MAX_VALUE
+                var maxX = -Float.MAX_VALUE
+                var minY = Float.MAX_VALUE
+                var maxY = -Float.MAX_VALUE
+                for (i in ring.indices step 2) {
+                    minX = minOf(minX, ring[i])
+                    maxX = maxOf(maxX, ring[i])
+                    minY = minOf(minY, ring[i + 1])
+                    maxY = maxOf(maxY, ring[i + 1])
+                }
+                floatArrayOf(minX, maxX, minY, maxY)
+            }
+            .maxByOrNull { (it[1] - it[0]) * (it[3] - it[2]) }
+            ?: floatArrayOf(labelLon, labelLon, labelLat, labelLat)
+    }
+
+    val country: Country
+        get() = Country(id = id, name = name, continent = continent, areaKm2 = areaKm2, nearby = nearby)
 
     /** Even-odd test over every ring, so holes (Lesotho inside South Africa) work. */
     fun contains(lon: Float, lat: Float): Boolean {
@@ -126,6 +152,7 @@ class GeoAtlas(val shapes: List<GeoShape>) {
                     labelLon = dto.label[0] / scale,
                     labelLat = dto.label[1] / scale,
                     rings = dto.rings.map { ring -> FloatArray(ring.size) { ring[it] / scale } },
+                    nearby = dto.near,
                 )
             }
             return GeoAtlas(shapes)
@@ -149,4 +176,5 @@ private class CountryDto(
     val small: Boolean,
     val label: List<Int>,
     val rings: List<List<Int>>,
+    val near: List<String> = emptyList(),
 )

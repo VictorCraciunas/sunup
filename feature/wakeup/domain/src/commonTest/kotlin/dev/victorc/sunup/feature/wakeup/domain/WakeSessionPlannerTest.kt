@@ -205,26 +205,54 @@ class WakeSessionPlannerTest {
     private fun geoPlanner(states: List<ReviewState>) =
         planner(decks = listOf(europe), notes = countries, states = states)
 
+    private fun countryOf(card: MorningCard) = (card.content as CardContent.OnMap).countryId
+
     @Test
     fun geographyStopsTheAlarmOnTheMapFromTheFirstMorning() = runTest {
         val plan = geoPlanner(states = emptyList()).plan(alarm(WakeMode.NORMAL))
 
         val silencing = plan.silencing.single().content
-        assertThat(silencing).isInstanceOf(CardContent.FindOnMap::class)
-        // Nothing learned yet: the biggest country first.
-        assertThat((silencing as CardContent.FindOnMap).countryId).isEqualTo("RU")
-        assertThat(silencing.region).isEqualTo(GeoRegion.EUROPE)
-        assertThat(plan.bonus.map { (it.content as CardContent.FindOnMap).countryName })
-            .isEqualTo(listOf("Ukraine", "France"))
+        // Nothing learned yet: every card is Name the country.
+        assertThat(silencing).isInstanceOf(CardContent.NameOnMap::class)
+        assertThat((silencing as CardContent.NameOnMap).region).isEqualTo(GeoRegion.EUROPE)
+        assertThat(plan.bonus.map { it.content.game }).isEqualTo(listOf(Game.NAME_ON_MAP, Game.NAME_ON_MAP))
+        // Three different countries this morning.
+        val asked = (plan.silencing + plan.bonus).map { countryOf(it) }
+        assertThat(asked.distinct()).hasSize(3)
     }
 
     @Test
-    fun geographyHeavySleeperFindsThreeCountriesAndDueOnesComeFirst() = runTest {
-        val spainDue = ReviewState(countries[3].id, Direction.FORWARD, step = 2, due = today)
-        val plan = geoPlanner(states = listOf(spainDue)).plan(alarm(WakeMode.HEAVY_SLEEPER))
+    fun geographyCountriesAreRandomNotBiggestFirst() = runTest {
+        val firstCountries = (1..20).map { seed ->
+            WakeSessionPlanner(
+                decks = FakeDecks(listOf(europe)),
+                notes = FakeNotes(countries),
+                reviews = FakeReviews(emptyList()),
+                cards = CardBuilder(Random(seed)),
+                clock = FixedClock,
+                timeZone = { TimeZone.UTC },
+                random = Random(seed),
+            ).plan(alarm(WakeMode.GENTLE)).silencing.single().let { countryOf(it) }
+        }
 
-        assertThat(plan.silencing.map { (it.content as CardContent.FindOnMap).countryId })
-            .isEqualTo(listOf("ES", "RU", "UA"))
+        assertThat(firstCountries.toSet().size > 1).isTrue()
+    }
+
+    @Test
+    fun knownCountriesAreFoundOnTheMapInstead() = runTest {
+        val known = countries.map { ReviewState(it.id, Direction.FORWARD, step = 2, level = MasteryLevel.MATCH, due = today) }
+        val plan = geoPlanner(states = known).plan(alarm(WakeMode.NORMAL))
+
+        assertThat((plan.silencing + plan.bonus).map { it.content.game })
+            .isEqualTo(listOf(Game.FIND_ON_MAP, Game.FIND_ON_MAP, Game.FIND_ON_MAP))
+    }
+
+    @Test
+    fun geographyHeavySleeperFindsThreeDifferentCountries() = runTest {
+        val plan = geoPlanner(states = emptyList()).plan(alarm(WakeMode.HEAVY_SLEEPER))
+
+        val asked = plan.silencing.map { countryOf(it) }
+        assertThat(asked.distinct()).hasSize(3)
         assertThat(plan.bonus).hasSize(0)
     }
 
@@ -240,11 +268,11 @@ class WakeSessionPlannerTest {
     }
 
     @Test
-    fun previewAddsTheMapWhenThereIsAGeographyDeck() = runTest {
+    fun previewAddsTheMapGamesWhenThereIsAGeographyDeck() = runTest {
         val plan = planner(decks = listOf(europe, spanish), notes = words + countries, states = emptyList()).preview()
 
         assertThat(plan.silencing.single().content).isInstanceOf(CardContent.TrueFalse::class)
-        assertThat(plan.bonus.last().content.game).isEqualTo(Game.FIND_ON_MAP)
+        assertThat(plan.bonus.takeLast(2).map { it.content.game }).isEqualTo(listOf(Game.NAME_ON_MAP, Game.FIND_ON_MAP))
     }
 
     @Test

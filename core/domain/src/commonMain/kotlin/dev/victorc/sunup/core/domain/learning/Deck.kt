@@ -31,8 +31,8 @@ enum class DeckKind {
     TRIVIA,
 
     /**
-     * Built-in: one note per country (front = name, back = country code), played as Find on
-     * the map. The region is the deck's [Deck.builtInPackId], see [GeoRegion.packId].
+     * Built-in: one note per country (front = name, back = country code), played as Name the
+     * country and Find on the map. The region is the deck's [Deck.builtInPackId], see [GeoRegion.packId].
      */
     GEOGRAPHY,
 }

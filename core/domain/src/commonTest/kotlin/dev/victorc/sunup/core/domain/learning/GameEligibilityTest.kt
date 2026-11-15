@@ -47,13 +47,23 @@ class GameEligibilityTest {
     }
 
     @Test
-    fun geographyDecksOnlyPlayFindOnTheMap() {
+    fun geographyDecksOnlyPlayTheMapGames() {
         val europe = Deck(id = "g", name = "Europe", kind = DeckKind.GEOGRAPHY, builtInPackId = GeoRegion.EUROPE.packId)
         val portugal = Note(id = "pt", deckId = "g", type = NoteType.QUESTION, front = "Portugal", back = "PT")
 
         val games = GameEligibility.eligibleGames(portugal, Direction.FORWARD, europe, notesInDeck = 40, hasPlus = true)
 
-        assertThat(games).isEqualTo(setOf(Game.FIND_ON_MAP))
+        assertThat(games).isEqualTo(setOf(Game.NAME_ON_MAP, Game.FIND_ON_MAP))
+    }
+
+    @Test
+    fun geographyNamesNewCountriesAndFindsKnownOnes() {
+        val mapGames = setOf(Game.NAME_ON_MAP, Game.FIND_ON_MAP)
+        val state = ReviewState(noteId = "pt", direction = Direction.FORWARD)
+
+        assertThat(GameEligibility.preferredGame(state, mapGames)).isEqualTo(Game.NAME_ON_MAP)
+        assertThat(GameEligibility.preferredGame(state.copy(level = MasteryLevel.MATCH), mapGames)).isEqualTo(Game.FIND_ON_MAP)
+        assertThat(GameEligibility.preferredGame(state.copy(level = MasteryLevel.RECALL), mapGames)).isEqualTo(Game.FIND_ON_MAP)
     }
 
     @Test
@@ -61,6 +71,7 @@ class GameEligibilityTest {
         val games = GameEligibility.eligibleGames(word, Direction.FORWARD, spanish, notesInDeck = 10, hasPlus = true)
 
         assertThat(games).doesNotContain(Game.FIND_ON_MAP)
+        assertThat(games).doesNotContain(Game.NAME_ON_MAP)
     }
 
     @Test

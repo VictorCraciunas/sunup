@@ -48,6 +48,8 @@ import dev.victorc.sunup.core.domain.learning.GeoRegion
  * @param hint a country to pulse in sun yellow (after a few misses).
  * @param onTap called with the country under the finger; taps on the sea are ignored.
  * @param resetKey when this changes (e.g. the next country), the map zooms back out.
+ * @param highlight a country shown in indigo, the one to name.
+ * @param focus a country to start zoomed in on; null starts with the whole region.
  */
 @Composable
 fun CountryMap(
@@ -60,6 +62,8 @@ fun CountryMap(
     onTap: (GeoShape) -> Unit,
     modifier: Modifier = Modifier,
     resetKey: Any? = null,
+    highlight: String? = null,
+    focus: String? = null,
 ) {
     val colors = SunupTheme.colors
     val sizes = SunupTheme.sizes
@@ -79,11 +83,10 @@ fun CountryMap(
     fun current(): MapProjection? {
         if (viewSize.width <= 0f || viewSize.height <= 0f) return null
         val zoomed = userView
-        return if (zoomed != null && zoomed.width == viewSize.width && zoomed.height == viewSize.height) {
-            zoomed
-        } else {
-            MapProjection(region, viewSize.width, viewSize.height)
-        }
+        if (zoomed != null && zoomed.width == viewSize.width && zoomed.height == viewSize.height) return zoomed
+        val whole = MapProjection(region, viewSize.width, viewSize.height)
+        val bounds = focus?.let { atlas.shape(it) }?.mainBounds ?: return whole
+        return whole.focusedOn(bounds[0], bounds[1], bounds[2], bounds[3])
     }
     val projection = current()
 
@@ -135,6 +138,7 @@ fun CountryMap(
             fun fillOf(shape: GeoShape): Color = when (shape.id) {
                 in found -> colors.correct
                 wrong -> colors.wrong
+                highlight -> colors.indigo
                 hint -> lerp(colors.mapLand, colors.sun, pulse)
                 else -> if (region.includes(shape.continent)) colors.mapLand else colors.mapLandMuted
             }

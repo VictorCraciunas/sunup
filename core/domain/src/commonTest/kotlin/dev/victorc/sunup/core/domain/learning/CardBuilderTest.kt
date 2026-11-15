@@ -27,6 +27,60 @@ class CardBuilderTest {
         word("5", "el cielo", "the sky"),
     )
 
+    // Geography notes as GeoDeckSeeder writes them: ids carry the size rank.
+    private val countries = listOf("RU" to "Russia", "UA" to "Ukraine", "FR" to "France", "ES" to "Spain",
+        "SE" to "Sweden", "NO" to "Norway", "DE" to "Germany", "FI" to "Finland", "PL" to "Poland",
+        "IT" to "Italy", "GB" to "United Kingdom", "RO" to "Romania", "LU" to "Luxembourg", "MT" to "Malta")
+        .mapIndexed { i, (code, name) ->
+            Note(id = "geo-${i.toString().padStart(3, '0')}-$code", deckId = "g", type = NoteType.QUESTION, front = name, back = code)
+        }
+
+    @Test
+    fun nameTheCountryOffersFourCountriesOfASimilarSize() {
+        val luxembourg = countries.first { it.back == "LU" }
+
+        val card = builder.nameOnMap(luxembourg, countries, GeoRegion.EUROPE)!!
+
+        assertThat(card.countryId).isEqualTo("LU")
+        assertThat(card.options).hasSize(4)
+        assertThat(card.options.distinct()).hasSize(4)
+        assertThat(card.options[card.correctIndex]).isEqualTo("Luxembourg")
+        assertThat(card.optionIds[card.correctIndex]).isEqualTo("LU")
+        // Never Russia next to Luxembourg: the options come from the 8 closest in size.
+        assertThat(card.options).doesNotContain("Russia")
+    }
+
+    @Test
+    fun nameTheCountryOffersNeighboursFirst() {
+        val germany = countries.first { it.back == "DE" }
+            .copy(wrongAnswers = listOf("France", "Poland", "Luxembourg", "Italy", "Spain"))
+
+        val card = builder.nameOnMap(germany, countries, GeoRegion.EUROPE)!!
+
+        val wrong = card.options.filterIndexed { index, _ -> index != card.correctIndex }
+        // Three of the four closest neighbours, never Spain (fifth) or a far-off country.
+        assertThat(setOf("France", "Poland", "Luxembourg", "Italy").containsAll(wrong)).isTrue()
+        assertThat(card.optionIds[card.options.indexOf(wrong.first())]).isEqualTo(
+            countries.first { it.front == wrong.first() }.back,
+        )
+    }
+
+    @Test
+    fun nameTheCountryFillsInWhenNeighboursAreMissing() {
+        // Only one neighbour is in this deck; the other two come from similar sizes.
+        val malta = countries.first { it.back == "MT" }.copy(wrongAnswers = listOf("Italy", "Libya", "Tunisia"))
+
+        val card = builder.nameOnMap(malta, countries, GeoRegion.EUROPE)!!
+
+        assertThat(card.options).hasSize(4)
+        assertThat(card.options).contains("Italy")
+    }
+
+    @Test
+    fun nameTheCountryNeedsFourCountries() {
+        assertThat(builder.nameOnMap(countries[0], countries.take(3), GeoRegion.EUROPE)).isNull()
+    }
+
     @Test
     fun pickTheMeaningHasFourDifferentOptionsIncludingTheAnswer() {
         val card = builder.pickMeaning(sol, Direction.FORWARD, deck)!!

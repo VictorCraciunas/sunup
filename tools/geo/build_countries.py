@@ -8,6 +8,9 @@ Output: core/geo/src/commonMain/composeResources/files/geo/countries.json
 Usage (from the project root, Python 3.8+, no extra packages):
     python tools/geo/build_countries.py path/to/ne_50m_admin_0_countries.geojson
 
+Only recompute the nearby countries of an existing map file (no download needed):
+    python tools/geo/build_countries.py --update-nearby [path/to/countries.json]
+
 The output is small on purpose: outlines are simplified (Douglas-Peucker), tiny islands are
 dropped, and coordinates are stored as whole numbers in hundredths of a degree (about 1 km).
 
@@ -23,6 +26,9 @@ Output format:
       "askable": true,         false for territories that are drawn but never asked
       "small": false,          true: too small to tap, the map draws a circle around it
       "label": [-806, 3970],   label point (lon, lat) × scale
+      "near": ["ES", "MA"],    askable countries only: the closest askable countries by
+                               border distance, closest first (neighbours, or for islands
+                               the nearest coasts). Wrong options for Name the country.
       "rings": [[lon, lat, lon, lat, ...], ...]   × scale; holes are just more rings (even-odd)
     }
   ]
@@ -38,6 +44,9 @@ SCALE = 100
 TOLERANCE_DEG = 0.03          # simplification; 1:50m data is much finer than a phone needs
 MIN_RING_AREA_KM2 = 150.0     # smaller islands are dropped, except a country's biggest ring
 SMALL_COUNTRY_KM2 = 3000.0    # Luxembourg and smaller get a tap circle
+NEARBY_COUNT = 8              # how many nearby countries each country lists
+NEARBY_CELL_DEG = 2.0         # grid cell for the border-distance search
+OVERSEAS_GAP_DEG = 25.0       # parts further than this from a country's mainland are "overseas"
 
 # Drawn and askable even though Natural Earth lists them under another sovereign state.
 ALWAYS_ASKABLE = {"XK", "TW", "PS", "EH", "GL"}
@@ -215,22 +224,96 @@ def build(features):
     return {"scale": SCALE, "countries": countries}
 
 
+def add_nearby(atlas):
+    """
+    For every askable country, the askable countries closest to its border, closest first.
+    Distance is between outline points (longitude scaled by latitude), found with a grid so
+    it runs in seconds. Countries with nothing close (far islands) fall back to the distance
+    between label points, so every country gets a full list.
+    """
+    scale = atlas["scale"]
+    countries = [c for c in atlas["countries"] if c["askable"]]
+
+    def bbox(ring):
+        xs, ys = ring[0::2], ring[1::2]
+        return min(xs) / scale, max(xs) / scale, min(ys) / scale, max(ys) / scale
+
+    def points_of(c):
+        # Far-away overseas parts don't make neighbours: France's Caribbean islands shouldn't
+        # put France next to Saint Kitts. Parts within OVERSEAS_GAP_DEG of the biggest one count.
+        boxes = [bbox(ring) for ring in c["rings"]]
+        main = max(boxes, key=lambda b: (b[1] - b[0]) * (b[3] - b[2]))
+        for ring, b in zip(c["rings"], boxes):
+            gap_lon = max(0.0, main[0] - b[1], b[0] - main[1])
+            gap_lat = max(0.0, main[2] - b[3], b[2] - main[3])
+            if max(gap_lon, gap_lat) > OVERSEAS_GAP_DEG:
+                continue
+            for i in range(0, len(ring), 2):
+                yield ring[i] / scale, ring[i + 1] / scale
+
+    grid = {}
+    for index, c in enumerate(countries):
+        for lon, lat in points_of(c):
+            key = (math.floor(lon / NEARBY_CELL_DEG), math.floor(lat / NEARBY_CELL_DEG))
+            grid.setdefault(key, []).append((index, lon, lat))
+
+    for index, c in enumerate(countries):
+        best = {}
+        for lon, lat in points_of(c):
+            kx = math.cos(math.radians(lat))
+            cx, cy = math.floor(lon / NEARBY_CELL_DEG), math.floor(lat / NEARBY_CELL_DEG)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for other, olon, olat in grid.get((cx + dx, cy + dy), ()):
+                        if other == index:
+                            continue
+                        d = math.hypot((olon - lon) * kx, olat - lat)
+                        if d < best.get(other, float("inf")):
+                            best[other] = d
+
+        lx, ly = c["label"][0] / scale, c["label"][1] / scale
+        kx = math.cos(math.radians(ly))
+        far = {
+            other: math.hypot((o["label"][0] / scale - lx) * kx, o["label"][1] / scale - ly) + 100.0
+            for other, o in enumerate(countries)
+            if other != index and other not in best
+        }
+        ranked = sorted({**far, **best}.items(), key=lambda item: item[1])
+        c["near"] = [countries[other]["id"] for other, _ in ranked[:NEARBY_COUNT]]
+
+
+def write(atlas, target):
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    with open(target, "w", encoding="utf-8") as f:
+        json.dump(atlas, f, ensure_ascii=False, separators=(",", ":"))
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
-    source = sys.argv[1]
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    target = sys.argv[2] if len(sys.argv) > 2 else os.path.join(
+    default_target = os.path.join(
         root, "core", "geo", "src", "commonMain", "composeResources", "files", "geo", "countries.json")
+
+    if sys.argv[1] == "--update-nearby":
+        target = sys.argv[2] if len(sys.argv) > 2 else default_target
+        with open(target, encoding="utf-8") as f:
+            atlas = json.load(f)
+        add_nearby(atlas)
+        write(atlas, target)
+        print(f"Updated nearby countries in {target}")
+        return
+
+    source = sys.argv[1]
+    target = sys.argv[2] if len(sys.argv) > 2 else default_target
 
     with open(source, encoding="utf-8") as f:
         data = json.load(f)
     atlas = build(data["features"])
+    add_nearby(atlas)
 
-    os.makedirs(os.path.dirname(target), exist_ok=True)
-    with open(target, "w", encoding="utf-8") as f:
-        json.dump(atlas, f, ensure_ascii=False, separators=(",", ":"))
+    write(atlas, target)
 
     askable = [c for c in atlas["countries"] if c["askable"]]
     by_continent = {}

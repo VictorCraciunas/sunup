@@ -112,7 +112,7 @@ class WakeUpViewModel(
      * are swapped out so the alarm can still be stopped.
      */
     private suspend fun withMapLoaded(plan: WakePlan): WakePlan {
-        val hasMap = (plan.silencing + plan.bonus).any { it.content is CardContent.FindOnMap }
+        val hasMap = (plan.silencing + plan.bonus).any { it.content is CardContent.OnMap }
         if (!hasMap) return plan
         val atlas = when (val result = atlasSource.load()) {
             is Result.Success -> result.data
@@ -445,6 +445,15 @@ private fun MorningCard.toUi(): CardUi = when (val c = content) {
         prompt = c.prompt,
         answers = c.answers,
         language = c.language,
+    )
+    is CardContent.NameOnMap -> CardUi.Choice(
+        kind = ChoiceKind.MAP,
+        label = label,
+        prompt = "Which country is this?",
+        options = c.options,
+        correctIndex = c.correctIndex,
+        learned = LearnedItem(c.countryName, c.region.title),
+        map = MapHighlight(countryId = c.countryId, region = c.region, optionIds = c.optionIds),
     )
     is CardContent.FindOnMap -> CardUi.FindOnMap(
         label = label,

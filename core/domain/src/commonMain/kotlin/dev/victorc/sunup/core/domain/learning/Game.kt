@@ -24,6 +24,9 @@ enum class Game(
     /** Geography decks: tap the named country on an interactive map. */
     FIND_ON_MAP(isPlus = false, canSilenceAlarm = true),
 
+    /** Geography decks: one country is highlighted on the map; pick its name from four. */
+    NAME_ON_MAP(isPlus = false, canSilenceAlarm = true),
+
     BUILD_THE_SENTENCE(isPlus = true, canSilenceAlarm = false),
     LISTEN_AND_PICK(isPlus = true, canSilenceAlarm = false),
 

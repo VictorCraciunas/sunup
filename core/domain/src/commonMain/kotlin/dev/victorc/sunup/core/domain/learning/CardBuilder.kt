@@ -47,14 +47,34 @@ sealed interface CardContent {
         override val game: Game get() = Game.FILL_THE_GAP
     }
 
+    /** A geography card: needs the map, and is about one country. */
+    sealed interface OnMap : CardContent {
+        /** Country code, e.g. "PT" (Kosovo: "XK"). */
+        val countryId: String
+        val countryName: String
+        val region: GeoRegion
+    }
+
     /** Tap [countryName] on the map of [region]. */
     data class FindOnMap(
-        /** Country code, e.g. "PT" (Kosovo: "XK"). */
-        val countryId: String,
-        val countryName: String,
-        val region: GeoRegion,
-    ) : CardContent {
+        override val countryId: String,
+        override val countryName: String,
+        override val region: GeoRegion,
+    ) : OnMap {
         override val game: Game get() = Game.FIND_ON_MAP
+    }
+
+    /** [countryId] is highlighted on the map of [region]: pick its name from [options]. */
+    data class NameOnMap(
+        override val countryId: String,
+        override val countryName: String,
+        override val region: GeoRegion,
+        val options: List<String>,
+        /** Country code of each option, so a wrong pick can be shown on the map. */
+        val optionIds: List<String>,
+        val correctIndex: Int,
+    ) : OnMap {
+        override val game: Game get() = Game.NAME_ON_MAP
     }
 
     /** Type the answer; checked forgivingly by [AnswerMatcher]. */
@@ -137,6 +157,48 @@ class CardBuilder(private val random: Random = Random.Default) {
         )
     }
 
+    /**
+     * Geography notes (front = name, back = country code, wrong answers = neighbours, closest
+     * first). Wrong options are neighbours, to really test the shape and place: three of the
+     * closest four. Short of neighbours in the deck, countries of a similar size fill in.
+     * Null if the deck has fewer than four countries.
+     */
+    fun nameOnMap(note: Note, deckNotes: List<Note>, region: GeoRegion): CardContent.NameOnMap? {
+        fun isOther(other: Note) = other.id != note.id && !other.front.equals(note.front, ignoreCase = true)
+
+        val byName = deckNotes.associateBy { it.front.lowercase() }
+        val neighbours = note.wrongAnswers
+            .mapNotNull { byName[it.trim().lowercase()] }
+            .filter(::isOther)
+            .distinctBy { it.id }
+            .take(CLOSEST_NEIGHBOURS)
+            .shuffled(random)
+            .take(3)
+
+        val ordered = deckNotes.sortedBy { it.id }
+        val position = ordered.indexOfFirst { it.id == note.id }.coerceAtLeast(0)
+        val similarSize = ordered
+            .withIndex()
+            .filter { (_, other) -> isOther(other) && other !in neighbours }
+            .sortedBy { (index, _) -> kotlin.math.abs(index - position) }
+            .take(SIMILAR_COUNTRIES)
+            .map { it.value }
+            .shuffled(random)
+
+        val wrong = (neighbours + similarSize).take(3)
+        if (wrong.size < 3) return null
+
+        val options = (wrong + note).shuffled(random)
+        return CardContent.NameOnMap(
+            countryId = note.back,
+            countryName = note.front,
+            region = region,
+            options = options.map { it.front },
+            optionIds = options.map { it.back },
+            correctIndex = options.indexOf(note),
+        )
+    }
+
     fun typeIt(note: Note, direction: Direction, answerLanguage: String?): CardContent.TypeIt =
         CardContent.TypeIt(
             prompt = note.prompt(direction),
@@ -204,5 +266,11 @@ class CardBuilder(private val random: Random = Random.Default) {
 
     companion object {
         const val MATCH_SIZE = 4
+
+        /** Name the country: wrong options are three of this many closest neighbours. */
+        private const val CLOSEST_NEIGHBOURS = 4
+
+        /** Name the country, short of neighbours: fill in from this many countries closest in size. */
+        private const val SIMILAR_COUNTRIES = 8
     }
 }

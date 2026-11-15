@@ -68,6 +68,21 @@ data class MapProjection(
     }
 
     /**
+     * Zoomed so the box (in degrees) takes about [share] of the view, and centred on it as far
+     * as the region allows. Tiny countries stop at [MAX_FOCUS_ZOOM] so their neighbours stay
+     * in sight; big ones simply show the whole region.
+     */
+    fun focusedOn(minLon: Float, maxLon: Float, minLat: Float, maxLat: Float, share: Float = 0.4f): MapProjection {
+        val boxW = ((maxLon - minLon) * squeeze * fit).coerceAtLeast(1f)
+        val boxH = ((maxLat - minLat) * fit).coerceAtLeast(1f)
+        val newZoom = minOf(width * share / boxW, height * share / boxH).coerceIn(MIN_ZOOM, MAX_FOCUS_ZOOM)
+        val zoomed = copy(zoom = newZoom, panX = 0f, panY = 0f)
+        val centerX = zoomed.screenX((minLon + maxLon) / 2f)
+        val centerY = zoomed.screenY((minLat + maxLat) / 2f)
+        return zoomed.copy(panX = width / 2f - centerX, panY = height / 2f - centerY).clamped()
+    }
+
+    /**
      * Keeps the region filling the view: if it's smaller than the view it's centred,
      * otherwise its edges can't be dragged past the view's edges.
      */
@@ -95,5 +110,6 @@ data class MapProjection(
     companion object {
         const val MIN_ZOOM = 1f
         const val MAX_ZOOM = 12f
+        const val MAX_FOCUS_ZOOM = 6f
     }
 }

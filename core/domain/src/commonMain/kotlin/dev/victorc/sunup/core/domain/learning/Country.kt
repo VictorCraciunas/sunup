@@ -8,4 +8,6 @@ data class Country(
     /** Natural Earth continent, e.g. "Europe". See [GeoRegion.includes]. */
     val continent: String,
     val areaKm2: Long,
+    /** Codes of the closest countries by border, closest first (neighbours; for islands the nearest coasts). */
+    val nearby: List<String> = emptyList(),
 )

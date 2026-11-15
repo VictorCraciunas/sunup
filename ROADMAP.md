@@ -57,6 +57,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [ ] Later: a check that survives tapping "Start my day" and going back to bed
 - [x] Part 3: Fill the gap (pick the missing word in the example sentence), Type it (forgiving check, accent keys, Show answer), Match pairs (4 words, each reviewed). Bonus cards follow the level-up path; silencing mixes Pick and True or false. A deck needs 4+ notes before alarms use it. Test bench: Preview all games.
 - [x] Part 4: geography, Find on the map. `:core:geo` (map file loader, projection, pinch/drag/tap map), built-in region decks (Europe, Africa, Asia, North and Central America, South America, Oceania, World), map file from Natural Earth via `tools/geo/build_countries.py`. Test bench: region picker, Load geography deck, deck for test alarms.
+- [x] Part 5: Name the country. One country highlighted and zoomed in on, pick its name from 4, the wrong ones being its neighbours (from the map file's nearby list). New countries are named, known ones are found.
 - [ ] Later: Build the sentence → Listen & pick → Say it (Plus)
 - [ ] More motion: Pip rising between screens, new-card pop, haptics
 
@@ -88,7 +89,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 ## Decisions since the PRD
 - Morning flow: one easy card stops the alarm, then a 60 s check and an optional quiet bonus round (Normal mode).
 - All 9 card games ship in the MVP. Build the sentence, Listen & pick and Say it stay Plus-only, as a test of whether they're worth paying for.
-- Geography (inspired by map quizzes like Seterra, in Sunup's own look): built-in region decks played as Find on the map. Same counts as other decks (1 + 2 bonus, Heavy 3). Any country can stop the alarm, new ones biggest first, because a big country is easy enough half asleep. Map data: Natural Earth, public domain. The region lives in the deck's built-in pack id, so no database change.
+- Geography (inspired by map quizzes like Seterra, in Sunup's own look): built-in region decks played on the map: Name the country (pick from 4) while a country is new, Find on the map once it is known. Same counts as other decks (1 + 2 bonus, Heavy 3). Any country can stop the alarm. Countries are picked at random from the whole region, never twice in one morning; spaced repetition only decides which map game a country gets. Map data: Natural Earth, public domain. The region lives in the deck's built-in pack id, so no database change.
 - Flip & rate is dropped: rating yourself is too easy to fake at 7 AM. Fill the gap replaces it (pick the missing word in the note's example sentence), so every game has a real right answer. Free games: Pick the meaning, True or false, Match pairs, Fill the gap, Type it, Quick math.
 - The wake-up check has no cap on re-rings: it keeps ringing softly every idle minute until Start my day, or until the user has been busy in other apps for about 5 minutes.
 - A deck needs at least 4 notes before alarms use it (the choice games take wrong answers from the deck). Below that the alarm uses Quick math, and the deck screen should say how many more to add (M4).

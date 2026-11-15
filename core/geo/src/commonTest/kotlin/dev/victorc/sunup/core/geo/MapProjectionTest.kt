@@ -47,6 +47,23 @@ class MapProjectionTest {
     }
 
     @Test
+    fun focusingZoomsInOnASmallCountryAndCentresIt() {
+        // Roughly Switzerland.
+        val focused = europe.focusedOn(minLon = 6f, maxLon = 10.5f, minLat = 45.8f, maxLat = 47.8f)
+
+        assertThat(focused.zoom).isEqualTo(MapProjection.MAX_FOCUS_ZOOM)
+        assertThat(focused.screenX(8.25f)).isCloseTo(500f, 0.5f)
+        assertThat(focused.screenY(46.8f)).isCloseTo(800f, 0.5f)
+    }
+
+    @Test
+    fun focusingOnAHugeCountryShowsTheWholeRegion() {
+        val focused = europe.focusedOn(minLon = -25f, maxLon = 45f, minLat = 34f, maxLat = 71.5f)
+
+        assertThat(focused.zoom).isEqualTo(MapProjection.MIN_ZOOM)
+    }
+
+    @Test
     fun cannotZoomOutPastTheRegionOrDragItAway() {
         val zoomedOut = europe.transformed(500f, 800f, factor = 0.2f, dragX = 0f, dragY = 0f)
         val dragged = europe.transformed(500f, 800f, factor = 2f, dragX = 5000f, dragY = 0f)

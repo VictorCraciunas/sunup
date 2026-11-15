@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -68,6 +69,7 @@ internal fun PromptCard(card: CardUi, palette: Palette) {
                     Text(card.prompt, style = SunupTheme.typography.title.copy(fontSize = 24.sp, lineHeight = 30.sp), color = palette.text)
                     card.statement?.let { Text(it, style = SunupTheme.typography.body, color = palette.muted) }
                 }
+                ChoiceKind.MAP -> Text(card.prompt, style = SunupTheme.typography.headline, color = palette.text)
                 ChoiceKind.TRUE_FALSE -> {
                     Text(card.prompt, style = promptStyle(), color = palette.text)
                     card.statement?.let {
@@ -89,6 +91,49 @@ internal fun PromptCard(card: CardUi, palette: Palette) {
 /** Find on the map: the map fills the space between the card and the controls. */
 @Composable
 internal fun MapArea(card: CardUi.FindOnMap, atlas: GeoAtlas?, palette: Palette, onAction: (WakeUpAction) -> Unit, modifier: Modifier) {
+    MapFrame(atlas, palette, modifier) { loaded ->
+        CountryMap(
+            atlas = loaded,
+            region = card.region,
+            found = if (card.solved) setOf(card.countryId) else emptySet(),
+            wrong = card.lastWrongId,
+            hint = card.countryId.takeIf { card.showHint },
+            description = "Map of ${card.region.title}. Find ${card.countryName}.",
+            onTap = { tapped -> onAction(WakeUpAction.OnMapTap(tapped.id, tapped.name)) },
+            modifier = Modifier.fillMaxSize(),
+            resetKey = card.countryId,
+        )
+    }
+}
+
+/**
+ * Name the country: the country is highlighted and the map starts zoomed in on it. A wrong
+ * pick shows where that country really is, in orange with its name.
+ */
+@Composable
+internal fun NameMapArea(card: CardUi.Choice, atlas: GeoAtlas?, palette: Palette, modifier: Modifier) {
+    val map = card.map ?: return
+    val lastWrong = card.wrongPicks.lastOrNull()?.let { map.optionIds.getOrNull(it) }
+    MapFrame(atlas, palette, modifier) { loaded ->
+        CountryMap(
+            atlas = loaded,
+            region = map.region,
+            found = if (card.solved) setOf(map.countryId) else emptySet(),
+            wrong = lastWrong.takeIf { !card.solved },
+            hint = null,
+            description = "Map of ${map.region.title} with one country highlighted. Which country is it?",
+            // Answers are the buttons below; the map is only for looking (pinch and drag still work).
+            onTap = {},
+            modifier = Modifier.fillMaxSize(),
+            resetKey = map.countryId,
+            highlight = map.countryId,
+            focus = map.countryId,
+        )
+    }
+}
+
+@Composable
+private fun MapFrame(atlas: GeoAtlas?, palette: Palette, modifier: Modifier, content: @Composable (GeoAtlas) -> Unit) {
     val shape = SunupTheme.shapes.card
     Box(
         modifier = modifier
@@ -101,17 +146,7 @@ internal fun MapArea(card: CardUi.FindOnMap, atlas: GeoAtlas?, palette: Palette,
             // The ViewModel swaps map cards out when the map can't load, so this is only a flash.
             Text("Unfolding the map…", style = SunupTheme.typography.body, color = palette.muted)
         } else {
-            CountryMap(
-                atlas = atlas,
-                region = card.region,
-                found = if (card.solved) setOf(card.countryId) else emptySet(),
-                wrong = card.lastWrongId,
-                hint = card.countryId.takeIf { card.showHint },
-                description = "Map of ${card.region.title}. Find ${card.countryName}.",
-                onTap = { tapped -> onAction(WakeUpAction.OnMapTap(tapped.id, tapped.name)) },
-                modifier = Modifier.matchParentSize(),
-                resetKey = card.countryId,
-            )
+            content(atlas)
         }
     }
 }
@@ -168,6 +203,8 @@ private fun ChoiceOptions(card: CardUi.Choice, palette: Palette, onPick: (Int) -
         rows.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
                 row.forEach { index ->
+                    // Country names can be long, and the map needs the room: smaller buttons.
+                    val compact = card.kind == ChoiceKind.MAP
                     Choice(
                         text = card.options[index],
                         state = when {
@@ -179,6 +216,8 @@ private fun ChoiceOptions(card: CardUi.Choice, palette: Palette, onPick: (Int) -
                         palette = palette,
                         onClick = { onPick(index) },
                         modifier = Modifier.weight(1f),
+                        minHeight = if (compact) 56.dp else 76.dp,
+                        textStyle = if (compact) SunupTheme.typography.body else SunupTheme.typography.title,
                     )
                 }
             }
