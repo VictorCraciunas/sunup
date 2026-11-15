@@ -14,6 +14,8 @@ import dev.victorc.sunup.core.domain.learning.ReviewRepository
 import dev.victorc.sunup.core.domain.learning.SpacedRepetition
 import dev.victorc.sunup.core.domain.Result
 import dev.victorc.sunup.core.geo.GeoAtlasSource
+import dev.victorc.sunup.core.domain.wakeup.TEST_ALARM_ID
+import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
 import dev.victorc.sunup.core.domain.wakeup.WakeMode
 import dev.victorc.sunup.feature.wakeup.domain.MorningCard
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -92,7 +95,10 @@ class WakeUpViewModel(
                 planner.preview()
             } else {
                 // The alarm's settings live in the database, which can be locked right after a reboot.
-                val alarm = try {
+                val alarm = if (alarmId == TEST_ALARM_ID) {
+                    // Onboarding's test ring: one card, no wake-up check.
+                    WakeAlarm(id = TEST_ALARM_ID, time = LocalTime(0, 0), label = "Test alarm", mode = WakeMode.GENTLE)
+                } else try {
                     alarms.get(alarmId)
                 } catch (e: CancellationException) {
                     throw e

@@ -6,7 +6,8 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.feature.alarms.domain)
+            // AlarmService: saving alarms to the engine and the database together.
+            implementation(projects.core.alarm)
             implementation(projects.core.designSystem)
 
             implementation(libs.androidx.lifecycle.viewmodelCompose)

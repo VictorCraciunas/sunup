@@ -18,6 +18,9 @@ val alarmModule = module {
     single<PlatformAlarmClock> { AndroidPlatformAlarmClock(androidContext()) }
     single<AlarmScheduler> { DefaultAlarmScheduler(store = get(), platform = get()) }
     single { AlarmPermissions(androidContext()) }
+    // Used by the alarm screens and onboarding. Needs WakeAlarmRepository and Clock from dataModule;
+    // a factory, so nothing on the ring path ever opens the database because of it.
+    factory { AlarmService(alarms = get(), scheduler = get(), engine = get(), clock = get()) }
 }
 
 /** Device-protected storage can be read after a reboot, before the phone is unlocked. */

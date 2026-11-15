@@ -40,11 +40,12 @@ include(":core:domain")
 include(":core:geo")
 include(":core:design-system")
 
-include(":feature:alarms:domain")
 include(":feature:alarms:presentation")
 
 include(":feature:decks:domain")
 include(":feature:decks:presentation")
+
+include(":feature:onboarding:presentation")
 
 include(":feature:wakeup:domain")
 include(":feature:wakeup:presentation")

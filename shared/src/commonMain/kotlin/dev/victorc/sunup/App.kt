@@ -16,9 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,6 +38,9 @@ import dev.victorc.sunup.feature.decks.presentation.DeckListRoot
 import dev.victorc.sunup.feature.decks.presentation.GamePickerScreen
 import dev.victorc.sunup.feature.decks.presentation.ImportRoot
 import dev.victorc.sunup.feature.decks.presentation.NewDeckRoot
+import dev.victorc.sunup.feature.onboarding.presentation.OnboardingRoute
+import dev.victorc.sunup.feature.onboarding.presentation.onboardingGraph
+import dev.victorc.sunup.feature.onboarding.presentation.rememberOnboardingDone
 import kotlinx.serialization.Serializable
 
 // Tabs (with the bottom bar)
@@ -74,45 +77,65 @@ private data class CardRoute(val deckId: String, val game: String, val cardId: S
 private data object TestBenchRoute
 
 /**
- * Root of the app: the Alarm and Decks tabs, their inner screens, and (Android debug) the
- * test bench.
+ * Root of the app: onboarding the first time, then the Alarm and Decks tabs, their inner
+ * screens, and (Android debug) the test bench.
  *
  * @param testBench the debug test bench; when set, the alarm list links to it.
  */
 @Composable
 fun App(testBench: (@Composable () -> Unit)? = null) {
     SunupTheme {
-        val navController = rememberNavController()
-        val entry by navController.currentBackStackEntryAsState()
-        val destination = entry?.destination
-        val onAlarms = destination?.hasRoute<AlarmListRoute>() == true
-        val onDecks = destination?.hasRoute<DeckListRoute>() == true
-        val showBar = onAlarms || onDecks
-
-        Column(Modifier.fillMaxSize().background(SunupTheme.colors.background)) {
-            Box(
-                Modifier
-                    .weight(1f)
-                    // The bar takes the system navigation area; screens above it mustn't pad for it again.
-                    .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
-            ) {
-                SunupNavHost(navController, testBench)
-            }
-            if (showBar) {
-                SunupNavBar(
-                    items = listOf(
-                        NavBarItem("Alarm", NavIcon.ALARM, selected = onAlarms, onClick = { navController.switchTab(AlarmListRoute) }),
-                        NavBarItem("Decks", NavIcon.DECKS, selected = onDecks, onClick = { navController.switchTab(DeckListRoute) }),
-                    ),
-                )
+        // Until the settings file is read (a moment), just the background, so neither the
+        // onboarding nor the alarm list flashes up by mistake.
+        when (val onboardingDone = rememberOnboardingDone()) {
+            null -> Box(Modifier.fillMaxSize().background(SunupTheme.colors.background))
+            else -> {
+                // Decided once: finishing onboarding navigates away by itself.
+                val start: Any = remember { if (onboardingDone) AlarmListRoute else OnboardingRoute }
+                SunupRoot(start, testBench)
             }
         }
     }
 }
 
 @Composable
-private fun SunupNavHost(navController: NavHostController, testBench: (@Composable () -> Unit)?) {
-    NavHost(navController = navController, startDestination = AlarmListRoute) {
+private fun SunupRoot(start: Any, testBench: (@Composable () -> Unit)?) {
+    val navController = rememberNavController()
+    val entry by navController.currentBackStackEntryAsState()
+    val destination = entry?.destination
+    val onAlarms = destination?.hasRoute<AlarmListRoute>() == true
+    val onDecks = destination?.hasRoute<DeckListRoute>() == true
+    val showBar = onAlarms || onDecks
+
+    Column(Modifier.fillMaxSize().background(SunupTheme.colors.background)) {
+        Box(
+            Modifier
+                .weight(1f)
+                // The bar takes the system navigation area; screens above it mustn't pad for it again.
+                .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
+        ) {
+            SunupNavHost(navController, start, testBench)
+        }
+        if (showBar) {
+            SunupNavBar(
+                items = listOf(
+                    NavBarItem("Alarm", NavIcon.ALARM, selected = onAlarms, onClick = { navController.switchTab(AlarmListRoute) }),
+                    NavBarItem("Decks", NavIcon.DECKS, selected = onDecks, onClick = { navController.switchTab(DeckListRoute) }),
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SunupNavHost(navController: NavHostController, start: Any, testBench: (@Composable () -> Unit)?) {
+    NavHost(navController = navController, startDestination = start) {
+        onboardingGraph(navController) { openDecks ->
+            // Onboarding is gone from the back stack: Back from the alarm list leaves the app.
+            navController.navigate(AlarmListRoute) { popUpTo<OnboardingRoute> { inclusive = true } }
+            if (openDecks) navController.switchTab(DeckListRoute)
+        }
+
         composable<AlarmListRoute> {
             AlarmListRoot(
                 onOpenEditor = { id -> navController.navigate(AlarmEditorRoute(id)) },
@@ -187,16 +210,19 @@ private fun SunupNavHost(navController: NavHostController, testBench: (@Composab
     }
 }
 
-/** Bottom bar tabs: one copy of each tab, and the tab keeps its place when you come back. */
+/**
+ * Bottom bar tabs: one copy of each tab, and the tab keeps its place when you come back.
+ * The alarm list is always the bottom of the stack (the graph's start can be onboarding).
+ */
 private fun NavHostController.switchTab(route: Any) {
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+        popUpTo<AlarmListRoute> { saveState = true }
         launchSingleTop = true
         restoreState = true
     }
 }
 
-// TODO(M4): remove with the test bench once onboarding exists.
+// Debug only: MainActivity passes the test bench. TODO: drop it before the first release.
 @Composable
 private fun TestBenchScreen(onBack: () -> Unit, content: @Composable () -> Unit) {
     Column(

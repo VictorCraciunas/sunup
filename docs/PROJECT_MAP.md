@@ -26,15 +26,16 @@ All Kotlin lives under the package `dev.victorc.sunup`, so `core/domain/.../lear
 ## Modules and who depends on whom
 
 ```
-androidApp ──► shared, feature:alarms:presentation, feature:decks:presentation, feature:wakeup:presentation, core:alarm, core:data, core:database,
-               core:design-system, core:geo
-shared ──────► feature:alarms:presentation, feature:decks:presentation, core:domain, core:design-system
+androidApp ──► shared, feature:alarms:presentation, feature:decks:presentation, feature:onboarding:presentation,
+               feature:wakeup:presentation, core:alarm, core:data, core:database, core:design-system, core:geo
+shared ──────► feature:alarms:presentation, feature:decks:presentation, feature:onboarding:presentation, core:domain,
+               core:design-system
 
-feature:alarms:presentation ──► feature:alarms:domain, core:design-system
-feature:decks:presentation ───► feature:decks:domain, core:design-system, core:geo, core:data
-feature:decks:domain ─────────► core:domain
-feature:alarms:domain ────────► core:domain, core:alarm
-feature:wakeup:presentation ──► feature:wakeup:domain, core:alarm, core:design-system, core:geo
+feature:alarms:presentation ─────► core:alarm, core:design-system
+feature:decks:presentation ──────► feature:decks:domain, core:design-system, core:geo, core:data
+feature:decks:domain ────────────► core:domain
+feature:onboarding:presentation ─► core:alarm, core:design-system, core:geo, core:data
+feature:wakeup:presentation ─────► feature:wakeup:domain, core:alarm, core:design-system, core:geo
 feature:wakeup:domain ────────► core:domain
 
 core:alarm ──────────► core:domain
@@ -52,14 +53,14 @@ Features never depend on each other; anything two features need moves to `core:*
 Most build errors here ("Unresolved reference", "Cannot access class … check your module classpath") come from one of these rules.
 
 **`api` vs `implementation`.** A module only sees what it depends on directly, plus what those modules expose with `api`. `implementation` stays private.
-- Use **`api`** when a type from the other module appears in your **public signatures**: constructor parameters, public function parameters or return types, public properties, base classes. Whoever uses your class needs that type too. Examples: `core:alarm` exposes `core:domain` (its `Result`, `Error`); `feature:alarms:domain` exposes `core:alarm`, because `AlarmService(scheduler: AlarmScheduler, engine: AlarmStore, …)` takes engine types and the presentation module's Koin module builds it.
+- Use **`api`** when a type from the other module appears in your **public signatures**: constructor parameters, public function parameters or return types, public properties, base classes. Whoever uses your class needs that type too. Examples: `core:alarm` exposes `core:domain` (its `Result`, `Error`, and `AlarmService`'s `WakeAlarm`) and `kotlinx-datetime` (`LocalTime` in `Alarm`).
 - Use **`implementation`** when the other module is only used inside your code: `core:data` uses `core:database` privately; the presentation modules use `core:design-system` privately.
 
 **Who builds a class needs its constructor's types.** Koin modules call constructors, so the module holding the Koin `module { }` needs every type in those constructors, directly or through `api`.
 
-**`androidApp` must depend directly on every module whose Koin module it registers.** `SunupApplication.kt` imports `alarmModule`, `databaseModule`, `dataModule`, `alarmsModule`, `wakeUpModule`, so `androidApp/build.gradle.kts` lists `core:alarm`, `core:database`, `core:data`, `feature:alarms:presentation`, `feature:wakeup:presentation` itself. Getting them through `shared` doesn't count: `shared` uses `implementation`.
+**`androidApp` must depend directly on every module whose Koin module it registers.** `SunupApplication.kt` imports `alarmModule`, `databaseModule`, `settingsStoreModule`, `dataModule`, `alarmsModule`, `decksModule`, `onboardingModule`, `wakeUpModule`, so `androidApp/build.gradle.kts` lists `core:alarm`, `core:database`, `core:data` and each of those feature presentation modules itself. Getting them through `shared` doesn't count: `shared` uses `implementation`.
 
-**Screens are reached through `shared`.** `App.kt` (in `shared`) holds the navigation, so `shared` depends on each feature's presentation module whose `Root` composable it shows. The morning flow is the exception: `AlarmRingingActivity` in `androidApp` shows `WakeUpRoot` directly.
+**Screens are reached through `shared`.** `App.kt` (in `shared`) holds the navigation, so `shared` depends on each feature's presentation module whose `Root` composable (or nav graph, like `onboardingGraph`) it shows. The morning flow is the exception: `AlarmRingingActivity` in `androidApp` shows `WakeUpRoot` directly.
 
 **Features never depend on each other.** Code two features need moves to `core:*`.
 
@@ -72,17 +73,17 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `core:domain` | kotlinx-datetime, kotlinx-coroutines | — |
 | `core:alarm` | `core:domain`, kotlinx-datetime | coroutines, serialization, Kermit, Koin (+ androidx-core on Android) |
 | `core:database` | `core:domain` | coroutines, serialization, Koin, Room (via `sunup.room`) |
-| `core:data` | `core:domain` | `core:database`, coroutines, Koin |
+| `core:data` | `core:domain` | `core:database`, coroutines, DataStore (settings), Koin (+ koin-android on Android) |
 | `core:design-system` | — | Compose (via `sunup.kmp.compose`) |
 | `core:geo` | `core:domain` | `core:design-system`, coroutines, serialization |
-| `feature:alarms:domain` | `core:domain`, `core:alarm` | coroutines |
-| `feature:alarms:presentation` | — | `feature:alarms:domain`, `core:design-system`, lifecycle, Koin |
+| `feature:alarms:presentation` | — | `core:alarm`, `core:design-system`, lifecycle, Koin |
 | `feature:decks:domain` | `core:domain` | coroutines, serialization (Import) |
 | `feature:decks:presentation` | — | `feature:decks:domain`, `core:design-system`, `core:geo`, `core:data`, lifecycle, Koin (+ activity-compose on Android, for the file picker) |
+| `feature:onboarding:presentation` | — | `core:alarm`, `core:design-system`, `core:geo`, `core:data`, lifecycle, navigation, serialization, Koin (+ activity-compose on Android, for the permission prompts) |
 | `feature:wakeup:domain` | `core:domain` | coroutines |
 | `feature:wakeup:presentation` | — | `feature:wakeup:domain`, `core:alarm`, `core:design-system`, `core:geo`, lifecycle, Koin |
-| `shared` | — | `core:domain`, `core:design-system`, `feature:alarms:presentation`, `feature:decks:presentation`, lifecycle, navigation, serialization |
-| `androidApp` | — | `shared`, `core:alarm`, `core:data`, `core:database`, `core:design-system`, `core:geo`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:wakeup:presentation`, activity, Compose, Koin |
+| `shared` | — | `core:domain`, `core:design-system`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:onboarding:presentation`, lifecycle, navigation, serialization |
+| `androidApp` | — | `shared`, `core:alarm`, `core:data`, `core:database`, `core:design-system`, `core:geo`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:onboarding:presentation`, `feature:wakeup:presentation`, activity, Compose, Koin |
 
 **Checklist: adding a module**
 1. `include(":…")` in `settings.gradle.kts`.
@@ -110,12 +111,13 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `learning/GeoRegion.kt` | Map regions (Europe … World): continents and map bounds |
 | `learning/Country.kt` | A country's facts (code, name, continent, size, nearby countries) |
 | `learning/LearningRepositories.kt` | `DeckRepository`, `NoteRepository`, `ReviewRepository` interfaces |
-| `wakeup/WakeAlarm.kt` | An alarm as the user sets it up (deck, `WakeMode`, label) |
+| `wakeup/WakeAlarm.kt` | An alarm as the user sets it up (deck, `WakeMode`, label); `TEST_ALARM_ID` (onboarding's test ring) |
+| `settings/AppSettingsRepository.kt` | Small app settings: whether onboarding is done |
 | `wakeup/WakeAlarmRepository.kt` | Its repository interface |
 
 ## `core:alarm`: the alarm engine (Rule #1 lives here)
 
-Nothing here may touch the network or the database. Alarms and the ring log are a JSON file in device-protected storage, readable before the first unlock after a reboot.
+Nothing on the ring path may touch the network or the database. Alarms and the ring log are a JSON file in device-protected storage, readable before the first unlock after a reboot. `AlarmService` (used by the screens, never by the ring path) is the one place that also writes the database.
 
 | File | What's in it |
 |---|---|
@@ -126,16 +128,17 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `commonMain/AlarmStore.kt`, `FileAlarmStore.kt` | The engine's copy of alarms plus the ring log, as one atomic JSON file |
 | `commonMain/RingEvent.kt` | One ring log line (SCHEDULED, RANG, STOPPED, SKIPPED…) |
 | `commonMain/RingingState.kt` | Which alarm is ringing right now (watched by the UI) |
+| `commonMain/AlarmService.kt` | The one place the screens change alarms: save (engine first, then database), on/off, delete, sync the app's copy with the engine's, next ring time; `AlarmError`. Used by the alarm screens and onboarding |
 | `androidMain/AndroidPlatformAlarmClock.kt` | `setAlarmClock()` with the alarm's extras |
 | `androidMain/AlarmReceiver.kt` | Fires at ring time; skips wake-up-check rings while the phone is in use |
 | `androidMain/AlarmRingingService.kt` | Foreground service: sound, vibration, full-screen notification, 15-minute timeout |
 | `androidMain/AlarmSound.kt`, `AlarmVibration.kt` | Alarm-stream sound that gets louder (beeps as fallback); vibration |
 | `androidMain/AlarmNotifications.kt` | The "ringing" notification channel and notification |
 | `androidMain/SystemEventReceiver.kt` | Re-registers alarms after reboot, time or time zone change, app update |
-| `androidMain/AlarmPermissions.kt` | What the phone allows (notifications, exact alarms, full screen, battery) and where to fix it |
+| `androidMain/AlarmPermissions.kt` | What the phone allows (notifications, exact alarms, full screen, battery), where to fix it, and each phone maker's Autostart screen (`autostartSettings`) |
 | `androidMain/AlarmIntents.kt` | Intent extras and the "show ringing screen" action |
-| `androidMain/AlarmModule.kt` | Koin `alarmModule`; device-protected file storage |
-| `androidMain/AndroidManifest.xml` | Receivers, service, alarm permissions |
+| `androidMain/AlarmModule.kt` | Koin `alarmModule` (also `AlarmService`); device-protected file storage |
+| `androidMain/AndroidManifest.xml` | Receivers, service, alarm permissions (and the one-tap battery prompt) |
 
 ## `core:database`: Room (credential-encrypted, never on the ring path)
 
@@ -157,7 +160,9 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `SafeLocal.kt` | Wraps database writes so failures become `DataError.Local` |
 | `SampleDeckSeeder.kt` | The sample Spanish deck for the test bench: a card of every game |
 | `GeoDeckSeeder.kt` | Builds a geography deck for a region from the map's country list |
-| `DataModule.kt` | Koin `dataModule` (repositories, seeders, `Clock`) |
+| `DataStoreAppSettings.kt` | `AppSettingsRepository` on a DataStore file (`settings.preferences_pb`); `createSettingsDataStore` |
+| `androidMain/SettingsStoreModule.android.kt` | Koin `settingsStoreModule`: the settings file in the app's files folder |
+| `DataModule.kt` | Koin `dataModule` (repositories, settings, seeders, `Clock`) |
 
 ## `core:design-system`: Sunup's look
 
@@ -170,8 +175,9 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `components/SunupButton.kt` | The chunky 3D button |
 | `components/SunupNavBar.kt` | The bottom bar (Alarm · Decks) with drawn icons |
 | `components/SunupFormParts.kt` | `SunupTopBar` (back + title), `SunupBackButton`, `SunupFieldLabel`, `SunupTextField` (labelled text box) |
+| `components/SunupTimeParts.kt` | `SunupStepper` (hours or minutes with arrows and ticking digits), `SunupDayChip`, `SunupIconButton`, `SunupChevron`. Used by the alarm editor and onboarding |
 | `components/SunupRaised.kt` | Any surface with the mockups' darker edge underneath (cards, chips, segments, the + button); tappable ones sink when pressed |
-| `motion/SunupMotion.kt` | `reduceMotion()` (Android "Remove animations" / iOS "Reduce Motion", platform code in `androidMain` / `iosMain`), `Modifier.riseIn(index)` (slide up and fade in, staggered), `Modifier.wobbleWhenOn(on)` (squash and stretch when picked) |
+| `motion/SunupMotion.kt` | `reduceMotion()` (Android "Remove animations" / iOS "Reduce Motion", platform code in `androidMain` / `iosMain`), `Modifier.riseIn(index)` (slide up and fade in, staggered), `Modifier.wobbleWhenOn(on)` (squash and stretch when picked), `Modifier.bob()` (Pip floating) |
 | `components/Pip.kt` | Pip the sun, with moods |
 
 ## `core:geo`: the country map
@@ -186,9 +192,10 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 
 ## `feature:alarms`: the alarm list and editor
 
+Saving goes through `AlarmService` in `core:alarm`.
+
 | File | What's in it |
 |---|---|
-| `domain/AlarmService.kt` | The one place alarms change: save (engine first, then database), on/off, delete, sync the app's copy with the engine's, next ring time; `AlarmError` |
 | `presentation/AlarmListViewModel.kt` | List state (`AlarmItemUi`), actions, events; runs the sync when the list opens; ticks every minute for "Rings in…" |
 | `presentation/AlarmListScreen.kt` | `AlarmListRoot` / `AlarmListScreen`: header with +, next-alarm banner, alarm cards with switches, empty state, test bench link |
 | `presentation/AlarmEditorViewModel.kt` | Editor state and actions: time, days, mode, deck, save, delete |
@@ -212,13 +219,26 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `presentation/DeckText.kt` | Game and deck-kind names, badges and colours, card summaries, `CardProblem` messages |
 | `presentation/DecksModule.kt` | Koin `decksModule` |
 
+## `feature:onboarding`: the first-run screens
+
+| File | What's in it |
+|---|---|
+| `presentation/OnboardingNavigation.kt` | `OnboardingRoute` and `onboardingGraph()`: Welcome → Goal → Time → Promise → Permissions → Mode, one shared ViewModel on the graph's back stack entry |
+| `presentation/OnboardingViewModel.kt` | `LearnGoal`, State / Actions / Events for the whole flow; the test alarm; finishing (adds the map pack, saves the first alarm with `AlarmService`, sets the onboarding flag) |
+| `presentation/OnboardingScreens.kt` | The six screens (mockups 1–4, C1, C2) |
+| `presentation/OnboardingParts.kt` | `OnboardingFrame` (back + progress bar, scrolling body, buttons at the bottom), Pip with a speech bubble, choice cards, ticks, pills |
+| `presentation/PhonePermissions.kt` (+ `androidMain` / `iosMain`) | `rememberPhonePermissions()`: which permissions this phone needs, which are allowed, and how to ask (prompts and Settings screens on Android; nothing yet on iOS) |
+| `presentation/OnboardingGate.kt` | `rememberOnboardingDone()`, which `App.kt` uses to pick the first screen |
+| `presentation/OnboardingText.kt` | Day names, goal and mode texts, "Your morning" steps |
+| `presentation/OnboardingModule.kt` | Koin `onboardingModule` |
+
 ## `feature:wakeup`: the morning flow
 
 | File | What's in it |
 |---|---|
 | `domain/WakeSessionPlanner.kt` | Picks this morning's cards: random, weighted toward due cards, per mode; geography plans; Preview all games; Quick math fallbacks |
 | `presentation/WakeUpState.kt` | MVI State, `CardUi` (Choice, Typing, Match, FindOnMap), Actions, Events |
-| `presentation/WakeUpViewModel.kt` | Answers, grading, saving reviews, stopping the alarm, the wake-up check, loading the map |
+| `presentation/WakeUpViewModel.kt` | Answers, grading, saving reviews, stopping the alarm, the wake-up check, loading the map; plays `TEST_ALARM_ID` as Gentle |
 | `presentation/WakeUpScreen.kt` | `WakeUpRoot` and the screens: card page, bonus offer, "You're up!", "Still with me?", palettes |
 | `presentation/WakeUpCards.kt` | Card pieces: prompt card, options, match grid, typing input, map areas, feedback panel |
 | `presentation/WakeUpModule.kt` | Koin `wakeUpModule` (planner, ViewModel, map source) |
@@ -232,10 +252,12 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `androidApp/.../alarm/AlarmRingingActivity.kt` | Shows `WakeUpRoot` over the lock screen; also opens Preview all games |
 | `androidApp/.../alarm/AlarmTestBench.kt` | Temporary debug panel: permissions, sample decks, modes, test alarms, ring log |
 | `androidApp/src/main/AndroidManifest.xml` | Activities |
-| `shared/.../App.kt` | Root composable and navigation: the Alarm and Decks tabs with the bottom bar, every inner screen, the test bench |
+| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise the alarm list), the Alarm and Decks tabs with the bottom bar, every inner screen, the test bench |
 | `shared/.../MainViewController.kt` | iOS entry into Compose |
 
 ## Key flows
+
+**First run**: `App.kt` → `rememberOnboardingDone()` (DataStore) → false: `onboardingGraph` → the mode screen's "Set my alarm" → `OnboardingViewModel.finish`: `GeoDeckSeeder` (geography) → `AlarmService.save` → `AppSettingsRepository.setOnboardingDone` → `App.kt` opens the alarm list (or the Decks tab). The test alarm: `AlarmScheduler.scheduleFollowUp(TEST_ALARM_ID, now + 10 s)`.
 
 **Setting an alarm**: `AlarmEditorViewModel` → `AlarmService.save` → `AlarmScheduler.schedule` (engine store + `setAlarmClock`) → then `WakeAlarmRepository.save` (database). Opening the list runs `AlarmService.syncWithEngine`.
 
@@ -264,7 +286,8 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | The map's look or touch handling | `CountryMap.kt`, `MapProjection.kt` |
 | Map data (names, regions, neighbours) | `tools/geo/build_countries.py`, then rebuild `countries.json` |
 | Database tables | `Entities.kt`, `Daos.kt`, `Mappers.kt`, then a schema version and migration |
-| The alarm list or editor | `feature:alarms` (saving and syncing: `AlarmService.kt`) |
+| The alarm list or editor | `feature:alarms` (saving and syncing: `core:alarm`'s `AlarmService.kt`) |
+| The first-run screens or the permission checklist | `feature:onboarding` (Android checks: `PhonePermissions.android.kt`, `AlarmPermissions.kt`) |
 | The deck screens or a card form | `feature:decks` (form rules: `CardDraft.kt`) |
 | Screens and navigation between them | `shared/.../App.kt` |
 | Test tools on the phone | `AlarmTestBench.kt` (opened from the alarm list) |
@@ -276,4 +299,4 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 
 ## Tests
 
-Each module's tests sit in its `src/commonTest`: alarm scheduling and the store (`core:alarm`), mappers (`core:database`), spaced repetition, eligibility, card building and answer checking (`core:domain`), map parsing and projection (`core:geo`), the morning planner (`feature:wakeup:domain`), the alarm service (`feature:alarms:domain`), alarm list text (`feature:alarms:presentation`). All run with `./gradlew testAndroidHostTest`.
+Each module's tests sit in its `src/commonTest`: alarm scheduling and the store (`core:alarm`), mappers (`core:database`), spaced repetition, eligibility, card building and answer checking (`core:domain`), map parsing and projection (`core:geo`), the morning planner (`feature:wakeup:domain`), the alarm service (`core:alarm`), alarm list text (`feature:alarms:presentation`). All run with `./gradlew testAndroidHostTest`.

@@ -21,6 +21,12 @@ data class WakeAlarm(
     val preAlarm: Boolean = false,
 )
 
+/**
+ * The "Try a test alarm" ring from onboarding. Not a saved alarm: the morning flow plays it
+ * as Gentle (one card, no wake-up check) with the first deck, or Quick math.
+ */
+const val TEST_ALARM_ID = "test-alarm"
+
 enum class WakeMode {
     /** 1 card stops the alarm. */
     GENTLE,

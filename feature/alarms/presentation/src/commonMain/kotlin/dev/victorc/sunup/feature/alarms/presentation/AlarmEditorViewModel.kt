@@ -6,7 +6,7 @@ import dev.victorc.sunup.core.domain.Result
 import dev.victorc.sunup.core.domain.learning.DeckRepository
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
 import dev.victorc.sunup.core.domain.wakeup.WakeMode
-import dev.victorc.sunup.feature.alarms.domain.AlarmService
+import dev.victorc.sunup.core.alarm.AlarmService
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid

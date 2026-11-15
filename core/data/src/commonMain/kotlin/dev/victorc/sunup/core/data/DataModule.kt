@@ -3,12 +3,14 @@ package dev.victorc.sunup.core.data
 import dev.victorc.sunup.core.domain.learning.DeckRepository
 import dev.victorc.sunup.core.domain.learning.NoteRepository
 import dev.victorc.sunup.core.domain.learning.ReviewRepository
+import dev.victorc.sunup.core.domain.settings.AppSettingsRepository
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
 import kotlin.time.Clock
 import org.koin.dsl.module
 
-/** Needs the DAOs from the platform's database module. */
+/** Needs the DAOs from the platform's database module and the settings DataStore (settingsStoreModule). */
 val dataModule = module {
+    single<AppSettingsRepository> { DataStoreAppSettings(store = get()) }
     single<Clock> { Clock.System }
     single<DeckRepository> { RoomDeckRepository(dao = get(), notes = get(), clock = get()) }
     single<NoteRepository> { RoomNoteRepository(notes = get(), states = get(), clock = get()) }

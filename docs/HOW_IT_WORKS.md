@@ -2,9 +2,32 @@
 
 The current rules of the app, in plain words. Keep this in sync with the code: when a rule changes, change it here in the same commit. What's built vs. planned lives in [ROADMAP.md](../ROADMAP.md); why things are this way is under "Decisions since the PRD" there.
 
+## First run
+
+The first time the app opens (nothing saved yet says it's done), it shows six screens before anything else. Back goes one screen back.
+
+1. **Welcome**: Pip, "Good morning!", **Get started**.
+2. **What should we wake up with?** (pick one to continue):
+   - **World geography**: pick a region to start with (Europe by default). Finishing adds that map pack, and the first alarm uses it.
+   - **My own cards**: after the last screen, the Decks tab opens to make or import a deck. The alarm uses the first deck (Quick math until there is one).
+   - **Quick mental math**: no deck; the alarm uses Quick math (or the first deck, once one exists).
+3. **When should I wake you?**: time (hours by 1, minutes by 5, tap to type) and repeat days (Monday to Friday by default; none = once).
+4. **This is for you**: no ads while you wake up; one card stops the alarm; a gentle check makes sure you stay up. **I'm doing this for me**, then **Let's go**.
+5. **Let's make sure I can wake you** (mockup C1): one row per thing this phone has to allow, each with **Allow** (or **Show me**) until it's **Done**, and "N of M ready". The rows are checked again whenever the user comes back to the app.
+   - **Notifications**: the system prompt the first time; after that, the app's notification settings.
+   - **Exact alarms** (Android 12+): the "Alarms & reminders" setting. Android 13+ allows it for alarm clocks by itself.
+   - **Show over lock screen** (Android 14+): the full-screen setting, so the card opens when it rings.
+   - **Battery: no limits**: a one-tap system prompt (or the battery list if the phone has none).
+   - **Autostart** (Xiaomi, Redmi, Poco, Samsung, Oppo, Realme, OnePlus, Vivo, Huawei, Honor only): opens the maker's screen, or Sunup's app info if it moved, with a hint of what to switch on. Android can't check this one, so it counts as done once opened.
+   - **Try a test alarm**: rings softly in 10 seconds (it needs Exact alarms). It plays as Gentle: one card stops it, no wake-up check, nothing saved except that card's review.
+   - **Continue** always works, even with rows not done.
+6. **How hard is it to get you up?** (mockup C2): Gentle, Normal (Recommended) or Heavy sleeper, with "Your morning" step by step. **Set my 07:00 alarm** saves the first alarm (the chosen time, days and mode, no label), remembers that onboarding is done, and opens the alarm list (or the Decks tab, for My own cards). If exact alarms aren't allowed it says so and stays.
+
+Onboarding shows again only if the app's data is cleared. If remembering "done" fails, it shows again next time (the alarm is already set).
+
 ## Setting alarms
 
-The app opens on the **alarm list**: each alarm's time, days, deck and mode, with a switch, and a banner saying when the next one rings ("Rings in 8 h 19 min"). Tap an alarm to edit it, or **+** to add one.
+After the first run the app opens on the **alarm list**: each alarm's time, days, deck and mode, with a switch, and a banner saying when the next one rings ("Rings in 8 h 19 min"). Tap an alarm to edit it, or **+** to add one.
 
 **The editor:** time (hours step by 1, minutes by 5; tap the time to type an exact one), repeat days (none = rings once, then switches itself off), wake-up mode, and the deck the cards come from (**Any deck** = the first deck). It shows when the alarm will ring. **Save alarm** always switches the alarm on. Existing alarms can be deleted (asks first).
 

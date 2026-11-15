@@ -35,6 +35,7 @@ dependencies {
     implementation(projects.core.geo)
     implementation(projects.feature.alarms.presentation)
     implementation(projects.feature.decks.presentation)
+    implementation(projects.feature.onboarding.presentation)
     implementation(projects.feature.wakeup.presentation)
 
     implementation(libs.androidx.activity.compose)

@@ -1,16 +1,23 @@
 package dev.victorc.sunup.core.designsystem.motion
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
@@ -60,6 +67,23 @@ fun Modifier.wobbleWhenOn(on: Boolean): Modifier = composed {
         scaleX = x
         scaleY = y
     }
+}
+
+/**
+ * Floats gently up and down forever, like the mockups' `bob` on Pip. Still with reduced motion.
+ *
+ * @param height how far up it goes
+ */
+fun Modifier.bob(height: Dp = 8.dp): Modifier = composed {
+    if (reduceMotion()) return@composed Modifier
+    val transition = rememberInfiniteTransition(label = "bob")
+    val lift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "lift",
+    )
+    graphicsLayer { translationY = -lift * height.toPx() }
 }
 
 /** Keyframes 0% 1/1 · 30% 1.08/0.92 · 60% 0.96/1.04 · 100% 1/1. */

@@ -1,6 +1,6 @@
 package dev.victorc.sunup.feature.alarms.presentation
 
-import dev.victorc.sunup.feature.alarms.domain.AlarmError
+import dev.victorc.sunup.core.alarm.AlarmError
 
 // TODO(M4): move user-facing text to string resources once localization is set up.
 internal fun AlarmError.message(): String = when (this) {

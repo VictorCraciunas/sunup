@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.victorc.sunup.core.domain.Result
 import dev.victorc.sunup.core.domain.learning.DeckRepository
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
-import dev.victorc.sunup.feature.alarms.domain.AlarmService
+import dev.victorc.sunup.core.alarm.AlarmService
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay

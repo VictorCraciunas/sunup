@@ -3,9 +3,11 @@ package dev.victorc.sunup
 import android.app.Application
 import dev.victorc.sunup.core.alarm.alarmModule
 import dev.victorc.sunup.core.data.dataModule
+import dev.victorc.sunup.core.data.settingsStoreModule
 import dev.victorc.sunup.core.database.databaseModule
 import dev.victorc.sunup.feature.alarms.presentation.alarmsModule
 import dev.victorc.sunup.feature.decks.presentation.decksModule
+import dev.victorc.sunup.feature.onboarding.presentation.onboardingModule
 import dev.victorc.sunup.feature.wakeup.presentation.wakeUpModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -20,7 +22,16 @@ class SunupApplication : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@SunupApplication)
-            modules(alarmModule, databaseModule, dataModule, alarmsModule, decksModule, wakeUpModule)
+            modules(
+                alarmModule,
+                databaseModule,
+                settingsStoreModule,
+                dataModule,
+                alarmsModule,
+                decksModule,
+                onboardingModule,
+                wakeUpModule,
+            )
         }
     }
 }

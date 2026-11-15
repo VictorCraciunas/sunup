@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
             App(
                 testBench = {
-                    // TODO(M4): remove once onboarding and the deck screens exist.
+                    // Debug tools for real-phone testing (ring log, quick test alarms). TODO: drop before release.
                     AlarmTestBench(
                         scheduler = scheduler,
                         store = store,

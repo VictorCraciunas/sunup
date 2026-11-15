@@ -24,15 +24,15 @@ All versions live in `gradle/libs.versions.toml`; never hardcode a version in a 
 :androidApp                    Android entry point (Application, activities, manifest, test bench)
 :shared                        Root composable App(); the "Shared" framework the iOS app links
 :core:domain                   Result, DataError, models, learning rules, repository interfaces
-:core:alarm                    The alarm engine: scheduling, ringing, ring log (Rule #1)
+:core:alarm                    The alarm engine: scheduling, ringing, ring log (Rule #1); AlarmService (engine first, then database)
 :core:database                 Room database, entities, DAOs, mappers
-:core:data                     Repository implementations, sample and geography deck seeders
-:core:design-system            SunupTheme tokens and shared components (SunupButton, Pip)
+:core:data                     Repository implementations, settings (DataStore), sample and geography deck seeders
+:core:design-system            SunupTheme tokens and shared components (SunupButton, SunupRaised, SunupStepper, Pip)
 :core:geo                      Country map file loader and the interactive map (geography games)
-:feature:alarms:domain         Saving alarms (engine first, then database) and keeping both in step
 :feature:alarms:presentation   The alarm list (home) and the alarm editor
 :feature:decks:domain          Card forms: what each game's form holds, checking it, turning it into a card
 :feature:decks:presentation    The Decks tab: My decks / Browse packs, New deck, Deck detail, game picker, card editor
+:feature:onboarding:presentation  First-run screens and the permission checklist; saves the first alarm
 :feature:wakeup:domain         Morning flow planning (which cards, per mode)
 :feature:wakeup:presentation   Morning flow screens and ViewModel
 tools/geo/                     Script that builds the map file from Natural Earth
