@@ -31,7 +31,7 @@ class MappersTest {
             name = "Biology",
             kind = DeckKind.STUDY,
             newCardsPerDay = 5,
-            allowedGames = setOf(Game.FLIP_AND_RATE, Game.PICK_MEANING),
+            allowedGames = setOf(Game.FILL_THE_GAP, Game.PICK_MEANING),
             examDate = LocalDate(2027, 1, 15),
         )
 

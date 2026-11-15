@@ -10,6 +10,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,7 +39,11 @@ import dev.victorc.sunup.core.alarm.AlarmScheduler
 import dev.victorc.sunup.core.alarm.AlarmStore
 import dev.victorc.sunup.core.alarm.RingEvent
 import dev.victorc.sunup.core.alarm.RingingState
+import dev.victorc.sunup.core.data.GeoDeckSeeder
 import dev.victorc.sunup.core.data.SampleDeckSeeder
+import dev.victorc.sunup.core.domain.learning.DeckRepository
+import dev.victorc.sunup.core.domain.learning.GeoRegion
+import dev.victorc.sunup.core.geo.GeoAtlasSource
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
 import dev.victorc.sunup.core.domain.wakeup.WakeMode
@@ -65,11 +71,18 @@ fun AlarmTestBench(
     permissions: AlarmPermissions,
     wakeAlarms: WakeAlarmRepository,
     seeder: SampleDeckSeeder,
+    geoSeeder: GeoDeckSeeder,
+    atlasSource: GeoAtlasSource,
+    decks: DeckRepository,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var mode by remember { mutableStateOf(WakeMode.NORMAL) }
+    var region by remember { mutableStateOf(GeoRegion.EUROPE) }
+    /** Deck the test alarms use; null means the first deck by name. */
+    var deckId by remember { mutableStateOf<String?>(null) }
+    val allDecks by remember { decks.observeDecks() }.collectAsState(initial = emptyList())
     var refresh by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf<String?>(null) }
     var alarms by remember { mutableStateOf(emptyList<Alarm>()) }
@@ -92,7 +105,7 @@ fun AlarmTestBench(
     fun schedule(alarm: Alarm) {
         scope.launch {
             // The morning flow reads the wake-up mode from the app's own alarm record.
-            wakeAlarms.save(WakeAlarm(id = alarm.id, time = alarm.time, label = alarm.label, mode = mode))
+            wakeAlarms.save(WakeAlarm(id = alarm.id, time = alarm.time, label = alarm.label, mode = mode, deckId = deckId))
             val scheduled = when (val result = scheduler.schedule(alarm)) {
                 is Result.Success -> result.data?.let { "\"${alarm.label}\" rings at ${it.localTime()}" } ?: "Alarm is off"
                 is Result.Error -> "Couldn't schedule: ${result.error}"
@@ -161,14 +174,65 @@ fun AlarmTestBench(
             onClick = {
                 scope.launch {
                     val deck = seeder.seedSpanish()
+                    deckId = deck.id
                     message = "Loaded \"${deck.name}\": 12 words, 6 already learned"
                 }
             },
         )
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Map", style = SunupTheme.typography.body, color = SunupTheme.colors.ink)
+            GeoRegion.entries.forEach { option ->
+                TextButton(onClick = { region = option }) {
+                    Text(
+                        text = (if (option == region) "● " else "") + option.title,
+                        color = if (option == region) SunupTheme.colors.indigo else SunupTheme.colors.inkMuted,
+                    )
+                }
+            }
+        }
+        SunupButton(
+            text = "Load geography deck · ${region.title}",
+            style = SunupButtonStyle.Secondary,
+            onClick = {
+                scope.launch {
+                    message = when (val atlas = atlasSource.load()) {
+                        is Result.Success -> {
+                            val countries = atlas.data.countries(region)
+                            val deck = geoSeeder.seed(region, countries)
+                            deckId = deck.id
+                            "Loaded \"${deck.name}\": ${countries.size} countries. Test alarms now use it."
+                        }
+                        is Result.Error ->
+                            "No map file yet. Build it with tools/geo/build_countries.py, then rebuild the app."
+                    }
+                }
+            },
+        )
+        if (allDecks.isNotEmpty()) {
+            Text("Deck for test alarms", style = SunupTheme.typography.body, color = SunupTheme.colors.ink)
+            val options = listOf<Pair<String?, String>>(null to "First deck") + allDecks.map { it.id to it.name }
+            options.forEach { (id, name) ->
+                TextButton(onClick = { deckId = id }) {
+                    Text(
+                        text = (if (id == deckId) "● " else "") + name,
+                        color = if (id == deckId) SunupTheme.colors.indigo else SunupTheme.colors.inkMuted,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
         Text(
             "Without a deck, the alarm uses Quick math.",
             style = SunupTheme.typography.bodySmall,
             color = SunupTheme.colors.inkMuted,
+        )
+        SunupButton(
+            text = "Preview all games",
+            style = SunupButtonStyle.Secondary,
+            onClick = { context.startActivity(AlarmRingingActivity.previewIntent(context)) },
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Mode", style = SunupTheme.typography.body, color = SunupTheme.colors.ink, modifier = Modifier.weight(1f))

@@ -1,5 +1,7 @@
 package dev.victorc.sunup.alarm
 
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -12,6 +14,7 @@ import dev.victorc.sunup.core.alarm.AlarmRingingService
 import dev.victorc.sunup.core.alarm.RingingState
 import dev.victorc.sunup.core.alarm.WakeUpScreenState
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
+import dev.victorc.sunup.feature.wakeup.presentation.PREVIEW_ALARM_ID
 import dev.victorc.sunup.feature.wakeup.presentation.WakeUpRoot
 
 /**
@@ -26,7 +29,9 @@ class AlarmRingingActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // Recreated (e.g. rotated) mid-flow: keep going. Opened from an old notification: nothing to show.
-        val id = savedInstanceState?.getString(KEY_ALARM_ID) ?: RingingState.current.value?.alarmId
+        val id = savedInstanceState?.getString(KEY_ALARM_ID)
+            ?: PREVIEW_ALARM_ID.takeIf { intent.getBooleanExtra(EXTRA_PREVIEW, false) }
+            ?: RingingState.current.value?.alarmId
         if (id == null) {
             finish()
             return
@@ -81,7 +86,12 @@ class AlarmRingingActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    private companion object {
-        const val KEY_ALARM_ID = "alarm_id"
+    companion object {
+        private const val KEY_ALARM_ID = "alarm_id"
+        private const val EXTRA_PREVIEW = "dev.victorc.sunup.extra.PREVIEW"
+
+        /** Plays every game once without an alarm, for trying them out. Saves nothing. */
+        fun previewIntent(context: Context): Intent =
+            Intent(context, AlarmRingingActivity::class.java).putExtra(EXTRA_PREVIEW, true)
     }
 }

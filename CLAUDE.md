@@ -7,6 +7,7 @@ An alarm app that wakes you with one quick learning card instead of a snooze but
   - [Main flows, plus an "Improvements" section](https://claude.ai/artifact/Cs6LrpXMvhderkFmJeZcLr)
   - [Cards & play](https://claude.ai/artifact/Jtm3mMbUWN91Fo2UVpmCXm)
 - Plan and progress: [ROADMAP.md](ROADMAP.md)
+- How the app behaves today (morning flow, modes, wake-up check, games, grading): [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md). Read it before changing behaviour, and update it in the same commit when a rule changes.
 
 ## Rule #1: a missed alarm is the one unforgivable bug
 Anything on the path from "alarm scheduled" to "alarm rings" must not depend on the network, the database being unlocked, or the UI rendering. The sound starts first; the card screen comes second.
@@ -23,6 +24,8 @@ All versions live in `gradle/libs.versions.toml`; never hardcode a version in a 
 :shared                Root composable App(); the "Shared" framework the iOS app links
 :core:domain           Result, DataError, shared models and repository interfaces
 :core:design-system    SunupTheme tokens and shared components (SunupButton)
+:core:geo              Country map file loader and the interactive map (geography game)
+tools/geo/             Script that builds the map file from Natural Earth
 build-logic/           Convention plugins
 iosApp/                Xcode project
 ```

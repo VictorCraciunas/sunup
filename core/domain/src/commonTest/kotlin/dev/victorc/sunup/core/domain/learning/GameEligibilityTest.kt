@@ -30,10 +30,10 @@ class GameEligibilityTest {
     )
 
     @Test
-    fun smallDeckOnlyGetsFlipAndType() {
+    fun smallDeckOnlyGetsTypeIt() {
         val games = GameEligibility.eligibleGames(word, Direction.FORWARD, spanish, notesInDeck = 3, hasPlus = false)
 
-        assertThat(games).isEqualTo(setOf(Game.FLIP_AND_RATE, Game.TYPE_IT))
+        assertThat(games).isEqualTo(setOf(Game.TYPE_IT))
     }
 
     @Test
@@ -43,6 +43,37 @@ class GameEligibilityTest {
         assertThat(games).contains(Game.PICK_MEANING)
         assertThat(games).contains(Game.TRUE_FALSE)
         assertThat(games).contains(Game.MATCH_PAIRS)
+        assertThat(games).contains(Game.FILL_THE_GAP)
+    }
+
+    @Test
+    fun geographyDecksOnlyPlayFindOnTheMap() {
+        val europe = Deck(id = "g", name = "Europe", kind = DeckKind.GEOGRAPHY, builtInPackId = GeoRegion.EUROPE.packId)
+        val portugal = Note(id = "pt", deckId = "g", type = NoteType.QUESTION, front = "Portugal", back = "PT")
+
+        val games = GameEligibility.eligibleGames(portugal, Direction.FORWARD, europe, notesInDeck = 40, hasPlus = true)
+
+        assertThat(games).isEqualTo(setOf(Game.FIND_ON_MAP))
+    }
+
+    @Test
+    fun wordDecksNeverPlayTheMap() {
+        val games = GameEligibility.eligibleGames(word, Direction.FORWARD, spanish, notesInDeck = 10, hasPlus = true)
+
+        assertThat(games).doesNotContain(Game.FIND_ON_MAP)
+    }
+
+    @Test
+    fun fillTheGapNeedsTheWordInItsExampleAndIsOnlyAskedOnce() {
+        val conjugated = word.copy(front = "despertarse", example = "Me despierto temprano.")
+        val noExample = word.copy(example = null)
+
+        assertThat(GameEligibility.eligibleGames(conjugated, Direction.FORWARD, spanish, 10, false))
+            .doesNotContain(Game.FILL_THE_GAP)
+        assertThat(GameEligibility.eligibleGames(noExample, Direction.FORWARD, spanish, 10, false))
+            .doesNotContain(Game.FILL_THE_GAP)
+        assertThat(GameEligibility.eligibleGames(word, Direction.REVERSE, spanish, 10, false))
+            .doesNotContain(Game.FILL_THE_GAP)
     }
 
     @Test
@@ -72,7 +103,7 @@ class GameEligibilityTest {
         assertThat(games).doesNotContain(Game.TYPE_IT)
         assertThat(games).doesNotContain(Game.BUILD_THE_SENTENCE)
         assertThat(games).doesNotContain(Game.LISTEN_AND_PICK)
-        assertThat(games).contains(Game.FLIP_AND_RATE)
+        assertThat(games).contains(Game.PICK_MEANING)
     }
 
     @Test

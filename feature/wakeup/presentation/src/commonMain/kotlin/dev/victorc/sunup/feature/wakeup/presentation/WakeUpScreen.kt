@@ -118,7 +118,7 @@ fun WakeUpScreen(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
 
 /** The screen brightens as you wake: night for the silencing card, dawn for the bonus, day at the end. */
 @Immutable
-private data class Palette(
+internal data class Palette(
     val background: Color,
     val surface: Color,
     val border: Color,
@@ -171,7 +171,11 @@ private fun CardPage(state: WakeUpState, palette: Palette, onAction: (WakeUpActi
         state.wakeCheckSecondsLeft?.let { WakeCheckChip(it) }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
-            Pip(if (silencing && !state.alarmStopped) PipMood.SLEEPY else PipMood.AWAKE, size = 88.dp)
+            // The map needs the room, so Pip sits smaller above it.
+            Pip(
+                if (silencing && !state.alarmStopped) PipMood.SLEEPY else PipMood.AWAKE,
+                size = if (card is CardUi.FindOnMap) 56.dp else 88.dp,
+            )
             Text(
                 text = when {
                     !silencing -> "Quiet now. Take your time."
@@ -187,36 +191,19 @@ private fun CardPage(state: WakeUpState, palette: Palette, onAction: (WakeUpActi
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(palette.surface, SunupTheme.shapes.card)
-                .border(2.dp, palette.border, SunupTheme.shapes.card)
-                .padding(SunupTheme.spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.xs),
-        ) {
-            Text(card.label.uppercase(), style = SunupTheme.typography.label, color = palette.muted)
-            Text(card.prompt, style = SunupTheme.typography.display.copy(fontSize = 34.sp), color = palette.text)
-            if (card.statement != null) {
-                Text("means “${card.statement}”?", style = SunupTheme.typography.title, color = palette.text)
-            }
-        }
+        PromptCard(card, palette)
+        if (card is CardUi.Match) MatchGrid(card, palette, onAction)
 
-        Spacer(Modifier.weight(1f))
+        if (card is CardUi.FindOnMap) {
+            MapArea(card, state.atlas, palette, onAction, Modifier.weight(1f))
+        } else {
+            Spacer(Modifier.weight(1f))
+        }
 
         if (card.solved) {
             Feedback(card, stopsAlarm = silencing && state.position == state.total - 1, onAction)
         } else {
-            if (card.wrongPicks.isNotEmpty()) {
-                Text(
-                    "Not quite. Have another go.",
-                    style = SunupTheme.typography.body,
-                    color = palette.muted,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Options(card, palette, onPick = { onAction(WakeUpAction.OnPick(it)) })
+            GameControls(card, palette, onAction)
             if (silencing && !state.alarmStopped) {
                 TextButton(
                     onClick = { onAction(WakeUpAction.OnEmergencyStop) },
@@ -226,116 +213,6 @@ private fun CardPage(state: WakeUpState, palette: Palette, onAction: (WakeUpActi
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun Options(card: CardUi, palette: Palette, onPick: (Int) -> Unit) {
-    val rows = if (card.kind == CardKind.TRUE_FALSE) listOf(card.options.indices.toList()) else card.options.indices.chunked(2)
-    Column(verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
-        rows.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
-                row.forEach { index ->
-                    Choice(
-                        text = card.options[index],
-                        state = when {
-                            card.solved && index == card.correctIndex -> ChoiceState.RIGHT
-                            card.solved -> ChoiceState.DIMMED
-                            index in card.wrongPicks -> ChoiceState.WRONG
-                            else -> ChoiceState.IDLE
-                        },
-                        palette = palette,
-                        onClick = { onPick(index) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-    }
-}
-
-private enum class ChoiceState { IDLE, RIGHT, WRONG, DIMMED }
-
-/** Shake path in dp: big first swing, settling back to the middle. */
-private val SHAKE_OFFSETS = listOf(-10f, 9f, -7f, 5f, -3f, 0f)
-
-@Composable
-private fun Choice(text: String, state: ChoiceState, palette: Palette, onClick: () -> Unit, modifier: Modifier) {
-    val colors = SunupTheme.colors
-    val shape = SunupTheme.shapes.card
-    val (background, border, content) = when (state) {
-        ChoiceState.RIGHT -> Triple(colors.correctContainer, colors.correct, colors.onCorrectContainer)
-        ChoiceState.WRONG -> Triple(colors.wrongContainer, colors.wrong, colors.onWrongContainer)
-        else -> Triple(palette.surface, palette.border, palette.text)
-    }
-
-    // Wrong answers shake gently, right ones bounce (PRD: never shame).
-    // Compose skips these when the phone's "Remove animations" setting is on.
-    val shake = remember { Animatable(0f) }
-    val scale = remember { Animatable(1f) }
-    LaunchedEffect(state) {
-        when (state) {
-            ChoiceState.WRONG -> SHAKE_OFFSETS.forEach { shake.animateTo(it, tween(durationMillis = 45)) }
-            ChoiceState.RIGHT -> {
-                scale.animateTo(1.08f, tween(durationMillis = 110))
-                scale.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = Spring.StiffnessMediumLow))
-            }
-            else -> Unit
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .heightIn(min = 76.dp)
-            .graphicsLayer {
-                translationX = shake.value.dp.toPx()
-                scaleX = scale.value
-                scaleY = scale.value
-            }
-            .alpha(if (state == ChoiceState.DIMMED) 0.45f else 1f)
-            .clip(shape)
-            .background(background)
-            .border(2.dp, border, shape)
-            .clickable(enabled = state == ChoiceState.IDLE, role = Role.Button, onClick = onClick)
-            .padding(SunupTheme.spacing.md),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text, style = SunupTheme.typography.title, color = content, textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-private fun Feedback(card: CardUi, stopsAlarm: Boolean, onAction: (WakeUpAction) -> Unit) {
-    // Slides up from below, like the sheet in the mockups.
-    val rise = remember { Animatable(1f) }
-    LaunchedEffect(Unit) {
-        rise.animateTo(0f, spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow))
-    }
-
-    Column(
-        modifier = Modifier
-            .graphicsLayer {
-                translationY = rise.value * 120.dp.toPx()
-                alpha = 1f - rise.value
-            }
-            .fillMaxWidth()
-            .background(SunupTheme.colors.correctContainer, SunupTheme.shapes.card)
-            .padding(SunupTheme.spacing.xl),
-        verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),
-    ) {
-        Text(
-            text = when {
-                stopsAlarm -> "Alarm off. Good morning!"
-                card.wrongPicks.isEmpty() -> "Nice one!"
-                else -> "Got it. It'll come back soon."
-            },
-            style = SunupTheme.typography.title,
-            color = SunupTheme.colors.onCorrectContainer,
-        )
-        card.explanation?.let {
-            Text(it, style = SunupTheme.typography.body, color = SunupTheme.colors.onCorrectContainer)
-        }
-        SunupButton(text = "Continue", onClick = { onAction(WakeUpAction.OnContinue) })
     }
 }
 

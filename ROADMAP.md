@@ -55,7 +55,9 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [x] Part 2 fix: leaving Sunup no longer ends the check. When the check fires, if the user is busy in another app (screen on, unlocked) it looks again a minute later, for up to 5 minutes; screen off or locked rings. A re-ring after Sunup was swiped away shows "Still with me?", not a new card. Cancels and skips are in the ring log.
 - [ ] Later: count phone movement (accelerometer) as activity, not only touches
 - [ ] Later: a check that survives tapping "Start my day" and going back to bed
-- [ ] Later parts: Flip & rate, Type it, Match pairs → Build the sentence → Listen & pick → Say it
+- [x] Part 3: Fill the gap (pick the missing word in the example sentence), Type it (forgiving check, accent keys, Show answer), Match pairs (4 words, each reviewed). Bonus cards follow the level-up path; silencing mixes Pick and True or false. A deck needs 4+ notes before alarms use it. Test bench: Preview all games.
+- [x] Part 4: geography, Find on the map. `:core:geo` (map file loader, projection, pinch/drag/tap map), built-in region decks (Europe, Africa, Asia, North and Central America, South America, Oceania, World), map file from Natural Earth via `tools/geo/build_countries.py`. Test bench: region picker, Load geography deck, deck for test alarms.
+- [ ] Later: Build the sentence → Listen & pick → Say it (Plus)
 - [ ] More motion: Pip rising between screens, new-card pop, haptics
 
 ## M4 · The rest of the app
@@ -86,6 +88,10 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 ## Decisions since the PRD
 - Morning flow: one easy card stops the alarm, then a 60 s check and an optional quiet bonus round (Normal mode).
 - All 9 card games ship in the MVP. Build the sentence, Listen & pick and Say it stay Plus-only, as a test of whether they're worth paying for.
+- Geography (inspired by map quizzes like Seterra, in Sunup's own look): built-in region decks played as Find on the map. Same counts as other decks (1 + 2 bonus, Heavy 3). Any country can stop the alarm, new ones biggest first, because a big country is easy enough half asleep. Map data: Natural Earth, public domain. The region lives in the deck's built-in pack id, so no database change.
+- Flip & rate is dropped: rating yourself is too easy to fake at 7 AM. Fill the gap replaces it (pick the missing word in the note's example sentence), so every game has a real right answer. Free games: Pick the meaning, True or false, Match pairs, Fill the gap, Type it, Quick math.
+- The wake-up check has no cap on re-rings: it keeps ringing softly every idle minute until Start my day, or until the user has been busy in other apps for about 5 minutes.
+- A deck needs at least 4 notes before alarms use it (the choice games take wrong answers from the deck). Below that the alarm uses Quick math, and the deck screen should say how many more to add (M4).
 - Users write notes (Word or Question); the app turns each note into the games. Without AI, wrong answers come from other notes in the same deck, so Pick / True or false / Match unlock at 4 notes.
 - Only Pick the meaning and True or false can stop the alarm. Say it always has a "Can't speak now" skip.
 - No backend in the MVP. At v1.1 add one service, most likely Supabase. Firebase stays for crash reports, analytics and push.

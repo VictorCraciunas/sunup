@@ -45,6 +45,13 @@ data class SunupColors(
     val dawn: Color = Color(0xFFFFE6CC),
     val daySky: Color = Color(0xFFDDEFFF),
 
+    // Geography map: calm sea, warm sand land, white borders. Found countries use [correct].
+    val mapSea: Color = Color(0xFFCFE7F8),
+    val mapLand: Color = Color(0xFFF6E2B8),
+    /** Land outside the region being played: drawn for context, can't be asked. */
+    val mapLandMuted: Color = Color(0xFFE7E0D2),
+    val mapBorder: Color = Color(0xFFFFFFFF),
+
     // Answer feedback. Never shame: "wrong" is a warm orange, not red.
     val correct: Color = Color(0xFF2F9E44),
     val correctShadow: Color = Color(0xFF1E6E2E),

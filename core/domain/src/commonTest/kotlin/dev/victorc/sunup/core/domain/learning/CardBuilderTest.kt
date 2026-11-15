@@ -7,6 +7,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import kotlin.random.Random
 import kotlin.test.Test
 
@@ -90,6 +91,66 @@ class CardBuilderTest {
             assertThat(card.options[card.correctIndex]).isEqualTo(expected)
             assertThat(card.options.distinct()).hasSize(4)
         }
+    }
+
+    @Test
+    fun fillTheGapBlanksTheWordWithItsArticle() {
+        val withExample = sol.copy(example = "El sol sale a las siete.", exampleTranslation = "The sun rises at seven.")
+
+        val card = builder.fillTheGap(withExample, deck)!!
+
+        assertThat(card.sentence).isEqualTo("${SentenceGap.BLANK} sale a las siete.")
+        assertThat(card.options[card.correctIndex]).isEqualTo("El sol")
+        assertThat(card.options).hasSize(4)
+        // Wrong options keep their article too, so the article doesn't give the answer away.
+        assertThat(card.options.filterIndexed { i, _ -> i != card.correctIndex }.all { it.contains(" ") }).isTrue()
+        assertThat(card.translation).isEqualTo("The sun rises at seven.")
+    }
+
+    @Test
+    fun fillTheGapDropsTheArticleWhenTheSentenceUsesAnother() {
+        val cafe = word("8", "el café", "coffee").copy(example = "Necesito un café.")
+
+        val card = builder.fillTheGap(cafe, deck)!!
+
+        assertThat(card.sentence).isEqualTo("Necesito un ${SentenceGap.BLANK}.")
+        assertThat(card.options[card.correctIndex]).isEqualTo("café")
+        assertThat(card.options.none { it.startsWith("el ") || it.startsWith("la ") }).isTrue()
+    }
+
+    @Test
+    fun fillTheGapNeedsTheWholeWordInTheSentence() {
+        val conjugated = word("8", "despertarse", "to wake up").copy(example = "Me despierto temprano.")
+        val partOfAnotherWord = word("9", "sol", "sun").copy(example = "Hace un día soleado.")
+
+        assertThat(builder.fillTheGap(conjugated, deck)).isNull()
+        assertThat(builder.fillTheGap(partOfAnotherWord, deck)).isNull()
+    }
+
+    @Test
+    fun typeItAcceptsEveryAnswerAndKnowsTheAnswerLanguage() {
+        val note = sol.copy(acceptedAnswers = listOf("sun"))
+
+        val card = builder.typeIt(note, Direction.FORWARD, answerLanguage = "en")
+
+        assertThat(card.answers).isEqualTo(listOf("the sun", "sun"))
+        assertThat(card.language).isEqualTo("en")
+    }
+
+    @Test
+    fun matchPairsKeepsEachAnswerWithItsPrompt() {
+        val card = builder.matchPairs(deck.take(4), Direction.FORWARD)!!
+
+        assertThat(card.prompts).isEqualTo(listOf("el sol", "la luna", "la nube", "la lluvia"))
+        assertThat(card.answers).isEqualTo(listOf("the sun", "the moon", "a cloud", "rain"))
+        assertThat(card.answerOrder.sorted()).isEqualTo(listOf(0, 1, 2, 3))
+    }
+
+    @Test
+    fun matchPairsNeedsFourDistinctWords() {
+        assertThat(builder.matchPairs(deck.take(3), Direction.FORWARD)).isNull()
+        val duplicate = deck.take(3) + word("9", "el astro", "The Sun")
+        assertThat(builder.matchPairs(duplicate, Direction.FORWARD)).isNull()
     }
 
     @Test

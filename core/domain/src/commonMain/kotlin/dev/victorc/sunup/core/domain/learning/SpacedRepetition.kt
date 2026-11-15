@@ -10,8 +10,8 @@ import kotlinx.datetime.plus
  * Decides when a card comes back. A simple ladder of intervals: getting it right climbs
  * one rung, "almost" stays on the rung, forgetting goes back to tomorrow.
  *
- * With the PRD's Flip & rate wording, for a card already learned once:
- * Not yet → tomorrow, Almost → 3 days, Knew it → 8 days.
+ * For a card already learned once: AGAIN → tomorrow, HARD → 3 days, GOOD → 8 days
+ * (the PRD's Not yet / Almost / Knew it intervals).
  */
 object SpacedRepetition {
 

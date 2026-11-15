@@ -25,4 +25,14 @@ data class Deck(
     }
 }
 
-enum class DeckKind { LANGUAGE, STUDY, TRIVIA }
+enum class DeckKind {
+    LANGUAGE,
+    STUDY,
+    TRIVIA,
+
+    /**
+     * Built-in: one note per country (front = name, back = country code), played as Find on
+     * the map. The region is the deck's [Deck.builtInPackId], see [GeoRegion.packId].
+     */
+    GEOGRAPHY,
+}

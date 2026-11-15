@@ -37,6 +37,7 @@ include(":core:alarm")
 include(":core:data")
 include(":core:database")
 include(":core:domain")
+include(":core:geo")
 include(":core:design-system")
 
 include(":feature:wakeup:domain")

@@ -32,6 +32,7 @@ dependencies {
     implementation(projects.core.data)
     implementation(projects.core.database)
     implementation(projects.core.designSystem)
+    implementation(projects.core.geo)
     implementation(projects.feature.wakeup.presentation)
 
     implementation(libs.androidx.activity.compose)

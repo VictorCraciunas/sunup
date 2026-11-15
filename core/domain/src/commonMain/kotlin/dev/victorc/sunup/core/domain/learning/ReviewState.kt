@@ -28,5 +28,5 @@ data class ReviewState(
 /** The level-up path from the PRD: a word starts as Pick the meaning, then Match pairs, then Type it. */
 enum class MasteryLevel { RECOGNIZE, MATCH, RECALL }
 
-/** How a review went. Flip & rate maps Not yet / Almost / Knew it onto these. */
+/** How a review went: right first time (GOOD), close (HARD), or needed another go (AGAIN). */
 enum class Grade { AGAIN, HARD, GOOD }

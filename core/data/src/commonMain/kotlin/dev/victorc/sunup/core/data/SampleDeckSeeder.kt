@@ -49,12 +49,14 @@ class SampleDeckSeeder(
         words.forEach { notes.saveNote(it, bothDirections = false) }
 
         val today = clock.now().toLocalDateTime(timeZone()).date
-        val learned = words.take(KNOWN_COUNT).map {
+        // Half at Match pairs level, half at Type it level, so the bonus round shows both games.
+        val learned = words.take(KNOWN_COUNT).mapIndexed { index, note ->
+            val recall = index >= KNOWN_COUNT / 2
             ReviewState(
-                noteId = it.id,
+                noteId = note.id,
                 direction = Direction.FORWARD,
-                step = 2,
-                level = MasteryLevel.MATCH,
+                step = if (recall) 3 else 2,
+                level = if (recall) MasteryLevel.RECALL else MasteryLevel.MATCH,
                 due = today,
                 reviews = 3,
             )

@@ -16,7 +16,10 @@ import dev.victorc.sunup.core.alarm.AlarmPermissions
 import dev.victorc.sunup.core.alarm.AlarmScheduler
 import dev.victorc.sunup.core.alarm.AlarmStore
 import dev.victorc.sunup.core.alarm.RingingState
+import dev.victorc.sunup.core.data.GeoDeckSeeder
 import dev.victorc.sunup.core.data.SampleDeckSeeder
+import dev.victorc.sunup.core.domain.learning.DeckRepository
+import dev.victorc.sunup.core.geo.GeoAtlasSource
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
 import org.koin.android.ext.android.inject
 
@@ -27,6 +30,9 @@ class MainActivity : ComponentActivity() {
     private val permissions: AlarmPermissions by inject()
     private val wakeAlarms: WakeAlarmRepository by inject()
     private val seeder: SampleDeckSeeder by inject()
+    private val geoSeeder: GeoDeckSeeder by inject()
+    private val atlasSource: GeoAtlasSource by inject()
+    private val decks: DeckRepository by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -51,6 +57,9 @@ class MainActivity : ComponentActivity() {
                         permissions = permissions,
                         wakeAlarms = wakeAlarms,
                         seeder = seeder,
+                        geoSeeder = geoSeeder,
+                        atlasSource = atlasSource,
+                        decks = decks,
                     )
                 },
             )

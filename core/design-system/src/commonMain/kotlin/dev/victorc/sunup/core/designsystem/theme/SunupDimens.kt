@@ -33,4 +33,9 @@ data class SunupSizes(
     val pressDepth: Dp = 4.dp,
     /** Smallest touch target (PRD: at least 44). */
     val minTouchTarget: Dp = 48.dp,
+    /** Geography map: circle drawn around countries too small to tap. */
+    val mapSmallCountry: Dp = 9.dp,
+    /** Geography map: a tap this close to a small country's circle counts for it. */
+    val mapTapRadius: Dp = 18.dp,
+    val mapBorder: Dp = 0.8.dp,
 )

@@ -16,7 +16,10 @@ import dev.victorc.sunup.core.domain.learning.Deck
 import dev.victorc.sunup.core.domain.learning.DeckKind
 import dev.victorc.sunup.core.domain.learning.DeckRepository
 import dev.victorc.sunup.core.domain.learning.Direction
+import dev.victorc.sunup.core.domain.learning.Game
+import dev.victorc.sunup.core.domain.learning.GeoRegion
 import dev.victorc.sunup.core.domain.learning.Grade
+import dev.victorc.sunup.core.domain.learning.MasteryLevel
 import dev.victorc.sunup.core.domain.learning.Note
 import dev.victorc.sunup.core.domain.learning.NoteRepository
 import dev.victorc.sunup.core.domain.learning.NoteType
@@ -68,7 +71,9 @@ class WakeSessionPlannerTest {
     private val today = LocalDate(2026, 11, 3)
     private val spanish = Deck(id = "es", name = "Spanish", kind = DeckKind.LANGUAGE, targetLanguage = "es")
     private val words = listOf("sol" to "sun", "luna" to "moon", "nube" to "cloud", "cielo" to "sky", "mar" to "sea", "río" to "river")
-        .mapIndexed { i, (f, b) -> Note(id = "n$i", deckId = "es", type = NoteType.WORD, front = f, back = b) }
+        .mapIndexed { i, (f, b) ->
+            Note(id = "n$i", deckId = "es", type = NoteType.WORD, front = f, back = b, example = "Hoy veo $f.")
+        }
 
     private fun known(i: Int) = ReviewState("n$i", Direction.FORWARD, step = 2, due = today)
     private fun new(i: Int) = ReviewState("n$i", Direction.FORWARD)
@@ -85,6 +90,7 @@ class WakeSessionPlannerTest {
         cards = CardBuilder(Random(7)),
         clock = FixedClock,
         timeZone = { TimeZone.UTC },
+        random = Random(3),
     )
 
     private fun alarm(mode: WakeMode) = WakeAlarm(id = "a", time = LocalTime(7, 0), mode = mode)
@@ -97,7 +103,8 @@ class WakeSessionPlannerTest {
         assertThat(plan.silencing).hasSize(1)
         val silencing = plan.silencing.single()
         assertThat(silencing.state?.isKnown).isNotNull().isTrue()
-        assertThat(silencing.content).isInstanceOf(CardContent.PickMeaning::class)
+        assertThat(silencing.content.game.canSilenceAlarm).isTrue()
+        assertThat(silencing.note).isNotNull()
 
         assertThat(plan.bonus).hasSize(2)
         assertThat(plan.bonus.map { it.label }).isEqualTo(listOf("Practice", "New word"))
@@ -153,6 +160,100 @@ class WakeSessionPlannerTest {
 
         assertThat(plan.silencing).hasSize(3)
         assertThat(plan.silencing.all { it.content is CardContent.QuickMath }).isTrue()
+    }
+
+    @Test
+    fun practiceCardAtMatchLevelBecomesMatchPairsWithFourWords() = runTest {
+        val matchLevel = known(1).copy(level = MasteryLevel.MATCH)
+        val plan = planner(states = listOf(known(0), matchLevel, known(2), known(3), known(4), new(5)))
+            .plan(alarm(WakeMode.NORMAL))
+
+        val practice = plan.bonus.first { it.label == "Practice" }
+        assertThat(practice.content).isInstanceOf(CardContent.MatchPairs::class)
+        assertThat(practice.items).hasSize(4)
+        // No word shows up twice this morning.
+        val allStates = (plan.silencing + plan.bonus).flatMap { it.items }.map { it.state }
+        assertThat(allStates.distinct()).hasSize(allStates.size)
+    }
+
+    @Test
+    fun practiceCardAtRecallLevelIsTypedInTheUsersLanguage() = runTest {
+        val recall = known(1).copy(level = MasteryLevel.RECALL)
+        val plan = planner(states = listOf(known(0), recall, new(2))).plan(alarm(WakeMode.NORMAL))
+
+        val practice = plan.bonus.first { it.label == "Practice" }.content
+        assertThat(practice).isInstanceOf(CardContent.TypeIt::class)
+        assertThat((practice as CardContent.TypeIt).language).isEqualTo("en")
+    }
+
+    @Test
+    fun previewShowsEveryBuiltGame() = runTest {
+        val plan = planner(states = emptyList()).preview()
+
+        assertThat(plan.silencing.single().content).isInstanceOf(CardContent.TrueFalse::class)
+        assertThat(plan.bonus.map { it.content.game })
+            .isEqualTo(listOf(Game.PICK_MEANING, Game.FILL_THE_GAP, Game.TYPE_IT, Game.MATCH_PAIRS))
+    }
+
+    // Geography: ids carry the size rank, like GeoDeckSeeder writes them.
+    private val europe = Deck(id = "geo", name = "Europe", kind = DeckKind.GEOGRAPHY, builtInPackId = GeoRegion.EUROPE.packId)
+    private val countries = listOf("RU" to "Russia", "UA" to "Ukraine", "FR" to "France", "ES" to "Spain", "PT" to "Portugal")
+        .mapIndexed { i, (code, name) ->
+            Note(id = "geo-00$i-$code", deckId = "geo", type = NoteType.QUESTION, front = name, back = code)
+        }
+
+    private fun geoPlanner(states: List<ReviewState>) =
+        planner(decks = listOf(europe), notes = countries, states = states)
+
+    @Test
+    fun geographyStopsTheAlarmOnTheMapFromTheFirstMorning() = runTest {
+        val plan = geoPlanner(states = emptyList()).plan(alarm(WakeMode.NORMAL))
+
+        val silencing = plan.silencing.single().content
+        assertThat(silencing).isInstanceOf(CardContent.FindOnMap::class)
+        // Nothing learned yet: the biggest country first.
+        assertThat((silencing as CardContent.FindOnMap).countryId).isEqualTo("RU")
+        assertThat(silencing.region).isEqualTo(GeoRegion.EUROPE)
+        assertThat(plan.bonus.map { (it.content as CardContent.FindOnMap).countryName })
+            .isEqualTo(listOf("Ukraine", "France"))
+    }
+
+    @Test
+    fun geographyHeavySleeperFindsThreeCountriesAndDueOnesComeFirst() = runTest {
+        val spainDue = ReviewState(countries[3].id, Direction.FORWARD, step = 2, due = today)
+        val plan = geoPlanner(states = listOf(spainDue)).plan(alarm(WakeMode.HEAVY_SLEEPER))
+
+        assertThat(plan.silencing.map { (it.content as CardContent.FindOnMap).countryId })
+            .isEqualTo(listOf("ES", "RU", "UA"))
+        assertThat(plan.bonus).hasSize(0)
+    }
+
+    @Test
+    fun withoutAMapTheAlarmStopsWithQuickMathInstead() = runTest {
+        val planner = geoPlanner(states = emptyList())
+        val plan = planner.plan(alarm(WakeMode.NORMAL))
+
+        val fallback = planner.withoutUnplayableMaps(plan) { false }
+
+        assertThat(fallback.silencing.single().content).isInstanceOf(CardContent.QuickMath::class)
+        assertThat(fallback.bonus).hasSize(0)
+    }
+
+    @Test
+    fun previewAddsTheMapWhenThereIsAGeographyDeck() = runTest {
+        val plan = planner(decks = listOf(europe, spanish), notes = words + countries, states = emptyList()).preview()
+
+        assertThat(plan.silencing.single().content).isInstanceOf(CardContent.TrueFalse::class)
+        assertThat(plan.bonus.last().content.game).isEqualTo(Game.FIND_ON_MAP)
+    }
+
+    @Test
+    fun deckWithFewerThanFourNotesIsNotUsedYet() = runTest {
+        val plan = planner(notes = words.take(3), states = listOf(known(0), known(1), known(2)))
+            .plan(alarm(WakeMode.NORMAL))
+
+        assertThat(plan.deck).isNull()
+        assertThat(plan.bonus).hasSize(0)
     }
 
     @Test

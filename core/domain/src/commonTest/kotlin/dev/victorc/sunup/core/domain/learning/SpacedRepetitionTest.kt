@@ -33,7 +33,7 @@ class SpacedRepetitionTest {
     }
 
     @Test
-    fun flipAndRateIntervalsMatchThePrdForALearnedCard() {
+    fun againHardGoodIntervalsMatchThePrdForALearnedCard() {
         val card = learned(step = 1)
 
         assertThat(SpacedRepetition.review(card, Grade.AGAIN, today).due).isEqualTo(LocalDate(2026, 11, 4))

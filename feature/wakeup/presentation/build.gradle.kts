@@ -9,6 +9,7 @@ kotlin {
             implementation(projects.feature.wakeup.domain)
             implementation(projects.core.alarm)
             implementation(projects.core.designSystem)
+            implementation(projects.core.geo)
 
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
