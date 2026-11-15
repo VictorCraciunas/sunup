@@ -10,7 +10,7 @@ data class Deck(
     val targetLanguage: String? = null,
     /** The user's own language, e.g. "en". */
     val nativeLanguage: String? = null,
-    /** Language decks: also test meaning → word, not only word → meaning. */
+    /** No longer used: cards are always asked as written. Kept so old saved decks still load. */
     val bothDirections: Boolean = false,
     val newCardsPerDay: Int = DEFAULT_NEW_CARDS_PER_DAY,
     /** Which games Pip may use for this deck. */

@@ -72,7 +72,7 @@ Feedback in every game: wrong shakes and turns orange ("Not quite. Have another 
 
 **A hidden nudge:** cards that are due again come up 3 times as often as the rest. A card you got wrong is due the next day, so it tends to come back soon. Spaced repetition runs underneath only for this; the user never sees levels or due dates.
 
-**Both ways:** in a deck set to "test both ways", Pick from 4 and Type it cards are sometimes asked the other way round (answer → question). The other games are always asked as written.
+**As written:** cards are always asked the way the user wrote them. To be asked the other way round (meaning → word), make a second card.
 
 **Skipped cards:** a card that can't be played yet is skipped, e.g. a Pick from 4 with no wrong answers of its own in a deck with too few other answers to borrow.
 
@@ -95,8 +95,10 @@ The grade feeds the hidden spaced repetition (1 → 3 → 8 → 21 → 45 → 90
 ## Decks and cards
 
 Users don't write notes for Sunup to turn into games any more; they make **cards**, each with its own game.
-- A deck has a name and a type (Language, Study, Trivia). It doesn't ask for a language.
-- **Making a card:** pick the game, then fill in its form (see the table above).
+- **In the app:** the **Decks** tab (bottom bar) lists your decks with their card count and how many alarms use them. **New deck** asks a name and a type (Language, Study, Trivia; no language). Tap a deck to see all its cards (filter by game), **Add a card**, tap a card to edit or delete it, or **Settings** to rename or delete the deck (its cards go too; alarms that used it fall back to the first deck).
+- A card that can't be played yet is marked in the deck ("add wrong answers, or more cards to borrow them from").
+- **Browse packs** lists the map regions: **+** loads one as a deck, **✓** removes it (asks first).
+- **Making a card:** pick the game, then fill in its form (see the table above). **Save & add another** keeps the same game with an empty form; **Done** goes back to the deck. A form that can't be saved says why (e.g. "Put the missing word in [brackets]").
 - Wrong answers are the card's own first, then borrowed from other cards in the same deck.
 - Cards made before cards had games (the old word and question notes) became **Pick from 4** cards.
 - **Geography decks** are built in: one card per country (name, its two-letter code, and its closest neighbours in the region as wrong answers). Loading a deck again updates the cards and keeps what was learned. The map comes with the app (Natural Earth, public domain), so it works offline.

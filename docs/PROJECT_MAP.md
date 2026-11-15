@@ -26,11 +26,13 @@ All Kotlin lives under the package `dev.victorc.sunup`, so `core/domain/.../lear
 ## Modules and who depends on whom
 
 ```
-androidApp ──► shared, feature:alarms:presentation, feature:wakeup:presentation, core:alarm, core:data, core:database,
+androidApp ──► shared, feature:alarms:presentation, feature:decks:presentation, feature:wakeup:presentation, core:alarm, core:data, core:database,
                core:design-system, core:geo
-shared ──────► feature:alarms:presentation, core:domain, core:design-system
+shared ──────► feature:alarms:presentation, feature:decks:presentation, core:domain, core:design-system
 
 feature:alarms:presentation ──► feature:alarms:domain, core:design-system
+feature:decks:presentation ───► feature:decks:domain, core:design-system, core:geo, core:data
+feature:decks:domain ─────────► core:domain
 feature:alarms:domain ────────► core:domain, core:alarm
 feature:wakeup:presentation ──► feature:wakeup:domain, core:alarm, core:design-system, core:geo
 feature:wakeup:domain ────────► core:domain
@@ -75,10 +77,12 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `core:geo` | `core:domain` | `core:design-system`, coroutines, serialization |
 | `feature:alarms:domain` | `core:domain`, `core:alarm` | coroutines |
 | `feature:alarms:presentation` | — | `feature:alarms:domain`, `core:design-system`, lifecycle, Koin |
+| `feature:decks:domain` | `core:domain` | coroutines |
+| `feature:decks:presentation` | — | `feature:decks:domain`, `core:design-system`, `core:geo`, `core:data`, lifecycle, Koin |
 | `feature:wakeup:domain` | `core:domain` | coroutines |
 | `feature:wakeup:presentation` | — | `feature:wakeup:domain`, `core:alarm`, `core:design-system`, `core:geo`, lifecycle, Koin |
-| `shared` | — | `core:domain`, `core:design-system`, `feature:alarms:presentation`, lifecycle, navigation, serialization |
-| `androidApp` | — | `shared`, `core:alarm`, `core:data`, `core:database`, `core:design-system`, `core:geo`, `feature:alarms:presentation`, `feature:wakeup:presentation`, activity, Compose, Koin |
+| `shared` | — | `core:domain`, `core:design-system`, `feature:alarms:presentation`, `feature:decks:presentation`, lifecycle, navigation, serialization |
+| `androidApp` | — | `shared`, `core:alarm`, `core:data`, `core:database`, `core:design-system`, `core:geo`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:wakeup:presentation`, activity, Compose, Koin |
 
 **Checklist: adding a module**
 1. `include(":…")` in `settings.gradle.kts`.
@@ -99,7 +103,7 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `learning/ReviewRecord.kt` | One answered card, kept for stats; `ReviewContext` |
 | `learning/SpacedRepetition.kt` | When a card is due again (1 → 3 → 8 → 21 → 45 → 90 days); due cards are more likely to come up |
 | `learning/Game.kt` | Every game, with Free/Plus |
-| `learning/GameEligibility.kt` | The five card games, which can be asked both ways, and Name vs Find for geography |
+| `learning/GameEligibility.kt` | The five card games, and Name vs Find for geography |
 | `learning/CardBuilder.kt` | `CardContent` (what each card shows) and `CardBuilder` (card → what the morning screen shows, per game; borrowed wrong answers; accent letters) |
 | `learning/AnswerMatcher.kt` | Forgiving check for typed answers (accents, typos, articles) |
 | `learning/SentenceGap.kt` | Fill the gap: the [bracketed] word in a sentence |
@@ -164,6 +168,8 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `theme/SunupDimens.kt` | Spacing, shapes, sizes (touch targets, map circle sizes) |
 | `theme/SunupTheme.kt` | `SunupTheme { }` and the `SunupTheme.colors / typography / spacing / shapes / sizes` accessors |
 | `components/SunupButton.kt` | The chunky 3D button |
+| `components/SunupNavBar.kt` | The bottom bar (Alarm · Decks) with drawn icons |
+| `components/SunupFormParts.kt` | `SunupTopBar` (back + title), `SunupBackButton`, `SunupFieldLabel`, `SunupTextField` (labelled text box) |
 | `components/SunupRaised.kt` | Any surface with the mockups' darker edge underneath (cards, chips, segments, the + button); tappable ones sink when pressed |
 | `motion/SunupMotion.kt` | `reduceMotion()` (Android "Remove animations" / iOS "Reduce Motion", platform code in `androidMain` / `iosMain`), `Modifier.riseIn(index)` (slide up and fade in, staggered), `Modifier.wobbleWhenOn(on)` (squash and stretch when picked) |
 | `components/Pip.kt` | Pip the sun, with moods |
@@ -191,6 +197,18 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `presentation/AlarmErrors.kt` | Messages for `AlarmError` |
 | `presentation/AlarmsModule.kt` | Koin `alarmsModule` |
 
+## `feature:decks`: making decks and cards
+
+| File | What's in it |
+|---|---|
+| `domain/CardDraft.kt` | `CardDraft` (what a card form holds, one shape for every game), `CardProblem` (why it can't be saved), `CardDrafts.check` / `toNote` (form → card) |
+| `presentation/DeckListViewModel.kt` / `DeckListScreen.kt` | The Decks tab (mockup D1): My decks with card counts and alarms, New deck; Browse packs with the map regions (add = load the region, remove = delete its deck) |
+| `presentation/NewDeckScreen.kt` | New deck (D2): name, Language / Study / Trivia. ViewModel in the same file |
+| `presentation/DeckDetailViewModel.kt` / `DeckDetailScreen.kt` | Deck detail (D3): card count, alarms using it, Add a card, filter by game, card rows (with "can't play yet"), settings dialog (rename, delete). Also `GamePickerScreen` (D4) |
+| `presentation/CardEditorViewModel.kt` / `CardEditorScreen.kt` | The card form for each game (E1–E5), new or editing; Save & add another, Done, Delete card |
+| `presentation/DeckText.kt` | Game and deck-kind names, badges and colours, card summaries, `CardProblem` messages |
+| `presentation/DecksModule.kt` | Koin `decksModule` |
+
 ## `feature:wakeup`: the morning flow
 
 | File | What's in it |
@@ -211,12 +229,14 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `androidApp/.../alarm/AlarmRingingActivity.kt` | Shows `WakeUpRoot` over the lock screen; also opens Preview all games |
 | `androidApp/.../alarm/AlarmTestBench.kt` | Temporary debug panel: permissions, sample decks, modes, test alarms, ring log |
 | `androidApp/src/main/AndroidManifest.xml` | Activities |
-| `shared/.../App.kt` | Root composable and navigation: alarm list (start), alarm editor, test bench |
+| `shared/.../App.kt` | Root composable and navigation: the Alarm and Decks tabs with the bottom bar, every inner screen, the test bench |
 | `shared/.../MainViewController.kt` | iOS entry into Compose |
 
 ## Key flows
 
 **Setting an alarm**: `AlarmEditorViewModel` → `AlarmService.save` → `AlarmScheduler.schedule` (engine store + `setAlarmClock`) → then `WakeAlarmRepository.save` (database). Opening the list runs `AlarmService.syncWithEngine`.
+
+**Making a card**: Decks tab → `DeckDetailScreen` → `GamePickerScreen` → `CardEditorScreen` → `CardDrafts.toNote` → `NoteRepository.saveNote` (creates its review state). The deck detail and the morning planner read it back through `NoteRepository`.
 
 **Alarm rings**: `DefaultAlarmScheduler.schedule` → `AndroidPlatformAlarmClock` (`setAlarmClock`) → at ring time `AlarmReceiver` → `AlarmRingingService` (sound first) → full-screen notification → `AlarmRingingActivity` → `WakeUpRoot`. After a reboot: `SystemEventReceiver` → `rescheduleAll`.
 
@@ -240,6 +260,7 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | Map data (names, regions, neighbours) | `tools/geo/build_countries.py`, then rebuild `countries.json` |
 | Database tables | `Entities.kt`, `Daos.kt`, `Mappers.kt`, then a schema version and migration |
 | The alarm list or editor | `feature:alarms` (saving and syncing: `AlarmService.kt`) |
+| The deck screens or a card form | `feature:decks` (form rules: `CardDraft.kt`) |
 | Screens and navigation between them | `shared/.../App.kt` |
 | Test tools on the phone | `AlarmTestBench.kt` (opened from the alarm list) |
 | A version or library | `gradle/libs.versions.toml` |

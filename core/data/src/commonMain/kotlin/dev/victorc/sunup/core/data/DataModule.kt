@@ -10,7 +10,7 @@ import org.koin.dsl.module
 /** Needs the DAOs from the platform's database module. */
 val dataModule = module {
     single<Clock> { Clock.System }
-    single<DeckRepository> { RoomDeckRepository(dao = get(), clock = get()) }
+    single<DeckRepository> { RoomDeckRepository(dao = get(), notes = get(), clock = get()) }
     single<NoteRepository> { RoomNoteRepository(notes = get(), states = get(), clock = get()) }
     single<ReviewRepository> { RoomReviewRepository(states = get(), log = get(), clock = get()) }
     single<WakeAlarmRepository> { RoomWakeAlarmRepository(dao = get(), clock = get()) }

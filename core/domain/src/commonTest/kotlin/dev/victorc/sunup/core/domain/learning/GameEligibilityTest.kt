@@ -2,8 +2,6 @@ package dev.victorc.sunup.core.domain.learning
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
-import assertk.assertions.isTrue
 import kotlin.test.Test
 
 class GameEligibilityTest {
@@ -13,14 +11,6 @@ class GameEligibilityTest {
         assertThat(GameEligibility.CARD_GAMES).isEqualTo(
             listOf(Game.PICK_MEANING, Game.TRUE_FALSE, Game.TYPE_IT, Game.FILL_THE_GAP, Game.MATCH_PAIRS),
         )
-    }
-
-    @Test
-    fun onlyPickAndTypeCanBeAskedBothWays() {
-        assertThat(GameEligibility.canReverse(Game.PICK_MEANING)).isTrue()
-        assertThat(GameEligibility.canReverse(Game.TYPE_IT)).isTrue()
-        assertThat(GameEligibility.canReverse(Game.TRUE_FALSE)).isFalse()
-        assertThat(GameEligibility.canReverse(Game.MATCH_PAIRS)).isFalse()
     }
 
     @Test

@@ -12,9 +12,6 @@ object GameEligibility {
         Game.MATCH_PAIRS,
     )
 
-    /** Pick from 4 and Type it can also be asked the other way round (answer → question). */
-    fun canReverse(game: Game): Boolean = game == Game.PICK_MEANING || game == Game.TYPE_IT
-
     /**
      * Geography: a country that's new or was just missed is named from four; once known,
      * it's found on the map with no help. [allowed] is the deck's allowed games.

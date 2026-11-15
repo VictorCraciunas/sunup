@@ -20,6 +20,7 @@ kotlin {
             implementation(projects.core.domain)
             implementation(projects.core.designSystem)
             implementation(projects.feature.alarms.presentation)
+            implementation(projects.feature.decks.presentation)
 
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)

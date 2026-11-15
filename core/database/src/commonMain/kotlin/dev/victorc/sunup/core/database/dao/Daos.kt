@@ -46,12 +46,18 @@ interface NoteDao {
     @Query("SELECT COUNT(*) FROM notes WHERE deckId = :deckId AND deletedAt IS NULL")
     suspend fun countInDeck(deckId: String): Int
 
+    @Query("SELECT deckId, COUNT(*) AS cards FROM notes WHERE deletedAt IS NULL GROUP BY deckId")
+    fun observeCountsPerDeck(): Flow<List<DeckCardCount>>
+
     @Query("UPDATE notes SET deletedAt = :now, updatedAt = :now WHERE id = :id")
     suspend fun softDelete(id: String, now: Long)
 
     @Query("UPDATE notes SET deletedAt = :now, updatedAt = :now WHERE deckId = :deckId AND deletedAt IS NULL")
     suspend fun softDeleteInDeck(deckId: String, now: Long)
 }
+
+/** How many cards a deck has, for the deck list. */
+data class DeckCardCount(val deckId: String, val cards: Int)
 
 @Dao
 interface ReviewStateDao {

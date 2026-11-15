@@ -47,11 +47,16 @@ private class FakeDecks(private val decks: List<Deck>, private val fail: Boolean
     }
     override suspend fun getDeck(id: String): Deck? = decks.firstOrNull { it.id == id }
     override suspend fun saveDeck(deck: Deck): EmptyResult<DataError.Local> = Result.Success(Unit)
+    override suspend fun deleteDeck(id: String): EmptyResult<DataError.Local> = Result.Success(Unit)
 }
 
 private class FakeNotes(private val notes: List<Note>) : NoteRepository {
     override suspend fun notesInDeck(deckId: String) = notes.filter { it.deckId == deckId }
     override suspend fun saveNote(note: Note, bothDirections: Boolean): EmptyResult<DataError.Local> = Result.Success(Unit)
+    override fun observeNotesInDeck(deckId: String): Flow<List<Note>> = flowOf(notes.filter { it.deckId == deckId })
+    override suspend fun getNote(id: String): Note? = notes.firstOrNull { it.id == id }
+    override suspend fun deleteNote(id: String): EmptyResult<DataError.Local> = Result.Success(Unit)
+    override fun observeCardCounts(): Flow<Map<String, Int>> = flowOf(notes.groupingBy { it.deckId }.eachCount())
 }
 
 private class FakeReviews(private val states: List<ReviewState>) : ReviewRepository {
@@ -176,13 +181,13 @@ class WakeSessionPlannerTest {
     }
 
     @Test
-    fun bothWaysOnlyFlipsGamesThatCanBeFlipped() = runTest {
+    fun cardsAreAlwaysAskedAsWritten() = runTest {
+        // An old deck that still says "both ways", with a leftover reverse state.
         val bothWays = spanish.copy(bothDirections = true)
-        val reverse = ReviewState("tf", Direction.REVERSE)
-        val plan = planner(decks = listOf(bothWays), notes = listOf(statement), states = listOf(reverse))
-            .plan(alarm(WakeMode.GENTLE))
+        val reverse = ReviewState("n0", Direction.REVERSE)
+        val plan = planner(decks = listOf(bothWays), states = listOf(reverse)).plan(alarm(WakeMode.HEAVY_SLEEPER))
 
-        assertThat(plan.silencing.single().state?.direction).isEqualTo(Direction.FORWARD)
+        assertThat(plan.silencing.all { it.state?.direction == Direction.FORWARD }).isTrue()
     }
 
     @Test

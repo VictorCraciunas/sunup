@@ -31,6 +31,8 @@ All versions live in `gradle/libs.versions.toml`; never hardcode a version in a 
 :core:geo                      Country map file loader and the interactive map (geography games)
 :feature:alarms:domain         Saving alarms (engine first, then database) and keeping both in step
 :feature:alarms:presentation   The alarm list (home) and the alarm editor
+:feature:decks:domain          Card forms: what each game's form holds, checking it, turning it into a card
+:feature:decks:presentation    The Decks tab: My decks / Browse packs, New deck, Deck detail, game picker, card editor
 :feature:wakeup:domain         Morning flow planning (which cards, per mode)
 :feature:wakeup:presentation   Morning flow screens and ViewModel
 tools/geo/                     Script that builds the map file from Natural Earth

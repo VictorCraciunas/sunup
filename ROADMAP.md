@@ -68,7 +68,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [ ] iOS: Koin isn't started on iOS yet, so the app screens need that before they run there (M5)
 - [ ] Home (original mockup): start screen with the next alarm, deck progress and the week; its alarm card opens the Alarms list
 - [x] Decks part 1: cards with one game each (database version 2: `game`, `isTrue`, `pairs`; old notes became Pick from 4), random morning cards weighted toward due ones, any card stops the alarm, True or false plays the user's statement, Match pairs holds its own pairs, Fill the gap uses [brackets], accent keys from the deck's letters, articles dropped for any language. Sample deck has every game.
-- [ ] Decks part 2: deck screens (mockups D1–D4, E1–E5): bottom bar, My decks / Browse packs, New deck, Deck detail, game picker, card forms
+- [x] Decks part 2: `:feature:decks`. Bottom bar (Alarm · Decks), My decks / Browse packs (map regions added and removed here), New deck, Deck detail with filter and settings (rename, delete), game picker, card forms for the five games (new and edit, Save & add another, delete). Not yet: exam date, free deck limit, Import (part 3).
 - [ ] Decks part 3: Import a deck with your own AI (mockup D5)
 - [ ] Streaks
 
@@ -92,6 +92,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 
 ## Decisions since the PRD
 - **Cards, not notes (M4, replaces the level-up path):** each card has **one game**, picked by the user when making it (Pick from 4, True or false, Type it, Fill the gap, Match pairs, Map). No mastery levels. Every morning Sunup picks **random cards** from the deck, never twice in one morning; a hidden rule makes cards you got wrong a bit more likely to come up. Any card can stop the alarm, whatever its game. Pick from 4: the user may write 3 wrong answers; empty ones are borrowed from other cards in the deck. This changes the M2/M3 learning code (levels, `GameEligibility`, the planner) when the deck screens are built.
+- **No "test both ways":** cards are always asked as written; to practise the other direction, make a second card. (The old `bothDirections` column stays, unused.)
 - **Decks don't ask for a language.** Accent keys come from the special letters in the deck's own cards; a leading article (el, la, le, der, the…) is ignored for any known language. Language only matters later for the Plus speaking/listening games.
 - **Import with your own AI, instead of a Sunup AI generator:** "Import deck" shows a ready prompt to copy into ChatGPT or Claude; the AI answers with the deck as JSON; the user pastes it (or uploads the .json file), sees a preview, and creates the deck. Free, no server, no AI cost. The same importer can read CSV and Anki later. Mockup 10 (AI generator) and "Fill in" (v1.2) are dropped.
 - **Free limit = number of decks:** free users can have a few decks (number to decide), however they're made; Plus means unlimited decks.

@@ -129,20 +129,11 @@ class WakeSessionPlanner(
     ): List<MorningCard> {
         val notesById = deckNotes.associateBy { it.id }
         val letters = CardBuilder.lettersIn(deckNotes)
-        val stateOf = states.associateBy { it.noteId to it.direction }
-
-        // Every way a card can be asked: forward always, the other way round when the deck
-        // tests both ways and the game allows it.
+        // Cards are always asked as written.
+        val stateOf = states.filter { it.direction == Direction.FORWARD }.associateBy { it.noteId }
         val candidates = deckNotes
             .filter { it.game in GameEligibility.CARD_GAMES }
-            .flatMap { note ->
-                val directions = if (deck.bothDirections && GameEligibility.canReverse(note.game)) {
-                    Direction.entries
-                } else {
-                    listOf(Direction.FORWARD)
-                }
-                directions.map { stateOf[note.id to it] ?: ReviewState(note.id, it) }
-            }
+            .map { note -> stateOf[note.id] ?: ReviewState(note.id, Direction.FORWARD) }
             .toMutableList()
 
         val picked = mutableListOf<MorningCard>()

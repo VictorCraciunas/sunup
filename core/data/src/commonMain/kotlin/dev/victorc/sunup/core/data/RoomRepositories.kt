@@ -27,6 +27,7 @@ import kotlinx.datetime.LocalDate
 
 class RoomDeckRepository(
     private val dao: DeckDao,
+    private val notes: NoteDao,
     private val clock: Clock,
 ) : DeckRepository {
 
@@ -40,6 +41,12 @@ class RoomDeckRepository(
         val createdAt = dao.get(deck.id)?.createdAt ?: now
         dao.upsert(deck.toEntity(createdAt = createdAt, updatedAt = now))
     }
+
+    override suspend fun deleteDeck(id: String): EmptyResult<DataError.Local> = safeLocal {
+        val now = clock.now().toEpochMilliseconds()
+        notes.softDeleteInDeck(id, now)
+        dao.softDelete(id, now)
+    }
 }
 
 class RoomNoteRepository(
@@ -50,6 +57,18 @@ class RoomNoteRepository(
 
     override suspend fun notesInDeck(deckId: String): List<Note> =
         notes.getInDeck(deckId).map { it.toDomain() }
+
+    override fun observeNotesInDeck(deckId: String): Flow<List<Note>> =
+        notes.observeInDeck(deckId).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun getNote(id: String): Note? = notes.get(id)?.toDomain()
+
+    override suspend fun deleteNote(id: String): EmptyResult<DataError.Local> = safeLocal {
+        notes.softDelete(id, clock.now().toEpochMilliseconds())
+    }
+
+    override fun observeCardCounts(): Flow<Map<String, Int>> =
+        notes.observeCountsPerDeck().map { counts -> counts.associate { it.deckId to it.cards } }
 
     override suspend fun saveNote(note: Note, bothDirections: Boolean): EmptyResult<DataError.Local> = safeLocal {
         val now = clock.now().toEpochMilliseconds()
