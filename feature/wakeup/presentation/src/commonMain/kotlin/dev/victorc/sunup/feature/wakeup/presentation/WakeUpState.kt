@@ -20,8 +20,6 @@ data class WakeUpState(
     val isPreview: Boolean = false,
     /** "07:01": when the last silencing card stopped the alarm. */
     val alarmOffAt: String? = null,
-    /** Bonus cards on offer after the wake-up check (Normal only); 0 hides "Play bonus cards". */
-    val bonusCount: Int = 0,
     val card: CardUi? = null,
     /** 0-based position of [card] in the current phase. */
     val position: Int = 0,
@@ -37,16 +35,33 @@ data class WakeUpState(
     val ringingAgain: Boolean = false,
     /** Country outlines, loaded only when this morning has a geography card. */
     val atlas: GeoAtlas? = null,
-    /** "Up at 07:03 · 13 sunrises in a row", once the alarm was stopped by answering. */
-    val upLine: String? = null,
+    /** Sunrises in a row including this one, once the alarm was stopped by answering. Null in previews. */
+    val streakDays: Int? = null,
+    /** The bonus round's cards, for the bonus round screen (A3). */
+    val bonusItems: List<BonusItemUi> = emptyList(),
+    /** Cards answered this morning, bonus included. */
+    val answeredCards: Int = 0,
+    /** Of those, answered right the first time. */
+    val rightFirstTime: Int = 0,
+    /** "You're up!" extras, when switched on and found. */
+    val weather: WeatherUi? = null,
+    val nextEvent: EventUi? = null,
 )
+
+/** "☀️", "14°", "Sunny · rain after 18:00". */
+data class WeatherUi(val icon: String, val temperature: String, val summary: String)
+
+/** "09:30", "Biology lecture". */
+data class EventUi(val time: String, val title: String)
+
+/** One card waiting in the bonus round: "Match pairs · 4", "PRACTICE", "the sun, the moon…". */
+data class BonusItemUi(val game: String, val isNew: Boolean, val hint: String)
 
 /**
  * RINGING: mockup 6, before the first card ("I'm up, let's go").
- * WAKE_CHECK: improvement A2, "Stay with me for a minute", right after the alarm stops (Normal and Heavy sleeper).
- * BONUS_OFFER: only when there's no wake-up check but a bonus round (previews).
+ * BONUS_OFFER: the bonus round screen (improvement A3), Normal mode only.
  */
-enum class WakePhase { LOADING, RINGING, SILENCING, WAKE_CHECK, BONUS_OFFER, BONUS, DONE }
+enum class WakePhase { LOADING, RINGING, SILENCING, BONUS_OFFER, BONUS, DONE }
 
 /** One card on screen. Each game keeps its own progress. */
 sealed interface CardUi {

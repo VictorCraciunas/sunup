@@ -3,6 +3,7 @@ package dev.victorc.sunup
 import android.app.Application
 import dev.victorc.sunup.core.alarm.alarmModule
 import dev.victorc.sunup.core.data.dataModule
+import dev.victorc.sunup.core.data.morningInfoModule
 import dev.victorc.sunup.core.data.settingsStoreModule
 import dev.victorc.sunup.core.database.databaseModule
 import dev.victorc.sunup.feature.alarms.presentation.alarmsModule
@@ -26,6 +27,7 @@ class SunupApplication : Application() {
                 alarmModule,
                 databaseModule,
                 settingsStoreModule,
+                morningInfoModule,
                 dataModule,
                 alarmsModule,
                 decksModule,

@@ -34,6 +34,7 @@ After the first run the app opens on **Home**, the Alarm tab (the original Home 
 - **Deck card:** the deck that alarm uses (Any deck = the first deck), with "24 of 60 cards learned" (countries for a map). Learned = answered right and not forgotten since. Tapping it opens the deck. No decks: "No deck yet", **Go to Decks**.
 - **This week:** Monday to Sunday: a sun for a sunrise, a dash for a missed morning, a glowing ring for today, a dashed ring for no alarm or days still to come; "3 sunrises".
 - **Preview tomorrow's wake-up:** plays that alarm's morning (its deck and mode) on the ringing screen, without sound, without the wake-up check, saving nothing.
+- **On "You're up!":** two switches, both off at first. **Today's weather** asks for the phone's approximate location; **Next event today** asks for the calendar. The phone's prompt only appears when a switch is turned on; if the user says no, the switch stays off with a note about the phone's settings. A switch shows on only while the setting is on *and* the phone allows it.
 
 ## Streaks
 
@@ -46,7 +47,7 @@ Every time the morning screen opens for a real alarm, Sunup keeps a record of th
 | No alarm rang (a day off, e.g. a weekend) | unchanged, never breaks it |
 | Today, before its sunrise | unchanged until the alarm is answered |
 
-One sunrise is enough for a day, even if another alarm that day was missed. If the ringing screen never opened (e.g. full-screen alarms not allowed and the user never tapped the notification), that morning isn't recorded, so it counts as no alarm. **"You're up!"** shows "Up at 07:03 · 13 sunrises in a row" ("day 1 of your streak" for the first). No streak freezes yet.
+One sunrise is enough for a day, even if another alarm that day was missed. If the ringing screen never opened (e.g. full-screen alarms not allowed and the user never tapped the notification), that morning isn't recorded, so it counts as no alarm. **"You're up!"** shows "07:03 · day 13" and a Streak tile with "+1" floating up. No streak freezes yet.
 
 ## Setting alarms
 
@@ -62,9 +63,9 @@ If Android doesn't allow exact alarms, saving fails with a message pointing to "
 
 1. **The alarm rings.** Starts soft and gets louder over about 50 seconds, on the alarm volume (rings in silent mode). Vibrates. Shows the ringing screen over the lock screen (mockup 6): the day and time, Pip rising from behind a hill with rings pulsing around it and stars twinkling, "Good morning! 1 quick card and the day is yours." (3 for Heavy sleeper), and **I'm up, let's go**, which opens the first card. No snooze. Previews and the test alarm show it too (previews say "no sound, nothing saved"); the wake-up check's re-ring skips it.
 2. **Silencing card(s).** Answer right to stop the alarm. A wrong answer keeps it ringing; try again.
-3. **Wake-up check** starts (Normal and Heavy sleeper only), on its own screen (improvement A2, "first light"): "✓ Alarm off · 07:01", Pip peeking over the horizon, "Stay with me for a minute", and a ring counting down the 60 seconds. See below.
-4. **Bonus round** (Normal only): **Play 2 bonus cards** on the wake-up check screen, or **I'm up, skip** (Heavy sleeper: just **I'm up**). Previews have no check, so they ask "Bonus round?" with Let's go / Not today instead.
-5. **"You're up!"**: Pip, and the words answered this morning. **Start my day** closes it.
+3. **Wake-up check** starts (Normal and Heavy sleeper only), shown as a chip on the next screens. See below.
+4. **Bonus round** (Normal only), right after the card: the bonus round screen (improvement A3, dawn): Pip floating, "Quiet now. Two more while you stretch?", one row per card (its game, NEW CARD or PRACTICE, a hint), "No sound. No ads. Skip anytime.", **Let's go** or **Not today**.
+5. **"You're up!"** (improvement A4 with mockup 8's tiles): confetti, Pip jumping in a bright sky with drifting clouds, "You're up!" with "07:03 · day 13", "3 cards before your feet hit the floor.", tiles **Correct** (right the first time / answered), **Cards** (+answered) and **Streak** (with "+1" floating up; not in previews), then "This morning" and **Start my day**, which closes it. After Emergency stop: no tiles, no confetti, "Stopped without a card. That's okay, see you tomorrow." With the Home switches on, two tiles sit under the title: **weather** ("☀️ 14°", "Sunny · rain after 18:00", "dry all day", or "take an umbrella" when it's wet now; with "Weather data from MET Norway" under it) and **next event** ("📅 09:30", "Biology lecture": the next timed event later today; all-day events are skipped). They're fetched only once the alarm has stopped (Rule #1), and each tile just doesn't show if it's off, offline (15 s at most), the location is unknown, or nothing is left today. Weather: MET Norway's forecast for the phone's approximate location, rounded to about 1 km; the calendar is read on the phone only. Not built: Share.
 
 There is **no snooze**. The only other way to stop the alarm is **Emergency stop** (small button under the first card): stops it at once, goes to "You're up!", no wake-up check. Whether to add a real snooze is an open question.
 
@@ -78,7 +79,7 @@ There is **no snooze**. The only other way to stop the alarm is **Emergency stop
 
 ## The 60-second wake-up check
 
-After the alarm stops, a soft re-ring (45% volume at most) is always scheduled 1 minute ahead. The wake-up check screen shows it as a countdown ring; after that, a chip on the other screens shows "Wake-up check · 0:42". Only touches and typing count as moving; phone movement (the motion sensor) doesn't yet.
+After the alarm stops, a soft re-ring (45% volume at most) is always scheduled 1 minute ahead. A chip on the screens after the card shows "Wake-up check · 0:42". (The A2 "Stay with me for a minute" screen was tried and dropped: it was one screen too many.) Only touches and typing count as moving; phone movement (the motion sensor) doesn't yet.
 
 | What the user does | What happens |
 |---|---|

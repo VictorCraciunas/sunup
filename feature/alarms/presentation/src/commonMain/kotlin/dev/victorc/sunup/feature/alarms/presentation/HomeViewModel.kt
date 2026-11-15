@@ -9,6 +9,7 @@ import dev.victorc.sunup.core.domain.learning.DeckKind
 import dev.victorc.sunup.core.domain.learning.DeckRepository
 import dev.victorc.sunup.core.domain.learning.NoteRepository
 import dev.victorc.sunup.core.domain.learning.ReviewRepository
+import dev.victorc.sunup.core.domain.settings.AppSettingsRepository
 import dev.victorc.sunup.core.domain.wakeup.DayMark
 import dev.victorc.sunup.core.domain.wakeup.Streaks
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
@@ -48,6 +49,9 @@ data class HomeState(
     val week: List<WeekDayUi> = emptyList(),
     val sunrisesThisWeek: Int = 0,
     val message: String? = null,
+    /** "You're up!" extras the user switched on (the phone's permission is checked on screen). */
+    val showWeather: Boolean = false,
+    val showCalendar: Boolean = false,
 )
 
 data class HomeAlarmUi(
@@ -87,6 +91,13 @@ sealed interface HomeAction {
 
     /** Home went out of sight: the card goes back to showing the next alarm. */
     data object OnLeave : HomeAction
+
+    /** Already allowed by the phone when [on]; the screen asks for permission first. */
+    data class OnSetWeather(val on: Boolean) : HomeAction
+    data class OnSetCalendar(val on: Boolean) : HomeAction
+
+    /** The phone said no to location ([forWeather]) or the calendar. */
+    data class OnPermissionDenied(val forWeather: Boolean) : HomeAction
 }
 
 sealed interface HomeEvent {
@@ -105,6 +116,7 @@ class HomeViewModel(
     private val notes: NoteRepository,
     private val reviews: ReviewRepository,
     sessions: WakeSessionRepository,
+    private val settings: AppSettingsRepository,
     private val timeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) : ViewModel() {
 
@@ -147,6 +159,10 @@ class HomeViewModel(
             .catch { _state.update { it.copy(loading = false, message = "Couldn't load Home. Try again.") } }
             .onEach { _state.value = it }
             .launchIn(viewModelScope)
+
+        settings.observeMorningInfo()
+            .onEach { info -> _state.update { it.copy(showWeather = info.weather, showCalendar = info.calendar) } }
+            .launchIn(viewModelScope)
     }
 
     fun onAction(action: HomeAction) {
@@ -159,6 +175,17 @@ class HomeViewModel(
             HomeAction.OnPreview -> _state.value.alarm?.let { send(HomeEvent.Preview(it.id)) }
             HomeAction.OnDismissMessage -> _state.update { it.copy(message = null) }
             HomeAction.OnLeave -> heldAlarmId.value = null
+            is HomeAction.OnSetWeather -> viewModelScope.launch { settings.setShowWeather(action.on) }
+            is HomeAction.OnSetCalendar -> viewModelScope.launch { settings.setShowCalendar(action.on) }
+            is HomeAction.OnPermissionDenied -> _state.update {
+                it.copy(
+                    message = if (action.forWeather) {
+                        "Sunup can't see your approximate location. You can allow it for Sunup in the phone's settings."
+                    } else {
+                        "Sunup can't see your calendar. You can allow it for Sunup in the phone's settings."
+                    },
+                )
+            }
         }
     }
 
@@ -230,6 +257,8 @@ class HomeViewModel(
             week = week,
             sunrisesThisWeek = week.count { it.mark == DayMark.SUNRISE },
             message = _state.value.message,
+            showWeather = _state.value.showWeather,
+            showCalendar = _state.value.showCalendar,
         )
     }
 

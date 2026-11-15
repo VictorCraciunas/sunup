@@ -14,6 +14,12 @@ import dev.victorc.sunup.core.domain.learning.ReviewRepository
 import dev.victorc.sunup.core.domain.learning.SpacedRepetition
 import dev.victorc.sunup.core.domain.Result
 import dev.victorc.sunup.core.geo.GeoAtlasSource
+import dev.victorc.sunup.core.domain.morning.CalendarSource
+import dev.victorc.sunup.core.domain.morning.MorningInfoSettings
+import dev.victorc.sunup.core.domain.morning.WeatherCondition
+import dev.victorc.sunup.core.domain.morning.WeatherSource
+import dev.victorc.sunup.core.domain.morning.WeatherToday
+import dev.victorc.sunup.core.domain.settings.AppSettingsRepository
 import dev.victorc.sunup.core.domain.wakeup.Streaks
 import dev.victorc.sunup.core.domain.wakeup.TEST_ALARM_ID
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
@@ -43,6 +49,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.LocalTime
@@ -55,6 +62,9 @@ class WakeUpViewModel(
     private val alarms: WakeAlarmRepository,
     private val reviews: ReviewRepository,
     private val sessions: WakeSessionRepository,
+    private val settings: AppSettingsRepository,
+    private val weather: WeatherSource,
+    private val calendar: CalendarSource,
     private val scheduler: AlarmScheduler,
     private val atlasSource: GeoAtlasSource,
     private val clock: Clock,
@@ -93,6 +103,9 @@ class WakeUpViewModel(
     private val countsForStreak get() = !isPreview && !isFollowUpRing && alarmId != TEST_ALARM_ID
     private var session: WakeSession? = null
     private val sessionWrites = Mutex()
+
+    // "You're up!" extras: fetched once, after the alarm has stopped (Rule #1).
+    private var morningInfoStarted = false
 
     init {
         if (isFollowUpRing) {
@@ -169,6 +182,7 @@ class WakeUpViewModel(
             WakeUpAction.OnEmergencyStop -> {
                 _state.update { it.copy(alarmStopped = true, stoppedWithoutCard = true, phase = WakePhase.DONE) }
                 viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
+                loadMorningInfo()
                 updateSession { if (it.outcome == WakeOutcome.UP) it else it.copy(outcome = WakeOutcome.STOPPED_WITHOUT_CARD) }
             }
             WakeUpAction.OnFinish -> viewModelScope.launch {
@@ -304,6 +318,8 @@ class WakeUpViewModel(
                 alarmStopped = it.alarmStopped || stopsAlarm,
                 learned = it.learned + learned,
                 alarmOffAt = if (stopsAlarm) clockText(clock.now()) else it.alarmOffAt,
+                answeredCards = it.answeredCards + 1,
+                rightFirstTime = it.rightFirstTime + if (solved.struggled) 0 else 1,
             )
         }
         record(cards[current.position], grades, current.phase)
@@ -311,6 +327,7 @@ class WakeUpViewModel(
         if (stopsAlarm) {
             viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
             startWakeCheck()
+            loadMorningInfo()
             markUp(silencingCards = cards.size)
         }
     }
@@ -339,15 +356,13 @@ class WakeUpViewModel(
         }
         val bonusCount = if (plan?.mode == WakeMode.NORMAL) plan?.bonus.orEmpty().size else 0
         val nextPhase = when (current.phase) {
-            WakePhase.SILENCING -> when {
-                // A2: the wake-up check gets its own screen, which also offers the bonus round.
-                checkActive -> WakePhase.WAKE_CHECK
-                bonusCount > 0 -> WakePhase.BONUS_OFFER
-                else -> WakePhase.DONE
-            }
+            // The wake-up check keeps running as a chip on the next screens.
+            WakePhase.SILENCING -> if (bonusCount > 0) WakePhase.BONUS_OFFER else WakePhase.DONE
             else -> WakePhase.DONE
         }
-        _state.update { it.copy(phase = nextPhase, card = null, bonusCount = bonusCount) }
+        val bonusItems = if (bonusCount > 0) plan?.bonus.orEmpty().map { it.toBonusItem() } else emptyList()
+        _state.update { it.copy(phase = nextPhase, card = null, bonusItems = bonusItems) }
+        loadMorningInfo()
     }
 
     private fun startPhase(phase: WakePhase, phaseCards: List<MorningCard>) {
@@ -426,9 +441,49 @@ class WakeUpViewModel(
             }
             val local = now.toLocalDateTime(timeZone())
             val streak = Streaks.current(saved.filter { it.id != mine.id } + mine, local.date)
-            val time = clockText(now)
-            val line = if (streak <= 1) "Up at $time · day 1 of your streak" else "Up at $time · $streak sunrises in a row"
-            _state.update { it.copy(upLine = line) }
+            _state.update { it.copy(streakDays = streak.coerceAtLeast(1)) }
+        }
+    }
+
+    /** Weather and the next event for "You're up!", if the user switched them on. Never blocks anything. */
+    private fun loadMorningInfo() {
+        if (morningInfoStarted) return
+        morningInfoStarted = true
+        viewModelScope.launch {
+            val wanted = try {
+                settings.observeMorningInfo().first()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                MorningInfoSettings()
+            }
+            if (wanted.calendar) {
+                launch {
+                    val event = try {
+                        calendar.nextEventToday()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (event != null) {
+                        val time = "${event.start.hour.toString().padStart(2, '0')}:${event.start.minute.toString().padStart(2, '0')}"
+                        _state.update { it.copy(nextEvent = EventUi(time = time, title = event.title)) }
+                    }
+                }
+            }
+            if (wanted.weather) {
+                launch {
+                    val result = try {
+                        withTimeoutOrNull(WEATHER_TIMEOUT) { weather.today() }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (result is Result.Success) _state.update { it.copy(weather = result.data.toUi()) }
+                }
+            }
         }
     }
 
@@ -482,6 +537,7 @@ class WakeUpViewModel(
 }
 
 private val WAKE_CHECK = 60.seconds
+private val WEATHER_TIMEOUT = 15.seconds
 private val RESCHEDULE_EVERY = 5.seconds
 
 /** How long the wake-up check keeps watching once the user is busy in another app. */
@@ -551,4 +607,63 @@ private fun MorningCard.toUi(): CardUi = when (val c = content) {
         answers = c.answers,
         answerOrder = c.answerOrder,
     )
+}
+
+// TODO(M4): move user-facing text to string resources once localization is set up.
+private fun MorningCard.toBonusItem(): BonusItemUi {
+    val c = content
+    val game = when (c) {
+        is CardContent.MatchPairs -> "Match pairs · ${c.prompts.size}"
+        is CardContent.PickMeaning -> "Pick from 4"
+        is CardContent.TrueFalse -> "True or false"
+        is CardContent.FillTheGap -> "Fill the gap"
+        is CardContent.TypeIt -> "Type it"
+        is CardContent.QuickMath -> "Quick math"
+        is CardContent.FindOnMap -> "Find on the map"
+        is CardContent.NameOnMap -> "Name the country"
+    }
+    val hint = when (c) {
+        is CardContent.MatchPairs -> c.prompts.take(3).joinToString(", ") + if (c.prompts.size > 3) "…" else ""
+        is CardContent.QuickMath -> "Keep your brain sharp"
+        is CardContent.NameOnMap -> "Which country is this?"
+        else -> note?.front.orEmpty()
+    }
+    return BonusItemUi(game = game, isNew = state?.isNew ?: false, hint = hint)
+}
+
+private fun WeatherToday.toUi(): WeatherUi {
+    val sky = when (condition) {
+        WeatherCondition.CLEAR -> "Sunny"
+        WeatherCondition.FAIR -> "Mostly sunny"
+        WeatherCondition.PARTLY_CLOUDY -> "Partly cloudy"
+        WeatherCondition.CLOUDY -> "Cloudy"
+        WeatherCondition.FOG -> "Foggy"
+        WeatherCondition.RAIN -> "Rain"
+        WeatherCondition.SLEET -> "Sleet"
+        WeatherCondition.SNOW -> "Snow"
+        WeatherCondition.THUNDER -> "Thunder"
+    }
+    val wetWord = when (wetKind) {
+        WeatherCondition.SNOW -> "snow"
+        WeatherCondition.SLEET -> "sleet"
+        WeatherCondition.THUNDER -> "storms"
+        else -> "rain"
+    }
+    val later = when {
+        wetNow -> "take an umbrella"
+        wetFromHour != null -> "$wetWord after ${wetFromHour.toString().padStart(2, '0')}:00"
+        else -> "dry all day"
+    }
+    val icon = when (condition) {
+        WeatherCondition.CLEAR -> "☀️"
+        WeatherCondition.FAIR -> "🌤️"
+        WeatherCondition.PARTLY_CLOUDY -> "⛅"
+        WeatherCondition.CLOUDY -> "☁️"
+        WeatherCondition.FOG -> "🌫️"
+        WeatherCondition.RAIN -> "🌧️"
+        WeatherCondition.SLEET -> "🌨️"
+        WeatherCondition.SNOW -> "❄️"
+        WeatherCondition.THUNDER -> "⛈️"
+    }
+    return WeatherUi(icon = icon, temperature = "$temperatureC°", summary = "$sky · $later")
 }

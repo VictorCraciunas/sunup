@@ -111,10 +111,9 @@ fun WakeUpScreen(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
         }
         WakePhase.RINGING -> RingingScreen(state, onAction)
         WakePhase.SILENCING -> CardPage(state, Palette.night(), onAction)
-        WakePhase.WAKE_CHECK -> WakeCheckScreen(state, onAction)
-        WakePhase.BONUS_OFFER -> BonusOffer(state, onAction)
+        WakePhase.BONUS_OFFER -> BonusRoundScreen(state, onAction)
         WakePhase.BONUS -> CardPage(state, Palette.dawn(), onAction)
-        WakePhase.DONE -> Done(state, onAction)
+        WakePhase.DONE -> YoureUpScreen(state, onAction)
     }
 }
 
@@ -134,7 +133,7 @@ internal data class Palette(
         }
 
         @Composable
-        fun dawn() = with(SunupTheme.colors) { Palette(dawn, surface, Color(0xFFF0CFA8), ink, inkMuted) }
+        fun dawn() = with(SunupTheme.colors) { Palette(dawn, surface, dawnEdge, ink, inkMuted) }
 
         @Composable
         fun day() = with(SunupTheme.colors) { Palette(background, surface, border, ink, inkMuted) }
@@ -219,87 +218,7 @@ private fun CardPage(state: WakeUpState, palette: Palette, onAction: (WakeUpActi
 }
 
 @Composable
-private fun BonusOffer(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
-    val palette = Palette.dawn()
-    Page(palette) {
-        state.wakeCheckSecondsLeft?.let { WakeCheckChip(it) }
-        Spacer(Modifier.weight(1f))
-        Pip(PipMood.AWAKE, modifier = Modifier.align(Alignment.CenterHorizontally), size = 140.dp)
-        Text("Bonus round", style = SunupTheme.typography.headline, color = palette.text, modifier = Modifier.align(Alignment.CenterHorizontally))
-        Text(
-            "Quiet now. Two more while you stretch?",
-            style = SunupTheme.typography.body,
-            color = palette.muted,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.weight(1f))
-        Text(
-            "No sound. No ads. Skip anytime.",
-            style = SunupTheme.typography.bodySmall,
-            color = palette.muted,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        SunupButton(text = "Let's go", onClick = { onAction(WakeUpAction.OnStartBonus) })
-        TextButton(onClick = { onAction(WakeUpAction.OnSkipBonus) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("Not today")
-        }
-    }
-}
-
-@Composable
-private fun Done(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
-    val palette = Palette.day()
-    Page(palette) {
-        state.wakeCheckSecondsLeft?.let { WakeCheckChip(it) }
-        Spacer(Modifier.weight(0.5f))
-        Pip(PipMood.HAPPY, modifier = Modifier.align(Alignment.CenterHorizontally), size = 140.dp)
-        Text("You're up!", style = SunupTheme.typography.display, color = palette.text, modifier = Modifier.align(Alignment.CenterHorizontally))
-        state.upLine?.let {
-            Text(
-                it,
-                style = SunupTheme.typography.title,
-                color = SunupTheme.colors.onSunSoft,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        if (state.stoppedWithoutCard) {
-            Text(
-                "Stopped without a card. That's okay, see you tomorrow.",
-                style = SunupTheme.typography.body,
-                color = palette.muted,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        if (state.learned.isNotEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(palette.surface, SunupTheme.shapes.card)
-                    .border(2.dp, palette.border, SunupTheme.shapes.card)
-                    .padding(SunupTheme.spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.sm),
-            ) {
-                Text("THIS MORNING", style = SunupTheme.typography.label, color = palette.muted)
-                state.learned.forEach { item ->
-                    Row {
-                        Text(item.prompt, style = SunupTheme.typography.body, color = palette.text, modifier = Modifier.weight(1f))
-                        Text(item.answer, style = SunupTheme.typography.body, color = palette.muted)
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.weight(1f))
-        SunupButton(text = "Start my day", onClick = { onAction(WakeUpAction.OnFinish) })
-    }
-}
-
-/** "Wake-up check · 0:42": time left before a soft re-ring if the phone is left alone. */
-@Composable
-private fun WakeCheckChip(secondsLeft: Int) {
+internal fun WakeCheckChip(secondsLeft: Int) {
     Row(
         modifier = Modifier
             .background(SunupTheme.colors.indigoContainer, SunupTheme.shapes.pill)

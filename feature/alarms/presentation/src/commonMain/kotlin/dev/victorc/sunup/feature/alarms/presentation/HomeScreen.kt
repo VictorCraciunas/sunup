@@ -96,12 +96,12 @@ fun HomeRoot(
             }
         }
     }
-    HomeScreen(state, viewModel::onAction, canPreview = onPreview != null)
+    HomeScreen(state, viewModel::onAction, canPreview = onPreview != null, permissions = rememberMorningPermissions())
 }
 
 // TODO(M4): move user-facing text to string resources once localization is set up.
 @Composable
-fun HomeScreen(state: HomeState, onAction: (HomeAction) -> Unit, canPreview: Boolean) {
+fun HomeScreen(state: HomeState, onAction: (HomeAction) -> Unit, canPreview: Boolean, permissions: MorningPermissions) {
     val colors = SunupTheme.colors
     val spacing = SunupTheme.spacing
 
@@ -170,7 +170,80 @@ fun HomeScreen(state: HomeState, onAction: (HomeAction) -> Unit, canPreview: Boo
                     modifier = Modifier.riseIn(3),
                 )
             }
+
+            MorningExtrasCard(state, permissions, onAction, Modifier.riseIn(4))
         }
+    }
+}
+
+/** Two switches for "You're up!": the weather and the next event today. Asks the phone only when turned on. */
+@Composable
+private fun MorningExtrasCard(state: HomeState, permissions: MorningPermissions, onAction: (HomeAction) -> Unit, modifier: Modifier) {
+    val colors = SunupTheme.colors
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colors.surface, SunupTheme.shapes.card)
+            .border(SunupTheme.sizes.border, colors.border, SunupTheme.shapes.card)
+            .padding(SunupTheme.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),
+    ) {
+        Text("On \"You're up!\"", style = SunupTheme.typography.title, color = colors.ink)
+        ExtraRow(
+            icon = "☀️",
+            title = "Today's weather",
+            detail = "Uses your approximate location. Weather data from MET Norway.",
+            on = state.showWeather && permissions.locationAllowed,
+            onChange = { on ->
+                if (!on) {
+                    onAction(HomeAction.OnSetWeather(false))
+                } else {
+                    permissions.askLocation { allowed ->
+                        onAction(if (allowed) HomeAction.OnSetWeather(true) else HomeAction.OnPermissionDenied(forWeather = true))
+                    }
+                }
+            },
+        )
+        ExtraRow(
+            icon = "📅",
+            title = "Next event today",
+            detail = "From your phone's calendar. It stays on your phone.",
+            on = state.showCalendar && permissions.calendarAllowed,
+            onChange = { on ->
+                if (!on) {
+                    onAction(HomeAction.OnSetCalendar(false))
+                } else {
+                    permissions.askCalendar { allowed ->
+                        onAction(if (allowed) HomeAction.OnSetCalendar(true) else HomeAction.OnPermissionDenied(forWeather = false))
+                    }
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ExtraRow(icon: String, title: String, detail: String, on: Boolean, onChange: (Boolean) -> Unit) {
+    val colors = SunupTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
+        Text(icon, style = SunupTheme.typography.title)
+        Column(Modifier.weight(1f)) {
+            Text(title, style = SunupTheme.typography.body, color = colors.ink)
+            Text(detail, style = SunupTheme.typography.bodySmall, color = colors.inkMuted)
+        }
+        Switch(
+            checked = on,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = colors.sun,
+                checkedThumbColor = colors.surface,
+                checkedBorderColor = colors.sun,
+                uncheckedTrackColor = colors.track,
+                uncheckedThumbColor = colors.surface,
+                uncheckedBorderColor = colors.border,
+            ),
+            modifier = Modifier.semantics { contentDescription = title },
+        )
     }
 }
 

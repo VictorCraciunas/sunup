@@ -48,6 +48,9 @@ data class SunupColors(
     // Sunrise steps between night and day
     val firstLight: Color = Color(0xFF3B3478),
     val dawn: Color = Color(0xFFFFE6CC),
+    /** The hill and card edges on the dawn screens (bonus round). */
+    val dawnHill: Color = Color(0xFFFFD9B3),
+    val dawnEdge: Color = Color(0xFFF0CFA8),
     val daySky: Color = Color(0xFFDDEFFF),
 
     // Geography map: calm sea, warm sand land, white borders. Found countries use [correct].

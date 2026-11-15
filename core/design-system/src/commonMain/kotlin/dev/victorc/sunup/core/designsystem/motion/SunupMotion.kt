@@ -51,6 +51,30 @@ fun Modifier.riseIn(index: Int = 0): Modifier = composed {
 }
 
 /**
+ * Pops in from small with a springy overshoot when first shown, [index] items after the
+ * first, like the mockups' `pop` on "You're up!". Shows at once with reduced motion.
+ */
+fun Modifier.popIn(index: Int = 0, delayMillis: Long = 0): Modifier = composed {
+    val still = reduceMotion()
+    val progress = remember { Animatable(if (still) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (still) return@LaunchedEffect
+        delay(delayMillis + index * POP_STAGGER_MILLIS)
+        progress.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessLow))
+    }
+    graphicsLayer {
+        val p = progress.value
+        val scale = 0.4f + 0.6f * p
+        scaleX = scale
+        scaleY = scale
+        alpha = p.coerceIn(0f, 1f)
+    }
+}
+
+/** Time between items that pop in one after another. */
+const val POP_STAGGER_MILLIS = 180L
+
+/**
  * A short squash-and-stretch each time [on] turns true, like the mockups' `jelly` on a
  * picked chip. Nothing with reduced motion.
  */

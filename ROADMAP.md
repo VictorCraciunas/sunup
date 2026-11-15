@@ -60,8 +60,10 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [x] Part 5: Name the country. One country highlighted and zoomed in on, pick its name from 4, the wrong ones being its neighbours (from the map file's nearby list). New countries are named, known ones are found.
 - [ ] Later: Build the sentence → Listen & pick → Say it (Plus)
 - [x] Ringing screen (mockup 6) before the first card: day and time, Pip rising from behind a hill and wiggling, rays turning, rings pulsing, twinkling stars, sound bars, "I'm up, let's go" (no snooze). Pip can turn its rays (`rayTurn`); `typography.clockHero`
-- [x] A2 wake-up check screen ("first light"): Alarm off pill with the time, Pip peeking over the horizon with a breathing glow, countdown ring, Play bonus cards / I'm up. Replaces the bonus offer screen when the check runs
-- [ ] Morning screens in the improvements' look: A1 card, A3 bonus round, A4 "You're up!"
+- [x] ~~A2 wake-up check screen~~: built, then dropped (one screen too many); the check stays a chip
+- [x] A3 bonus round screen (dawn, the cards waiting with NEW CARD / PRACTICE, Let's go / Not today) and A4 "You're up!" (confetti, Pip jumping in a bright sky, 07:03 · day N, Correct / Cards / Streak tiles with +1, This morning). Not built: A3's "+1 bonus sun for Pip's sky", A4's Share
+- [x] A4 weather and next-event tiles, switched on from Home (location and calendar asked only then). Weather: MET Norway (free, credit shown) for the approximate location, fetched after the alarm stops; calendar read on the phone. Not on iOS yet
+- [ ] Morning screens in the improvements' look: A1 card
 - [ ] More motion: Pip rising between screens, new-card pop, haptics
 
 ## M4 · The rest of the app
@@ -99,6 +101,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - **Decks don't ask for a language.** Accent keys come from the special letters in the deck's own cards; a leading article (el, la, le, der, the…) is ignored for any known language. Language only matters later for the Plus speaking/listening games.
 - **Import with your own AI, instead of a Sunup AI generator:** "Import deck" shows a ready prompt to copy into ChatGPT or Claude; the AI answers with the deck as JSON; the user pastes it (or uploads the .json file), sees a preview, and creates the deck. Free, no server, no AI cost. The same importer can read CSV and Anki later. Mockup 10 (AI generator) and "Fill in" (v1.2) are dropped.
 - **Onboarding matches today's app (M4):** no "I already have an account" (no accounts yet); the goal choices are World geography, My own cards and Quick math (no language or fun-facts packs exist; import is with your own AI, not Anki/Quizlet/CSV); no "cards each morning" (the wake-up mode decides); the promise lists only what's built (no ads, one card stops the alarm, the wake-up check). The permission screen adds "Show over lock screen" (needed on Android 14+). The test bench stays, debug only, until before release.
+- **Weather from MET Norway (M4):** free, no key, commercial use allowed with the credit "Weather data from MET Norway" (check their terms again before release, and add a contact URL to the User-Agent). Open-Meteo's free tier is non-commercial only. Location: the phone's approximate location, rounded to ~1 km; only that is sent.
 - **Free limit = number of decks:** free users can have a few decks (number to decide), however they're made; Plus means unlimited decks.
 - Home vs. Alarms (two mockups): the original **Home** (next alarm, deck progress, this week's sunrises) is the Alarm tab's start screen; tapping its alarm card opens the **Alarms** list (Improvements A2), where alarms are added and edited.
 - **Streak rules (M4):** a sunrise = an alarm stopped by answering. Emergency stop or an alarm left ringing resets the streak; days with no alarm never break it. Kept as one record per morning, not worked out from the card log, so Quick math mornings and Emergency stops count too.

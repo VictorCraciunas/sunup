@@ -58,7 +58,7 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 
 **Who builds a class needs its constructor's types.** Koin modules call constructors, so the module holding the Koin `module { }` needs every type in those constructors, directly or through `api`.
 
-**`androidApp` must depend directly on every module whose Koin module it registers.** `SunupApplication.kt` imports `alarmModule`, `databaseModule`, `settingsStoreModule`, `dataModule`, `alarmsModule`, `decksModule`, `onboardingModule`, `wakeUpModule`, so `androidApp/build.gradle.kts` lists `core:alarm`, `core:database`, `core:data` and each of those feature presentation modules itself. Getting them through `shared` doesn't count: `shared` uses `implementation`.
+**`androidApp` must depend directly on every module whose Koin module it registers.** `SunupApplication.kt` imports `alarmModule`, `databaseModule`, `settingsStoreModule`, `morningInfoModule`, `dataModule`, `alarmsModule`, `decksModule`, `onboardingModule`, `wakeUpModule`, so `androidApp/build.gradle.kts` lists `core:alarm`, `core:database`, `core:data` and each of those feature presentation modules itself. Getting them through `shared` doesn't count: `shared` uses `implementation`.
 
 **Screens are reached through `shared`.** `App.kt` (in `shared`) holds the navigation, so `shared` depends on each feature's presentation module whose `Root` composable (or nav graph, like `onboardingGraph`) it shows. The morning flow is the exception: `AlarmRingingActivity` in `androidApp` shows `WakeUpRoot` directly.
 
@@ -73,10 +73,10 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `core:domain` | kotlinx-datetime, kotlinx-coroutines | — |
 | `core:alarm` | `core:domain`, kotlinx-datetime | coroutines, serialization, Kermit, Koin (+ androidx-core on Android) |
 | `core:database` | `core:domain` | coroutines, serialization, Koin, Room (via `sunup.room`) |
-| `core:data` | `core:domain` | `core:database`, coroutines, DataStore (settings), Koin (+ koin-android on Android) |
+| `core:data` | `core:domain` | `core:database`, coroutines, serialization (forecast), DataStore (settings), Koin (+ koin-android on Android) |
 | `core:design-system` | — | Compose (via `sunup.kmp.compose`) |
 | `core:geo` | `core:domain` | `core:design-system`, coroutines, serialization |
-| `feature:alarms:presentation` | — | `core:alarm`, `core:design-system`, lifecycle, Koin |
+| `feature:alarms:presentation` | — | `core:alarm`, `core:design-system`, lifecycle, Koin (+ activity-compose on Android, for Home's permission prompts) |
 | `feature:decks:domain` | `core:domain` | coroutines, serialization (Import) |
 | `feature:decks:presentation` | — | `feature:decks:domain`, `core:design-system`, `core:geo`, `core:data`, lifecycle, Koin (+ activity-compose on Android, for the file picker) |
 | `feature:onboarding:presentation` | — | `core:alarm`, `core:design-system`, `core:geo`, `core:data`, lifecycle, navigation, serialization, Koin (+ activity-compose on Android, for the permission prompts) |
@@ -112,7 +112,8 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `learning/Country.kt` | A country's facts (code, name, continent, size, nearby countries) |
 | `learning/LearningRepositories.kt` | `DeckRepository`, `NoteRepository`, `ReviewRepository` interfaces |
 | `wakeup/WakeAlarm.kt` | An alarm as the user sets it up (deck, `WakeMode`, label); `TEST_ALARM_ID` (onboarding's test ring) |
-| `settings/AppSettingsRepository.kt` | Small app settings: whether onboarding is done |
+| `settings/AppSettingsRepository.kt` | Small app settings: whether onboarding is done, the "You're up!" weather and calendar switches |
+| `morning/MorningInfo.kt` | "You're up!" extras: `WeatherToday`, `WeatherCondition`, `CalendarEvent`, the `WeatherSource` / `CalendarSource` interfaces, `MorningInfoSettings` |
 | `wakeup/WakeAlarmRepository.kt` | Its repository interface |
 | `wakeup/WakeSession.kt` | One morning (`WakeSession`, `WakeOutcome`: RINGING, UP, STOPPED_WITHOUT_CARD) and `WakeSessionRepository` |
 | `wakeup/Streaks.kt` | The streak rules: `current`, `week` (`DayMark` per day), `cardsAnswered` |
@@ -164,6 +165,11 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | `GeoDeckSeeder.kt` | Builds a geography deck for a region from the map's country list |
 | `DataStoreAppSettings.kt` | `AppSettingsRepository` on a DataStore file (`settings.preferences_pb`); `createSettingsDataStore` |
 | `androidMain/SettingsStoreModule.android.kt` | Koin `settingsStoreModule`: the settings file in the app's files folder |
+| `MetNorwayForecast.kt` | Reads MET Norway's Locationforecast JSON into `WeatherToday` (sky now, temperature, when rain starts today) |
+| `androidMain/MetNorwayWeatherSource.kt` | Approximate location (last known, else a quick network fix) → MET Norway over HTTPS |
+| `androidMain/AndroidCalendarSource.kt` | The next timed event later today from the phone's calendars |
+| `androidMain/MorningInfoModule.android.kt` | Koin `morningInfoModule` (weather and calendar sources) |
+| `androidMain/AndroidManifest.xml` | Internet, approximate location and calendar permissions |
 | `DataModule.kt` | Koin `dataModule` (repositories, settings, seeders, `Clock`) |
 
 ## `core:design-system`: Sunup's look
@@ -179,7 +185,7 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | `components/SunupFormParts.kt` | `SunupTopBar` (back + title), `SunupBackButton`, `SunupFieldLabel`, `SunupTextField` (labelled text box) |
 | `components/SunupTimeParts.kt` | `SunupStepper` (hours or minutes with arrows and ticking digits), `SunupDayChip`, `SunupIconButton`, `SunupChevron`. Used by the alarm editor and onboarding |
 | `components/SunupRaised.kt` | Any surface with the mockups' darker edge underneath (cards, chips, segments, the + button); tappable ones sink when pressed |
-| `motion/SunupMotion.kt` | `reduceMotion()` (Android "Remove animations" / iOS "Reduce Motion", platform code in `androidMain` / `iosMain`), `Modifier.riseIn(index)` (slide up and fade in, staggered), `Modifier.wobbleWhenOn(on)` (squash and stretch when picked), `Modifier.bob()` (Pip floating) |
+| `motion/SunupMotion.kt` | `reduceMotion()` (Android "Remove animations" / iOS "Reduce Motion", platform code in `androidMain` / `iosMain`), `Modifier.riseIn(index)` (slide up and fade in, staggered), `Modifier.wobbleWhenOn(on)` (squash and stretch when picked), `Modifier.bob()` (Pip floating), `Modifier.popIn(index)` (pop in from small, staggered) |
 | `components/Pip.kt` | Pip the sun, with moods |
 
 ## `core:geo`: the country map
@@ -199,7 +205,8 @@ Saving goes through `AlarmService` in `core:alarm`.
 | File | What's in it |
 |---|---|
 | `presentation/HomeViewModel.kt` | Home state (`HomeAlarmUi`, `DeckProgressUi`, `WeekDayUi`), actions, events: the alarm shown on the card, its deck's progress, streak and week from `Streaks` |
-| `presentation/HomeScreen.kt` | `HomeRoot` / `HomeScreen`: streak and cards chips, the alarm card with its switch, deck card, This week, Preview button |
+| `presentation/HomeScreen.kt` | `HomeRoot` / `HomeScreen`: streak and cards chips, the alarm card with its switch, deck card, This week, Preview button, the "On You're up!" weather and calendar switches |
+| `presentation/MorningPermissions.kt` (+ `androidMain` / `iosMain`) | `rememberMorningPermissions()`: location and calendar allowed?, and the prompts |
 | `presentation/AlarmListViewModel.kt` | List state (`AlarmItemUi`), actions, events; runs the sync when the list opens; ticks every minute for "Rings in…" |
 | `presentation/AlarmListScreen.kt` | `AlarmListRoot` / `AlarmListScreen`: Back, title and +, next-alarm banner, alarm cards with switches, empty state, test bench link |
 | `presentation/AlarmEditorViewModel.kt` | Editor state and actions: time, days, mode, deck, save, delete |
@@ -243,8 +250,9 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `domain/WakeSessionPlanner.kt` | Picks this morning's cards: random, weighted toward due cards, per mode; geography plans; Preview all games; Quick math fallbacks |
 | `presentation/WakeUpState.kt` | MVI State, `CardUi` (Choice, Typing, Match, FindOnMap), Actions, Events; `PREVIEW_ALARM_ID`, `PREVIEW_ALARM_PREFIX` |
 | `presentation/WakeUpViewModel.kt` | Answers, grading, saving reviews, stopping the alarm, the wake-up check, loading the map; plays `TEST_ALARM_ID` as Gentle; `preview:<alarm id>` as practice; writes this morning's `WakeSession` and the "Up at 07:03" streak line |
-| `presentation/WakeUpScreen.kt` | `WakeUpRoot` and the screens: card page, bonus offer, "You're up!", "Still with me?", palettes |
-| `presentation/WakeUpCheck.kt` | The wake-up check screen (improvement A2, phase WAKE_CHECK): "Alarm off" pill, Pip peeking over the horizon, countdown ring, Play bonus cards / I'm up |
+| `presentation/WakeUpScreen.kt` | `WakeUpRoot`, the phase switch, the card page, the wake-up check chip, "Still with me?", palettes |
+| `presentation/WakeUpBonus.kt` | The bonus round screen (improvement A3, phase BONUS_OFFER): Pip floating, the cards waiting (`BonusItemUi`), Let's go / Not today |
+| `presentation/WakeUpDone.kt` | "You're up!" (improvement A4 + mockup 8's tiles, phase DONE): confetti, Pip jumping in the sky, weather and next-event tiles, Correct / Cards / Streak tiles, This morning, Start my day |
 | `presentation/WakeUpRinging.kt` | The ringing screen (mockup 6, phase RINGING): stars, Pip rising with pulsing rings, the message, "I'm up, let's go" |
 | `presentation/WakeUpCards.kt` | Card pieces: prompt card, options, match grid, typing input, map areas, feedback panel |
 | `presentation/WakeUpModule.kt` | Koin `wakeUpModule` (planner, ViewModel, map source) |
