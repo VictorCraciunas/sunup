@@ -64,7 +64,8 @@ sealed interface CardUi {
         override val label: String,
         val prompt: String,
         val answers: List<String>,
-        val language: String?,
+        /** Accent keys above the keyboard: the special letters in this deck's cards. */
+        val letters: List<String>,
         val text: String = "",
         val wrongAttempts: Int = 0,
         val result: TypingResult? = null,

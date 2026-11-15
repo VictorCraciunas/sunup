@@ -175,7 +175,7 @@ fun AlarmTestBench(
                 scope.launch {
                     val deck = seeder.seedSpanish()
                     deckId = deck.id
-                    message = "Loaded \"${deck.name}\": 12 words, 6 already learned"
+                    message = "Loaded \"${deck.name}\": 12 cards, every game"
                 }
             },
         )

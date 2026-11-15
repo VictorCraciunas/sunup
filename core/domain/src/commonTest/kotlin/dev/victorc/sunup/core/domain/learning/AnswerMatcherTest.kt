@@ -27,6 +27,9 @@ class AnswerMatcherTest {
         assertThat(AnswerMatcher.check("amanecer", listOf("el amanecer"), "es")).isEqualTo(AnswerCheck.Correct)
         assertThat(AnswerMatcher.check("el amanecer", listOf("amanecer"), "es")).isEqualTo(AnswerCheck.Correct)
         assertThat(AnswerMatcher.check("wake up", listOf("to wake up"), "en")).isEqualTo(AnswerCheck.Correct)
+        // Decks don't say their language: any known article is dropped.
+        assertThat(AnswerMatcher.check("amanecer", listOf("el amanecer"))).isEqualTo(AnswerCheck.Correct)
+        assertThat(AnswerMatcher.check("Katze", listOf("die Katze"))).isEqualTo(AnswerCheck.Correct)
     }
 
     @Test

@@ -2,7 +2,7 @@ package dev.victorc.sunup.core.domain.learning
 
 import kotlin.random.Random
 
-/** What a card shows. Built fresh each time from a note, so options are shuffled every morning. */
+/** What a card shows. Built fresh each time from a card, so options are shuffled every morning. */
 sealed interface CardContent {
     val game: Game
 
@@ -14,12 +14,11 @@ sealed interface CardContent {
         override val game: Game get() = Game.PICK_MEANING
     }
 
-    /** "Does [prompt] mean [shownAnswer]?" */
+    /** A statement the user wrote: is it true? */
     data class TrueFalse(
-        val prompt: String,
-        val shownAnswer: String,
+        val statement: String,
         val isTrue: Boolean,
-        val correctAnswer: String,
+        /** The one-line "why", shown after answering. */
         val explanation: String?,
     ) : CardContent {
         override val game: Game get() = Game.TRUE_FALSE
@@ -33,16 +32,15 @@ sealed interface CardContent {
         override val game: Game get() = Game.QUICK_MATH
     }
 
-    /** The example sentence with the word missing: pick it from four. */
+    /** A sentence with one word missing: pick it from four. */
     data class FillTheGap(
         /** Sentence with [SentenceGap.BLANK] where the word was. */
         val sentence: String,
         val translation: String?,
         val options: List<String>,
         val correctIndex: Int,
-        /** The note's word and meaning, for the learned list. */
+        /** The missing word, for the "You're up!" list. */
         val word: String,
-        val meaning: String,
     ) : CardContent {
         override val game: Game get() = Game.FILL_THE_GAP
     }
@@ -82,13 +80,13 @@ sealed interface CardContent {
         val prompt: String,
         /** Every answer that counts; the first is the one shown when revealed. */
         val answers: List<String>,
-        /** Language of the answer, for articles and accent keys, e.g. "es". */
-        val language: String?,
+        /** Special letters to offer as keys, taken from the deck's own cards (e.g. á, ñ). */
+        val letters: List<String>,
     ) : CardContent {
         override val game: Game get() = Game.TYPE_IT
     }
 
-    /** Four prompts and their answers. answers[i] belongs to prompts[i]; [answerOrder] is how the right column is shuffled. */
+    /** Up to four pairs. answers[i] belongs to prompts[i]; [answerOrder] is how the right column is shuffled. */
     data class MatchPairs(
         val prompts: List<String>,
         val answers: List<String>,
@@ -99,61 +97,84 @@ sealed interface CardContent {
 }
 
 /**
- * Turns notes into playable cards. Without AI, wrong answers come from the user's own
- * "wrong answers" first, then from other notes in the same deck.
+ * Turns cards into what the morning screen shows. Wrong answers come from the card's own
+ * list first, then are borrowed from other cards in the same deck.
  */
 class CardBuilder(private val random: Random = Random.Default) {
 
+    /** The card in its game, or null if it can't be played yet (e.g. not enough wrong answers). */
+    fun build(note: Note, direction: Direction, deckNotes: List<Note>, letters: List<String> = emptyList()): CardContent? =
+        when (note.game) {
+            Game.PICK_MEANING -> pickMeaning(note, direction, deckNotes)
+            Game.TRUE_FALSE -> trueFalse(note)
+            Game.TYPE_IT -> typeIt(note, direction, letters)
+            Game.FILL_THE_GAP -> fillTheGap(note, deckNotes)
+            Game.MATCH_PAIRS -> matchPairs(note)
+            else -> null
+        }
+
     fun pickMeaning(note: Note, direction: Direction, deckNotes: List<Note>): CardContent.PickMeaning? {
-        val correct = note.answers(direction).first()
-        val wrong = distractors(note, direction, deckNotes, count = 3) ?: return null
+        if (note.front.isBlank() || note.back.isBlank()) return null
+        val correct = note.answers(direction).first().trim()
+        val own = if (direction == Direction.FORWARD) note.wrongAnswers else emptyList()
+        val wrong = wrongAnswers(own, borrowable(note, direction, deckNotes), rightOnes = note.answers(direction)) ?: return null
         val options = (wrong + correct).shuffled(random)
         return CardContent.PickMeaning(
-            prompt = note.prompt(direction),
+            prompt = note.prompt(direction).trim(),
             options = options,
             correctIndex = options.indexOf(correct),
         )
     }
 
-    fun trueFalse(note: Note, direction: Direction, deckNotes: List<Note>): CardContent.TrueFalse? {
-        val correct = note.answers(direction).first()
-        val wrong = distractors(note, direction, deckNotes, count = 1)?.first() ?: return null
-        val isTrue = random.nextBoolean()
+    fun trueFalse(note: Note): CardContent.TrueFalse? {
+        if (note.front.isBlank()) return null
         return CardContent.TrueFalse(
-            prompt = note.prompt(direction),
-            shownAnswer = if (isTrue) correct else wrong,
-            isTrue = isTrue,
-            correctAnswer = correct,
-            explanation = note.explanation,
+            statement = note.front.trim(),
+            isTrue = note.isTrue ?: true,
+            explanation = note.explanation?.takeIf { it.isNotBlank() },
         )
     }
 
-    /**
-     * Wrong options are other words from the deck, in the same form as the gap: with their
-     * article if the gap kept it ("la luna"), without if it didn't ("luna").
-     */
-    fun fillTheGap(note: Note, deckNotes: List<Note>): CardContent.FillTheGap? {
-        val gap = SentenceGap.find(note) ?: return null
-        val wrong = deckNotes
-            .filter { it.id != note.id && it.type == NoteType.WORD }
-            .map { other ->
-                val word = other.front.trim()
-                if (gap.withoutArticle) SentenceGap.withoutArticle(word) ?: word else word
-            }
-            .filter { it.isNotEmpty() && !it.equals(gap.answer, ignoreCase = true) }
-            .distinctBy { it.lowercase() }
-            .shuffled(random)
-            .take(3)
-        if (wrong.size < 3) return null
+    fun typeIt(note: Note, direction: Direction, letters: List<String> = emptyList()): CardContent.TypeIt? {
+        if (note.front.isBlank() || note.back.isBlank()) return null
+        return CardContent.TypeIt(
+            prompt = note.prompt(direction).trim(),
+            answers = note.answers(direction).map { it.trim() }.filter { it.isNotEmpty() },
+            letters = letters,
+        )
+    }
 
+    /** The sentence's [bracketed] word is the gap; wrong options are the card's own, then other cards' answers. */
+    fun fillTheGap(note: Note, deckNotes: List<Note>): CardContent.FillTheGap? {
+        val gap = SentenceGap.fromBrackets(note.front) ?: return null
+        val wrong = wrongAnswers(note.wrongAnswers, borrowable(note, Direction.FORWARD, deckNotes), rightOnes = listOf(gap.answer))
+            ?: return null
         val options = (wrong + gap.answer).shuffled(random)
         return CardContent.FillTheGap(
             sentence = gap.sentence,
-            translation = note.exampleTranslation,
+            translation = note.exampleTranslation?.takeIf { it.isNotBlank() },
             options = options,
             correctIndex = options.indexOf(gap.answer),
-            word = note.front,
-            meaning = note.back,
+            word = gap.answer,
+        )
+    }
+
+    /** One card holds its own pairs: 2 to [MATCH_SIZE], each side different. */
+    fun matchPairs(note: Note): CardContent.MatchPairs? {
+        val pairs = note.pairs
+            .map { (left, right) -> left.trim() to right.trim() }
+            .filter { (left, right) -> left.isNotEmpty() && right.isNotEmpty() }
+            .take(MATCH_SIZE)
+        if (pairs.size < 2) return null
+        val prompts = pairs.map { it.first }
+        val answers = pairs.map { it.second }
+        val distinct = prompts.map { it.lowercase() }.toSet().size == pairs.size &&
+            answers.map { it.lowercase() }.toSet().size == pairs.size
+        if (!distinct) return null
+        return CardContent.MatchPairs(
+            prompts = prompts,
+            answers = answers,
+            answerOrder = answers.indices.shuffled(random),
         )
     }
 
@@ -199,32 +220,7 @@ class CardBuilder(private val random: Random = Random.Default) {
         )
     }
 
-    fun typeIt(note: Note, direction: Direction, answerLanguage: String?): CardContent.TypeIt =
-        CardContent.TypeIt(
-            prompt = note.prompt(direction),
-            answers = note.answers(direction),
-            language = answerLanguage,
-        )
-
-    /**
-     * One card, four words: [notes] in order, the first being the card's own note.
-     * Null unless there are exactly [MATCH_SIZE] notes with distinct prompts and answers.
-     */
-    fun matchPairs(notes: List<Note>, direction: Direction): CardContent.MatchPairs? {
-        if (notes.size != MATCH_SIZE) return null
-        val prompts = notes.map { it.prompt(direction) }
-        val answers = notes.map { it.answers(direction).first() }
-        val distinct = prompts.map { it.lowercase() }.toSet().size == MATCH_SIZE &&
-            answers.map { it.lowercase() }.toSet().size == MATCH_SIZE
-        if (!distinct) return null
-        return CardContent.MatchPairs(
-            prompts = prompts,
-            answers = answers,
-            answerOrder = answers.indices.shuffled(random),
-        )
-    }
-
-    /** Needs no notes, so it works before a deck exists or before the first unlock after a reboot. */
+    /** Needs no cards, so it works before a deck exists or before the first unlock after a reboot. */
     fun quickMath(): CardContent.QuickMath {
         val (question, answer) = if (random.nextBoolean()) {
             val a = random.nextInt(4, 30)
@@ -245,26 +241,33 @@ class CardBuilder(private val random: Random = Random.Default) {
     }
 
     /**
-     * [count] distinct wrong answers for [note], or null if the deck can't supply enough.
-     * Never returns anything that would also count as right.
+     * Answers from other cards that could pass as a wrong option: the answers of Pick from 4
+     * and Type it cards (in [direction]) and the missing words of Fill the gap cards.
      */
-    fun distractors(note: Note, direction: Direction, deckNotes: List<Note>, count: Int): List<String>? {
-        val rightOnes = note.answers(direction).map { it.trim().lowercase() }.toSet()
-        val own = if (direction == Direction.FORWARD) note.wrongAnswers.shuffled(random) else emptyList()
-        val fromDeck = deckNotes
-            .filter { it.id != note.id && it.type == note.type }
-            .map { it.answers(direction).first() }
-            .shuffled(random)
+    private fun borrowable(note: Note, direction: Direction, deckNotes: List<Note>): List<String> = deckNotes
+        .filter { it.id != note.id }
+        .mapNotNull { other ->
+            when (other.game) {
+                Game.PICK_MEANING, Game.TYPE_IT -> other.answers(direction).firstOrNull()
+                Game.FILL_THE_GAP -> SentenceGap.fromBrackets(other.front)?.answer
+                else -> null
+            }
+        }
+        .shuffled(random)
 
-        val picked = (own + fromDeck)
+    /** Three distinct wrong answers, the card's own first, never one that also counts as right. Null if short. */
+    private fun wrongAnswers(own: List<String>, borrowed: List<String>, rightOnes: List<String>): List<String>? {
+        val right = rightOnes.map { it.trim().lowercase() }.toSet()
+        val picked = (own.shuffled(random) + borrowed)
             .map { it.trim() }
-            .filter { it.isNotEmpty() && it.lowercase() !in rightOnes }
+            .filter { it.isNotEmpty() && it.lowercase() !in right }
             .distinctBy { it.lowercase() }
-            .take(count)
-        return picked.takeIf { it.size == count }
+            .take(3)
+        return picked.takeIf { it.size == 3 }
     }
 
     companion object {
+        /** Match pairs cards hold up to this many pairs. */
         const val MATCH_SIZE = 4
 
         /** Name the country: wrong options are three of this many closest neighbours. */
@@ -272,5 +275,18 @@ class CardBuilder(private val random: Random = Random.Default) {
 
         /** Name the country, short of neighbours: fill in from this many countries closest in size. */
         private const val SIMILAR_COUNTRIES = 8
+
+        /** Accent keys offered in Type it: the special letters used in a deck's cards, most used first. */
+        fun lettersIn(notes: List<Note>, max: Int = 12): List<String> = notes
+            .flatMap { note -> listOf(note.front, note.back) + note.acceptedAnswers + note.pairs.flatMap { listOf(it.first, it.second) } }
+            .joinToString("")
+            .lowercase()
+            .filter { it.isLetter() && it.code > 127 }
+            .groupingBy { it }
+            .eachCount()
+            .entries
+            .sortedByDescending { it.value }
+            .take(max)
+            .map { it.key.toString() }
     }
 }

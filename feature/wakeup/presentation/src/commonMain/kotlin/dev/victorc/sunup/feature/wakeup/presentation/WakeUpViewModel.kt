@@ -178,7 +178,7 @@ class WakeUpViewModel(
         val card = _state.value.card as? CardUi.Typing ?: return
         if (card.solved || card.text.isBlank()) return
 
-        val result = when (val check = AnswerMatcher.check(card.text, card.answers, card.language)) {
+        val result = when (val check = AnswerMatcher.check(card.text, card.answers)) {
             AnswerCheck.Correct -> TypingResult.CORRECT
             is AnswerCheck.Close ->
                 if (check.reason == CloseReason.ACCENTS) TypingResult.CLOSE_ACCENTS else TypingResult.CLOSE_TYPO
@@ -231,9 +231,10 @@ class WakeUpViewModel(
             setCard(matched)
             return
         }
+        // One card, one review: right first time if no pair was wrong.
         solve(
             matched,
-            grades = card.prompts.indices.map { gradeFor(card.mistakes[it] ?: 0) },
+            grades = listOf(gradeFor(card.mistakes.values.sum())),
             learned = card.prompts.indices.map { LearnedItem(card.prompts[it], card.answers[it]) },
         )
     }
@@ -417,12 +418,11 @@ private fun MorningCard.toUi(): CardUi = when (val c = content) {
     is CardContent.TrueFalse -> CardUi.Choice(
         kind = ChoiceKind.TRUE_FALSE,
         label = label,
-        prompt = c.prompt,
-        statement = c.shownAnswer,
+        prompt = c.statement,
         options = listOf("True", "False"),
         correctIndex = if (c.isTrue) 0 else 1,
-        explanation = c.explanation ?: if (c.isTrue) null else "It means “${c.correctAnswer}”.",
-        learned = LearnedItem(c.prompt, c.correctAnswer),
+        explanation = c.explanation ?: if (c.isTrue) "It's true." else "It's false.",
+        learned = LearnedItem(c.statement, if (c.isTrue) "True" else "False"),
     )
     is CardContent.FillTheGap -> CardUi.Choice(
         kind = ChoiceKind.GAP,
@@ -431,7 +431,7 @@ private fun MorningCard.toUi(): CardUi = when (val c = content) {
         statement = c.translation,
         options = c.options,
         correctIndex = c.correctIndex,
-        learned = LearnedItem(c.word, c.meaning),
+        learned = LearnedItem(c.word, c.translation.orEmpty()),
     )
     is CardContent.QuickMath -> CardUi.Choice(
         kind = ChoiceKind.MATH,
@@ -444,7 +444,7 @@ private fun MorningCard.toUi(): CardUi = when (val c = content) {
         label = label,
         prompt = c.prompt,
         answers = c.answers,
-        language = c.language,
+        letters = c.letters,
     )
     is CardContent.NameOnMap -> CardUi.Choice(
         kind = ChoiceKind.MAP,

@@ -1,5 +1,6 @@
 package dev.victorc.sunup.core.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -40,6 +41,12 @@ data class NoteEntity(
     val explanation: String?,
     /** JSON array of strings. */
     val wrongAnswers: String,
+    /** The card's one game (Game enum name). Added in version 2; older cards became Pick from 4. */
+    @ColumnInfo(defaultValue = "PICK_MEANING") val game: String,
+    /** True or false cards: whether the statement is true. */
+    @ColumnInfo(defaultValue = "NULL") val isTrue: Boolean?,
+    /** Match pairs cards: JSON array of [left, right] arrays. */
+    @ColumnInfo(defaultValue = "[]") val pairs: String,
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long? = null,

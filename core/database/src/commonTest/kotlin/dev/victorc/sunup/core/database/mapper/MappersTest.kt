@@ -66,6 +66,31 @@ class MappersTest {
     }
 
     @Test
+    fun cardGamesRoundTrip() {
+        val trueFalse = Note(
+            id = "tf", deckId = "d", type = NoteType.QUESTION, front = "The sun is a star.", back = "",
+            game = Game.TRUE_FALSE, isTrue = true, explanation = "The closest one.",
+        )
+        val match = Note(
+            id = "m", deckId = "d", type = NoteType.WORD, front = "", back = "",
+            game = Game.MATCH_PAIRS, pairs = listOf("el sol" to "the sun", "la luna" to "the moon"),
+        )
+
+        assertThat(trueFalse.toEntity(1, 2).toDomain()).isEqualTo(trueFalse)
+        assertThat(match.toEntity(1, 2).toDomain()).isEqualTo(match)
+    }
+
+    @Test
+    fun cardsFromBeforeVersion2ArePickFromFour() {
+        val old = Note(id = "n", deckId = "d", type = NoteType.WORD, front = "el sol", back = "the sun")
+            .toEntity(1, 2)
+            .copy(game = "SOMETHING_UNKNOWN", pairs = "not json")
+
+        assertThat(old.toDomain().game).isEqualTo(Game.PICK_MEANING)
+        assertThat(old.toDomain().pairs).isEqualTo(emptyList())
+    }
+
+    @Test
     fun reviewStateRoundTripsIncludingNew() {
         val learned = ReviewState(
             noteId = "n",

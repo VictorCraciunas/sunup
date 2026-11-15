@@ -14,6 +14,6 @@ val dataModule = module {
     single<NoteRepository> { RoomNoteRepository(notes = get(), states = get(), clock = get()) }
     single<ReviewRepository> { RoomReviewRepository(states = get(), log = get(), clock = get()) }
     single<WakeAlarmRepository> { RoomWakeAlarmRepository(dao = get(), clock = get()) }
-    single { SampleDeckSeeder(decks = get(), notes = get(), reviews = get(), clock = get()) }
+    single { SampleDeckSeeder(decks = get(), notes = get()) }
     single { GeoDeckSeeder(decks = get(), notes = get()) }
 }

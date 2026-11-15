@@ -50,62 +50,57 @@ After the alarm stops, a soft re-ring (45% volume at most) is always scheduled 1
 
 ## The games
 
-| Game | How it plays | Free / Plus | Can stop the alarm |
-|---|---|---|---|
-| Pick the meaning | A word, 4 options | Free | yes |
-| True or false | "*el sol* means *the moon*?" True / False; if false, shows the real meaning | Free | yes |
-| Quick math | "7 × 8", 4 options. Needs no deck | Free | yes (fallback only) |
-| Fill the gap | Example sentence with the word missing, 4 options | Free | no |
-| Match pairs | 4 words, 4 shuffled meanings; tap a word, then its meaning. All 4 words count as reviewed | Free | no |
-| Name the country | Geography decks only. One country is shown in indigo and the map starts zoomed in on it; pick its name from 4. The wrong options are its **neighbours** (3 of the 4 closest in the deck; for islands, the nearest coasts), so you have to know the shape and place. If the region has too few, countries of a similar size fill in. A wrong pick shows that country on the map in orange with its name; the right one turns green | Free | yes |
-| Find on the map | Geography decks only. "Find: Portugal" above a map of the region; pinch to zoom, drag to move, tap the country. Wrong tap turns that country orange with its name ("That's Spain"); right turns it green. Tiny countries (Luxembourg and smaller) get a circle you can tap. After 3 wrong countries the right one glows | Free | yes |
-| Type it | Type the answer. Forgives capitals, punctuation, a leading article, missing accents and small typos (with a note). Accent keys for es/fr/de/it/pt. **Show answer** after one wrong try | Free | no |
-| Build the sentence | Not built yet | Plus | no |
-| Listen & pick | Not built yet | Plus | no |
-| Say it | Not built yet; always offers "Can't speak now" | Plus | no |
+Every card has **one game**, picked by the user when making it. Any card can stop the alarm.
+
+| Game | How it plays | What the card holds |
+|---|---|---|
+| Pick from 4 | A question and 4 answers; tap the right one | Question, right answer, up to 3 wrong answers (missing ones are borrowed from other cards' answers) |
+| True or false | The user's statement; tap True or False, then the "why" shows | Statement, true or false, optional "why" |
+| Type it | Type the answer. Forgives capitals, punctuation, a leading article (el, la, le, der, the…), missing accents and small typos (with a note). Accent keys are the special letters used in that deck's cards. **Show answer** after one wrong try | Question, answer, other answers that also count |
+| Fill the gap | A sentence with one word missing; pick it from 4 | Sentence with the word in [brackets], optional translation, up to 3 wrong answers (missing ones borrowed) |
+| Match pairs | Up to 4 words and their shuffled meanings; tap a word, then its meaning | 2 to 4 pairs |
+| Name the country | Geography decks only. One country is shown in indigo and the map starts zoomed in on it; pick its name from 4. The wrong options are its **neighbours** (3 of the 4 closest in the deck; for islands, the nearest coasts). If the region has too few, countries of a similar size fill in. A wrong pick shows that country on the map in orange with its name; the right one turns green | Built in |
+| Find on the map | Geography decks only. "Find: Portugal" above a map of the region; pinch to zoom, drag to move, tap the country. Wrong tap turns that country orange with its name ("That's Spain"); right turns it green. Tiny countries (Luxembourg and smaller) get a circle you can tap. After 3 wrong countries the right one glows | Built in |
+| Quick math | "7 × 8", 4 options. Needs no deck | Generated (fallback only) |
+| Build the sentence, Listen & pick, Say it | Not built yet (Plus) | |
 
 Feedback in every game: wrong shakes and turns orange ("Not quite. Have another go."), right bounces and turns green, then a panel slides up with **Continue**. Never shaming.
 
-## Which game appears when
+## Which cards appear when
 
-**Silencing card:** a word the user already knows (reviewed at least once and not just forgotten), in **Pick the meaning** or **True or false**, picked at random. Heavy sleeper gets 3 different known words.
+**Every morning:** random cards from the alarm's deck (**Any deck** = the first deck), never the same card twice in one morning: 1 to stop the alarm and 2 in the bonus round (Normal), 3 to stop it (Heavy sleeper), 1 and no bonus (Gentle).
 
-**Geography decks** (a region: Europe, Africa, Asia, North and Central America, South America, Oceania, or the World) play on the map, with the same counts as other decks: 1 country stops the alarm and 2 more in the bonus round (Normal), 3 to stop it (Heavy sleeper), 1 and no bonus (Gentle). Any country can stop the alarm, not only known ones. Countries are picked **at random** from the whole region, and never twice in one morning. Spaced repetition only decides the game (named while new or just missed, found once known), not which country comes up. A country that is new, or was just forgotten, is **Name the country** (pick from 4); once it is known it becomes **Find on the map** (no options). Tapping the same wrong country twice counts as one mistake. If the map can't be read, map cards that would stop the alarm become Quick math and bonus map cards are skipped.
+**A hidden nudge:** cards that are due again come up 3 times as often as the rest. A card you got wrong is due the next day, so it tends to come back soon. Spaced repetition runs underneath only for this; the user never sees levels or due dates.
 
-**Quick math instead** when: no deck, the deck has fewer than 4 notes, nothing learned yet, or the database can't be read (e.g. right after a reboot, before the first unlock).
+**Both ways:** in a deck set to "test both ways", Pick from 4 and Type it cards are sometimes asked the other way round (answer → question). The other games are always asked as written.
 
-**Bonus round:** one word to practise (due today) and one new word. Each plays the game that fits its level:
+**Skipped cards:** a card that can't be played yet is skipped, e.g. a Pick from 4 with no wrong answers of its own in a deck with too few other answers to borrow.
 
-1. New / recognizing → **Pick the meaning** (or True or false)
-2. Getting there → **Match pairs**, else **Fill the gap**
-3. Well learned → **Type it**, else Fill the gap
+**Quick math instead** when: no deck, no playable card, or the database can't be read (e.g. right after a reboot, before the first unlock). If a deck has fewer playable cards than needed to stop the alarm, Quick math fills in the rest.
 
-A game is only offered if the note allows it:
-- Pick, True or false, Match pairs, Fill the gap: the deck has **4+ notes** (wrong answers come from other notes).
-- Fill the gap: the word appears whole in its example sentence (with its article, or without if the sentence uses another). Asked in one direction only.
-- Type it: the answer is 3 words or fewer.
-- Plus games: only with Plus. Deck settings can switch games off.
+**Geography decks** (a region: Europe, Africa, Asia, North and Central America, South America, Oceania, or the World) play on the map, with the same counts. Countries are picked **at random** from the whole region, never twice in one morning. A country that is new, or was just forgotten, is **Name the country** (pick from 4); once it is known it becomes **Find on the map** (no options). Tapping the same wrong country twice counts as one mistake. If the map can't be read, map cards that would stop the alarm become Quick math and bonus map cards are skipped.
 
-## How answers change what comes back
+## How answers are graded
 
-| Result | Grade | Next time (for a word learned before) | Level |
-|---|---|---|---|
-| Right first try | GOOD | Next rung of 1 → 3 → 8 → 21 → 45 → 90 days | Up one |
-| Type it: close (accent, typo) | HARD | Same rung again | Same |
-| Needed another try, or Show answer | AGAIN | Tomorrow | Down one |
-| Find on the map: one wrong country first | HARD | Same rung again | Same |
-| Find on the map: two or more wrong | AGAIN | Tomorrow | Down one |
+| Result | Grade |
+|---|---|
+| Right first try (Match pairs: no wrong pair) | GOOD |
+| Type it: close (accent, typo) | HARD |
+| Needed another try, or Show answer | AGAIN |
+| Find on the map: one wrong country first | HARD |
+| Find on the map: two or more wrong | AGAIN |
 
-A brand-new word answered right comes back in 3 days. With an exam date, cards are always seen again before the exam.
+The grade feeds the hidden spaced repetition (1 → 3 → 8 → 21 → 45 → 90 days; AGAIN = tomorrow), which only decides which cards are a bit more likely to come up. For geography it also decides Name the country vs Find on the map.
 
-## Notes, decks and games
+## Decks and cards
 
-Users don't build games; they write **notes** and Sunup turns each note into the games.
-- **Word note** (language decks): word, meaning, optional example sentence, hint, accepted answers, own wrong answers.
-- **Question note** (study / trivia): question, answer, optional one-line "why", own wrong answers.
-- **Geography decks** are built in, not written: one note per country (name, its two-letter code, and its closest neighbours in the region as wrong answers), all new when loaded. Loading a deck again updates the notes and keeps what was learned. The map comes with the app (Natural Earth, public domain), so it works offline.
-- Wrong options come from the user's own wrong answers first, then other notes in the same deck.
-- A deck is used by alarms only once it has **at least 4 notes**.
+Users don't write notes for Sunup to turn into games any more; they make **cards**, each with its own game.
+- A deck has a name and a type (Language, Study, Trivia). It doesn't ask for a language.
+- **Making a card:** pick the game, then fill in its form (see the table above).
+- Wrong answers are the card's own first, then borrowed from other cards in the same deck.
+- Cards made before cards had games (the old word and question notes) became **Pick from 4** cards.
+- **Geography decks** are built in: one card per country (name, its two-letter code, and its closest neighbours in the region as wrong answers). Loading a deck again updates the cards and keeps what was learned. The map comes with the app (Natural Earth, public domain), so it works offline.
+- **Free limit:** a few decks (number to decide), unlimited with Plus. Built-in decks (sample, maps) don't count. Not enforced yet.
 
 ## Reliability rules
 
@@ -118,6 +113,6 @@ Users don't build games; they write **notes** and Sunup turns each note into the
 
 ## Testing without waiting for an alarm
 
-Test bench (the **Test bench** link at the bottom of the alarm list): **Load sample Spanish deck** (12 words; 3 at Match level, 3 at Type it level, 6 new), or pick a **Map** region and **Load geography deck**. Choose the **Deck for test alarms** (loading a deck selects it) and a **Mode**, then **Ring in 1 minute**, or **Preview all games** (plays each game once, no alarm, saves nothing; Name the country and Find on the map are added when a geography deck exists).
+Test bench (the **Test bench** link at the bottom of the alarm list): **Load sample Spanish deck** (12 cards, every game), or pick a **Map** region and **Load geography deck**. Choose the **Deck for test alarms** (loading a deck selects it) and a **Mode**, then **Ring in 1 minute**, or **Preview all games** (one card of each game in the first deck, plus Name the country and Find on the map when a geography deck exists; no alarm, saves nothing).
 
 The map file (outlines, plus each country's nearby countries) is built from Natural Earth's countries file with `python tools/geo/build_countries.py <ne_50m_admin_0_countries.geojson>`; it writes `core/geo/src/commonMain/composeResources/files/geo/countries.json`. `--update-nearby` recomputes just the nearby countries in that file, without the download. The **ring log** shows scheduled vs. actual ring times, skips and cancels.

@@ -1,28 +1,48 @@
 package dev.victorc.sunup.core.domain.learning
 
 /**
- * One fact the user writes once, e.g. "el amanecer → sunrise". Sunup turns each note
- * into the different games; the user never builds a "Match pairs card" by hand.
+ * One card in a deck. The user picks its [game] when making it, and fills in the fields
+ * that game needs:
+ *
+ * | Game          | Fields used                                                        |
+ * |---------------|--------------------------------------------------------------------|
+ * | Pick from 4   | [front] question, [back] right answer, [wrongAnswers] (optional)   |
+ * | True or false | [front] statement, [isTrue], [explanation] (optional)              |
+ * | Type it       | [front] question, [back] answer, [acceptedAnswers] (optional)      |
+ * | Fill the gap  | [front] sentence with the word in [brackets], [exampleTranslation], [wrongAnswers] |
+ * | Match pairs   | [pairs]                                                            |
+ *
+ * Geography decks are built in: [front] is the country's name, [back] its code, and the
+ * map games are chosen by the deck, not by [game].
+ *
+ * Still called Note in code (and in the database) from before cards had one game each.
  */
 data class Note(
     val id: String,
     val deckId: String,
     val type: NoteType,
-    /** The word, or the question. */
+    /** The question, statement, or sentence. */
     val front: String,
-    /** The meaning, or the answer. */
+    /** The right answer. */
     val back: String,
     /** Other answers that also count, e.g. "wake up" for "to wake up". */
     val acceptedAnswers: List<String> = emptyList(),
-    /** Word notes: an example sentence in the language being learned. Unlocks Build the sentence. */
+    /** Old word notes: an example sentence. New cards keep their sentence in [front]. */
     val example: String? = null,
+    /** Fill the gap: the sentence's translation. */
     val exampleTranslation: String? = null,
-    /** Word notes: a short extra, e.g. gender or plural. */
+    /** A short extra, e.g. gender or plural. */
     val hint: String? = null,
-    /** Question notes: the one-line "why" shown after True or false. */
+    /** True or false: the one-line "why", shown after answering. */
     val explanation: String? = null,
-    /** Optional wrong answers written by the user, used before random ones from the deck. */
+    /** Pick from 4 and Fill the gap: the user's own wrong answers. Empty ones are borrowed from other cards. */
     val wrongAnswers: List<String> = emptyList(),
+    /** The one game this card plays. */
+    val game: Game = Game.PICK_MEANING,
+    /** True or false: whether [front] is true. */
+    val isTrue: Boolean? = null,
+    /** Match pairs: left ↔ right. */
+    val pairs: List<Pair<String, String>> = emptyList(),
 ) {
     fun prompt(direction: Direction): String = if (direction == Direction.FORWARD) front else back
 

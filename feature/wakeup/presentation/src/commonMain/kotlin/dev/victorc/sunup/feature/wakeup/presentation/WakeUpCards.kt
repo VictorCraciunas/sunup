@@ -66,16 +66,12 @@ internal fun PromptCard(card: CardUi, palette: Palette) {
             is CardUi.Choice -> when (card.kind) {
                 ChoiceKind.GAP -> {
                     // A whole sentence: smaller than a single word, still easy to read half asleep.
-                    Text(card.prompt, style = SunupTheme.typography.title.copy(fontSize = 24.sp, lineHeight = 30.sp), color = palette.text)
+                    Text(card.prompt, style = sentenceStyle(), color = palette.text)
                     card.statement?.let { Text(it, style = SunupTheme.typography.body, color = palette.muted) }
                 }
                 ChoiceKind.MAP -> Text(card.prompt, style = SunupTheme.typography.headline, color = palette.text)
-                ChoiceKind.TRUE_FALSE -> {
-                    Text(card.prompt, style = promptStyle(), color = palette.text)
-                    card.statement?.let {
-                        Text("means “$it”?", style = SunupTheme.typography.title, color = palette.text)
-                    }
-                }
+                // A whole statement: smaller than a single word, like Fill the gap's sentence.
+                ChoiceKind.TRUE_FALSE -> Text(card.prompt, style = sentenceStyle(), color = palette.text)
                 else -> Text(card.prompt, style = promptStyle(), color = palette.text)
             }
             is CardUi.Typing -> {
@@ -153,6 +149,10 @@ private fun MapFrame(atlas: GeoAtlas?, palette: Palette, modifier: Modifier, con
 
 @Composable
 private fun promptStyle(): TextStyle = SunupTheme.typography.display.copy(fontSize = 34.sp, lineHeight = 38.sp)
+
+/** A whole sentence or statement: smaller than a single word, still easy to read half asleep. */
+@Composable
+private fun sentenceStyle(): TextStyle = SunupTheme.typography.title.copy(fontSize = 24.sp, lineHeight = 30.sp)
 
 /** What you tap or type to answer, below the card. */
 @Composable
@@ -301,7 +301,7 @@ private fun TypingInput(card: CardUi.Typing, palette: Palette, onAction: (WakeUp
             .focusRequester(focus),
     )
 
-    val accents = accentKeys(card.language)
+    val accents = card.letters
     if (accents.isNotEmpty()) {
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -333,16 +333,6 @@ private fun TypingInput(card: CardUi.Typing, palette: Palette, onAction: (WakeUp
             Text("Show answer", color = palette.muted)
         }
     }
-}
-
-/** Letters that are hard to reach on a phone keyboard, for the language being typed. */
-private fun accentKeys(language: String?): List<String> = when (language) {
-    "es" -> listOf("á", "é", "í", "ó", "ú", "ñ", "ü", "¿", "¡")
-    "fr" -> listOf("é", "è", "ê", "à", "â", "ç", "ô", "û", "ù", "î", "ï", "ë", "œ")
-    "de" -> listOf("ä", "ö", "ü", "ß")
-    "it" -> listOf("à", "è", "é", "ì", "ò", "ù")
-    "pt" -> listOf("á", "â", "ã", "à", "ç", "é", "ê", "í", "ó", "ô", "õ", "ú")
-    else -> emptyList()
 }
 
 internal enum class ChoiceState { IDLE, SELECTED, RIGHT, WRONG, DIMMED }

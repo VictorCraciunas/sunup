@@ -1,5 +1,6 @@
 package dev.victorc.sunup.core.database
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -26,8 +27,12 @@ import kotlinx.coroutines.IO
         ReviewLogEntity::class,
         AlarmEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
+    autoMigrations = [
+        // 2: cards have one game each (game, isTrue, pairs on notes).
+        AutoMigration(from = 1, to = 2),
+    ],
 )
 @ConstructedBy(SunupDatabaseConstructor::class)
 abstract class SunupDatabase : RoomDatabase() {

@@ -12,6 +12,20 @@ data class SentenceGap(
     companion object {
         const val BLANK = "_____"
 
+        private val BRACKETED = Regex("\\[([^\\[\\]]+)]")
+
+        /**
+         * Fill the gap cards: the missing word is written in brackets, e.g.
+         * "Me despierto con el [amanecer]." Null when there's no bracketed word.
+         */
+        fun fromBrackets(text: String): SentenceGap? {
+            val match = BRACKETED.find(text) ?: return null
+            val word = match.groupValues[1].trim()
+            if (word.isEmpty()) return null
+            val sentence = text.replaceRange(match.range, BLANK).replace("[", "").replace("]", "")
+            return SentenceGap(sentence = sentence, answer = word, withoutArticle = false)
+        }
+
         /**
          * Finds the note's word in its example sentence, first as written ("el amanecer"),
          * then without a leading article ("café" in "Necesito un café."). Null if the word

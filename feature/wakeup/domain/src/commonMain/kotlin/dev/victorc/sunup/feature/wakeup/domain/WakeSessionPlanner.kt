@@ -28,8 +28,8 @@ import kotlinx.datetime.toLocalDateTime
 data class CardItem(val note: Note, val state: ReviewState)
 
 /**
- * One card in the morning flow. Quick math cards have no note.
- * Match pairs reviews four notes at once: [note]/[state] plus [extraItems], in the card's order.
+ * One card in the morning flow. Quick math cards have no note. [extraItems] is for a card
+ * that reviews several notes at once (none do today: Match pairs cards hold their own pairs).
  */
 data class MorningCard(
     val content: CardContent,
@@ -53,9 +53,9 @@ data class WakePlan(
 )
 
 /**
- * Picks this morning's cards. Never fails: anything missing or broken (no deck, nothing
- * learned yet, database locked after a reboot) falls back to Quick math, so the alarm
- * can always be stopped.
+ * Picks this morning's cards: random cards from the alarm's deck, each in its own game.
+ * Never fails: anything missing or broken (no deck, no playable card, database locked
+ * after a reboot) falls back to Quick math, so the alarm can always be stopped.
  */
 class WakeSessionPlanner(
     private val decks: DeckRepository,
@@ -80,9 +80,8 @@ class WakeSessionPlanner(
     }
 
     /**
-     * Every game once, from the first deck, for trying them out without an alarm:
-     * True or false to silence, then Pick the meaning, Fill the gap (if a sentence allows),
-     * Type it and Match pairs in the bonus round. Nothing is saved.
+     * Every game once, for trying them out without an alarm: one card of each game in the
+     * first deck, then the map games if there's a geography deck. Nothing is saved.
      */
     suspend fun preview(): WakePlan {
         val plan = try {
@@ -100,91 +99,101 @@ class WakeSessionPlanner(
             ?: decks.observeDecks().first().firstOrNull()
             ?: return null
         val deckNotes = notes.notesInDeck(deck.id)
-        // The choice games need wrong answers from the deck; a smaller deck isn't used yet.
-        if (deckNotes.size < GameEligibility.MIN_NOTES_FOR_CHOICES) return null
+        if (deckNotes.isEmpty()) return null
         val notesById = deckNotes.associateBy { it.id }
-        val today = clock.now().toLocalDateTime(timeZone()).date
         val states = reviews.statesInDeck(deck.id).filter { it.noteId in notesById }
         if (deck.kind == DeckKind.GEOGRAPHY) return geographyPlan(deck, mode, deckNotes, states)
-        val used = mutableSetOf<ReviewState>()
 
-        // Silencing: easy, known cards in a fast game. Most overdue first.
-        val known = states
-            .filter { it.isKnown }
-            .sortedWith(compareBy(nullsLast<LocalDate>()) { it.due })
-        val silencing = mutableListOf<MorningCard>()
-        for (state in known) {
-            if (silencing.size == silencingCount(mode)) break
-            val note = notesById.getValue(state.noteId)
-            val content = fastCard(note, state, deck, deckNotes) ?: continue
-            silencing += MorningCard(content, label = "${deck.name} · you know this one", note = note, state = state)
-            used += state
-        }
+        val today = clock.now().toLocalDateTime(timeZone()).date
+        val picked = randomCards(deck, deckNotes, states, wanted = cardCount(mode), today = today) { deck.name }
+        if (picked.isEmpty()) return null
+        val silencing = picked.take(silencingCount(mode)).toMutableList()
+        // A deck with too few playable cards still stops the alarm, with Quick math for the rest.
         while (silencing.size < silencingCount(mode)) silencing += quickMath()
-
-        // Bonus: one card to practise, one new word; each in the game that fits its level.
-        val bonus = mutableListOf<MorningCard>()
-        if (mode == WakeMode.NORMAL) {
-            val due = states.filter { it !in used && !it.isNew && (it.due ?: today) <= today }
-            val new = states.filter { it !in used && it.isNew }
-            val candidates = listOfNotNull(
-                due.firstOrNull()?.let { it to "Practice" },
-                new.firstOrNull()?.let { it to "New word" },
-            ) + (due.drop(1) + new.drop(1)).map { it to "Practice" }
-
-            for ((state, label) in candidates) {
-                if (bonus.size == BONUS_COUNT) break
-                if (state in used) continue
-                val note = notesById.getValue(state.noteId)
-                val card = levelCard(note, state, deck, deckNotes, states, notesById, used, label) ?: continue
-                bonus += card
-                used += card.items.map { it.state }
-            }
-        }
-
-        return WakePlan(mode = mode, deck = deck, silencing = silencing, bonus = bonus)
+        return WakePlan(mode = mode, deck = deck, silencing = silencing, bonus = picked.drop(silencingCount(mode)))
     }
 
+    /**
+     * Up to [wanted] cards from the deck, each in its own game, picked at random and never the
+     * same card twice. Cards due again (the ones you got wrong come back the next day) are a
+     * bit more likely: that's the only trace of spaced repetition the user notices.
+     * Cards that can't be played yet (a Pick from 4 with too few wrong answers) are skipped.
+     */
+    private fun randomCards(
+        deck: Deck,
+        deckNotes: List<Note>,
+        states: List<ReviewState>,
+        wanted: Int,
+        today: LocalDate,
+        label: (Note) -> String,
+    ): List<MorningCard> {
+        val notesById = deckNotes.associateBy { it.id }
+        val letters = CardBuilder.lettersIn(deckNotes)
+        val stateOf = states.associateBy { it.noteId to it.direction }
+
+        // Every way a card can be asked: forward always, the other way round when the deck
+        // tests both ways and the game allows it.
+        val candidates = deckNotes
+            .filter { it.game in GameEligibility.CARD_GAMES }
+            .flatMap { note ->
+                val directions = if (deck.bothDirections && GameEligibility.canReverse(note.game)) {
+                    Direction.entries
+                } else {
+                    listOf(Direction.FORWARD)
+                }
+                directions.map { stateOf[note.id to it] ?: ReviewState(note.id, it) }
+            }
+            .toMutableList()
+
+        val picked = mutableListOf<MorningCard>()
+        val usedNotes = mutableSetOf<String>()
+        while (picked.size < wanted && candidates.isNotEmpty()) {
+            val state = weightedPick(candidates, today)
+            candidates.remove(state)
+            if (state.noteId in usedNotes) continue
+            val note = notesById.getValue(state.noteId)
+            val content = cards.build(note, state.direction, deckNotes, letters) ?: continue
+            picked += MorningCard(content, label(note), note, state)
+            usedNotes += note.id
+        }
+        return picked
+    }
+
+    /** Due cards weigh [DUE_WEIGHT], the rest 1. */
+    private fun weightedPick(candidates: List<ReviewState>, today: LocalDate): ReviewState {
+        fun weight(state: ReviewState) = if (state.reviews > 0 && (state.due ?: today) <= today) DUE_WEIGHT else 1
+        var roll = random.nextInt(candidates.sumOf { weight(it) })
+        for (state in candidates) {
+            roll -= weight(state)
+            if (roll < 0) return state
+        }
+        return candidates.last()
+    }
+
+    /** One card of every game in the first deck (that isn't a map), then the map games. Nothing is saved. */
     private suspend fun previewFromDeck(): WakePlan? {
         val allDecks = decks.observeDecks().first()
         val mapCards = allDecks.firstOrNull { it.kind == DeckKind.GEOGRAPHY }?.let { previewMapCards(it) }.orEmpty()
         val deck = allDecks.firstOrNull { it.kind != DeckKind.GEOGRAPHY }
-            ?: return mapCards.takeIf { it.isNotEmpty() }?.let {
-                WakePlan(WakeMode.NORMAL, deck = null, silencing = it.take(1), bonus = it.drop(1))
-            }
+        val deckCards = deck?.let { previewDeckCards(it) }.orEmpty()
+
+        val all = deckCards + mapCards
+        if (all.isEmpty()) return null
+        return WakePlan(mode = WakeMode.NORMAL, deck = deck, silencing = all.take(1), bonus = all.drop(1))
+    }
+
+    private suspend fun previewDeckCards(deck: Deck): List<MorningCard> {
         val deckNotes = notes.notesInDeck(deck.id)
-        if (deckNotes.size < CardBuilder.MATCH_SIZE) return null
-        val direction = Direction.FORWARD
-        val items = deckNotes.take(CardBuilder.MATCH_SIZE).map { CardItem(it, ReviewState(it.id, direction)) }
-        val (first, second) = items
-        fun item(note: Note) = CardItem(note, ReviewState(note.id, direction))
-
-        val silencing = listOf(
-            MorningCard(
-                content = cards.trueFalse(first.note, direction, deckNotes) ?: return null,
-                label = "Preview · True or false",
-                note = first.note,
-                state = first.state,
-            ),
-        )
-        val pick = cards.pickMeaning(second.note, direction, deckNotes) ?: return null
-        // Fill the gap only works for words whose example sentence contains them.
-        val gap = deckNotes.firstNotNullOfOrNull { note -> cards.fillTheGap(note, deckNotes)?.let { note to it } }
-        val match = cards.matchPairs(items.map { it.note }, direction) ?: return null
-        val typed = items.last()
-
-        val bonus = listOfNotNull(
-            MorningCard(pick, "Preview · Pick the meaning", second.note, second.state),
-            gap?.let { (note, content) -> MorningCard(content, "Preview · Fill the gap", note, item(note).state) },
-            MorningCard(
-                cards.typeIt(typed.note, direction, answerLanguage(deck, direction)),
-                "Preview · Type it",
-                typed.note,
-                typed.state,
-            ),
-            MorningCard(match, "Preview · Match pairs", first.note, first.state, extraItems = items.drop(1)),
-        ) + mapCards
-        return WakePlan(mode = WakeMode.NORMAL, deck = deck, silencing = silencing, bonus = bonus)
+        val letters = CardBuilder.lettersIn(deckNotes)
+        return GameEligibility.CARD_GAMES.mapNotNull { game ->
+            deckNotes
+                .filter { it.game == game }
+                .firstNotNullOfOrNull { note ->
+                    cards.build(note, Direction.FORWARD, deckNotes, letters)?.let { content ->
+                        MorningCard(content, "Preview · ${game.title()}", note, ReviewState(note.id, Direction.FORWARD))
+                    }
+                }
+        }
     }
 
     /** Name the country, then Find on the map, each with a random country from the deck. */
@@ -201,9 +210,9 @@ class WakeSessionPlanner(
 
     /**
      * Geography decks: every card is on the map. Same counts as the other decks (1 to stop
-     * the alarm and 2 bonus, or 3 to stop it for heavy sleepers), but any country can stop the
-     * alarm. Countries are picked at random from the whole region, never twice in one
-     * morning. New countries are named from four; known ones are found.
+     * the alarm and 2 bonus, or 3 to stop it for heavy sleepers). Countries are picked at
+     * random from the whole region, never twice in one morning. New countries are named from
+     * four; known ones are found.
      */
     private fun geographyPlan(
         deck: Deck,
@@ -218,8 +227,7 @@ class WakeSessionPlanner(
         // Each country appears once in this list, so nothing repeats within the morning.
         val order = deckNotes.shuffled(random)
 
-        val wanted = silencingCount(mode) + if (mode == WakeMode.NORMAL) BONUS_COUNT else 0
-        val picked = order.take(wanted).map { note ->
+        val picked = order.take(cardCount(mode)).map { note ->
             mapCard(note, state(note), deck, deckNotes, region)
         }
         val silencing = picked.take(silencingCount(mode))
@@ -241,8 +249,7 @@ class WakeSessionPlanner(
 
     /** Name the country while it's new, Find on the map once it's known (see GameEligibility). */
     private fun mapCard(note: Note, state: ReviewState, deck: Deck, deckNotes: List<Note>, region: GeoRegion): MorningCard {
-        val eligible = GameEligibility.eligibleGames(note, state.direction, deck, deckNotes.size, hasPlus = false)
-        val named = if (GameEligibility.preferredGame(state, eligible) == Game.NAME_ON_MAP) {
+        val named = if (GameEligibility.mapGame(state, deck.allowedGames) == Game.NAME_ON_MAP) {
             cards.nameOnMap(note, deckNotes, region)
         } else {
             null
@@ -258,73 +265,6 @@ class WakeSessionPlanner(
     private fun findContent(note: Note, region: GeoRegion) =
         CardContent.FindOnMap(countryId = note.back, countryName = note.front, region = region)
 
-    /** Silencing games: Pick the meaning or True or false, mixed for variety. */
-    private fun fastCard(note: Note, state: ReviewState, deck: Deck, deckNotes: List<Note>): CardContent? {
-        val eligible = GameEligibility.eligibleGames(note, state.direction, deck, deckNotes.size, hasPlus = false)
-        val canPick = Game.PICK_MEANING in eligible
-        val canTrueFalse = Game.TRUE_FALSE in eligible
-        return when {
-            canPick && canTrueFalse && random.nextBoolean() -> cards.trueFalse(note, state.direction, deckNotes)
-            canPick -> cards.pickMeaning(note, state.direction, deckNotes)
-            canTrueFalse -> cards.trueFalse(note, state.direction, deckNotes)
-            else -> null
-        }
-    }
-
-    /** The level-up path: Pick the meaning → Match pairs / Fill the gap → Type it. */
-    private fun levelCard(
-        note: Note,
-        state: ReviewState,
-        deck: Deck,
-        deckNotes: List<Note>,
-        states: List<ReviewState>,
-        notesById: Map<String, Note>,
-        used: Set<ReviewState>,
-        label: String,
-    ): MorningCard? {
-        val eligible = GameEligibility.eligibleGames(note, state.direction, deck, deckNotes.size, hasPlus = false)
-            .intersect(BUILT_GAMES)
-        val game = GameEligibility.preferredGame(state, eligible) ?: return null
-        val direction = state.direction
-
-        fun single(content: CardContent?) = content?.let { MorningCard(it, label, note, state) }
-
-        return when (game) {
-            Game.MATCH_PAIRS -> matchCard(note, state, states, notesById, used, label)
-                ?: single(cards.pickMeaning(note, direction, deckNotes))
-            Game.TYPE_IT -> single(cards.typeIt(note, direction, answerLanguage(deck, direction)))
-            Game.FILL_THE_GAP -> single(cards.fillTheGap(note, deckNotes))
-                ?: single(cards.pickMeaning(note, direction, deckNotes))
-            Game.PICK_MEANING -> single(cards.pickMeaning(note, direction, deckNotes))
-            Game.TRUE_FALSE -> single(cards.trueFalse(note, direction, deckNotes))
-            else -> null
-        }
-    }
-
-    /** Pairs [note] with three other cards in the same direction, learned ones first. */
-    private fun matchCard(
-        note: Note,
-        state: ReviewState,
-        states: List<ReviewState>,
-        notesById: Map<String, Note>,
-        used: Set<ReviewState>,
-        label: String,
-    ): MorningCard? {
-        val others = states
-            .filter { it != state && it !in used && it.direction == state.direction }
-            .sortedBy { if (it.isNew) 1 else 0 }
-            .take(CardBuilder.MATCH_SIZE - 1)
-            .map { CardItem(notesById.getValue(it.noteId), it) }
-        val content = cards.matchPairs(listOf(note) + others.map { it.note }, state.direction) ?: return null
-        return MorningCard(content, label, note, state, extraItems = others)
-    }
-
-    /** Typed answers: the meaning is in the user's language, the word in the language being learned. */
-    private fun answerLanguage(deck: Deck, direction: Direction): String? {
-        if (deck.kind != DeckKind.LANGUAGE) return deck.nativeLanguage
-        return if (direction == Direction.FORWARD) deck.nativeLanguage ?: "en" else deck.targetLanguage
-    }
-
     private fun quickMathPlan(mode: WakeMode) = WakePlan(
         mode = mode,
         deck = null,
@@ -336,17 +276,23 @@ class WakeSessionPlanner(
 
     private fun silencingCount(mode: WakeMode) = if (mode == WakeMode.HEAVY_SLEEPER) 3 else 1
 
+    /** Cards this morning: the ones that stop the alarm, plus the bonus round in Normal mode. */
+    private fun cardCount(mode: WakeMode) = silencingCount(mode) + if (mode == WakeMode.NORMAL) BONUS_COUNT else 0
+
+    private fun Game.title(): String = when (this) {
+        Game.PICK_MEANING -> "Pick from 4"
+        Game.TRUE_FALSE -> "True or false"
+        Game.TYPE_IT -> "Type it"
+        Game.FILL_THE_GAP -> "Fill the gap"
+        Game.MATCH_PAIRS -> "Match pairs"
+        else -> name
+    }
+
     private companion object {
         const val BONUS_COUNT = 2
 
-        /** Games the morning flow can show so far. The Plus games come later. */
-        val BUILT_GAMES = setOf(
-            Game.PICK_MEANING,
-            Game.TRUE_FALSE,
-            Game.FILL_THE_GAP,
-            Game.TYPE_IT,
-            Game.MATCH_PAIRS,
-        )
+        /** How much more likely a card that's due again is to come up. */
+        const val DUE_WEIGHT = 3
     }
 }
 

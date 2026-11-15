@@ -67,7 +67,9 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [ ] Later in the editor: pre-alarm, sound, label (not built yet, so not shown)
 - [ ] iOS: Koin isn't started on iOS yet, so the app screens need that before they run there (M5)
 - [ ] Home (original mockup): start screen with the next alarm, deck progress and the week; its alarm card opens the Alarms list
-- [ ] Decks: create a deck, quick add, paste a list, note editor, deck detail
+- [x] Decks part 1: cards with one game each (database version 2: `game`, `isTrue`, `pairs`; old notes became Pick from 4), random morning cards weighted toward due ones, any card stops the alarm, True or false plays the user's statement, Match pairs holds its own pairs, Fill the gap uses [brackets], accent keys from the deck's letters, articles dropped for any language. Sample deck has every game.
+- [ ] Decks part 2: deck screens (mockups D1–D4, E1–E5): bottom bar, My decks / Browse packs, New deck, Deck detail, game picker, card forms
+- [ ] Decks part 3: Import a deck with your own AI (mockup D5)
 - [ ] Streaks
 
 ## M5 · iOS
@@ -84,11 +86,15 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 
 ## After the MVP
 - v1.1 Accounts, backup and sync (Supabase), Anki/CSV import
-- v1.2 AI deck generator, "Fill in" for words
+- v1.2 (dropped: AI generator and "Fill in" are replaced by Import with your own AI, see decisions)
 - v1.3 Friends and 1v1
 - v1.4 Squads
 
 ## Decisions since the PRD
+- **Cards, not notes (M4, replaces the level-up path):** each card has **one game**, picked by the user when making it (Pick from 4, True or false, Type it, Fill the gap, Match pairs, Map). No mastery levels. Every morning Sunup picks **random cards** from the deck, never twice in one morning; a hidden rule makes cards you got wrong a bit more likely to come up. Any card can stop the alarm, whatever its game. Pick from 4: the user may write 3 wrong answers; empty ones are borrowed from other cards in the deck. This changes the M2/M3 learning code (levels, `GameEligibility`, the planner) when the deck screens are built.
+- **Decks don't ask for a language.** Accent keys come from the special letters in the deck's own cards; a leading article (el, la, le, der, the…) is ignored for any known language. Language only matters later for the Plus speaking/listening games.
+- **Import with your own AI, instead of a Sunup AI generator:** "Import deck" shows a ready prompt to copy into ChatGPT or Claude; the AI answers with the deck as JSON; the user pastes it (or uploads the .json file), sees a preview, and creates the deck. Free, no server, no AI cost. The same importer can read CSV and Anki later. Mockup 10 (AI generator) and "Fill in" (v1.2) are dropped.
+- **Free limit = number of decks:** free users can have a few decks (number to decide), however they're made; Plus means unlimited decks.
 - Home vs. Alarms (two mockups): the original **Home** (next alarm, deck progress, this week's sunrises) becomes the start screen once streaks and deck progress exist; tapping its alarm card opens the **Alarms** list (Improvements A2), where alarms are added and edited. Until then the app opens on the Alarms list.
 - Morning flow: one easy card stops the alarm, then a 60 s check and an optional quiet bonus round (Normal mode).
 - All 9 card games ship in the MVP. Build the sentence, Listen & pick and Say it stay Plus-only, as a test of whether they're worth paying for.
@@ -107,6 +113,6 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - Built-in packs: who writes them, and how big are they?
 - Note types: are Word and Question enough, or add a True/false statement type?
 - Paste a list: free or Plus?
-- Free limit of 100: notes or cards?
+- Free limit: decided as a number of decks (see decisions); how many is still open.
 - Snooze vs. emergency stop; pre-alarm in the MVP?
-- Pricing, free deck limit, final name.
+- Pricing, how many free decks (e.g. 3?), final name.

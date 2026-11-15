@@ -75,6 +75,9 @@ fun Note.toEntity(createdAt: Long, updatedAt: Long) = NoteEntity(
     hint = hint,
     explanation = explanation,
     wrongAnswers = encodeList(wrongAnswers),
+    game = game.name,
+    isTrue = isTrue,
+    pairs = encodePairs(pairs),
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
@@ -91,6 +94,9 @@ fun NoteEntity.toDomain() = Note(
     hint = hint,
     explanation = explanation,
     wrongAnswers = decodeList(wrongAnswers),
+    game = enumOrDefault(game, Game.PICK_MEANING),
+    isTrue = isTrue,
+    pairs = decodePairs(pairs),
 )
 
 // Review state and log
@@ -174,6 +180,17 @@ private fun encodeList(values: List<String>): String = json.encodeToString(strin
 
 private fun decodeList(text: String): List<String> =
     runCatching { json.decodeFromString(stringList, text) }.getOrDefault(emptyList())
+
+private val pairList = ListSerializer(ListSerializer(String.serializer()))
+
+private fun encodePairs(values: List<Pair<String, String>>): String =
+    json.encodeToString(pairList, values.map { listOf(it.first, it.second) })
+
+private fun decodePairs(text: String): List<Pair<String, String>> =
+    runCatching { json.decodeFromString(pairList, text) }
+        .getOrDefault(emptyList())
+        .filter { it.size == 2 }
+        .map { it[0] to it[1] }
 
 private inline fun <reified E : Enum<E>> enumOrDefault(name: String, default: E): E =
     enumValues<E>().firstOrNull { it.name == name } ?: default

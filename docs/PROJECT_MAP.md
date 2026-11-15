@@ -94,15 +94,15 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 |---|---|
 | `Result.kt`, `DataError.kt` | `Result<T, E>`, `map / onSuccess / onFailure`, `DataError.Local / Network` |
 | `learning/Deck.kt` | `Deck`, `DeckKind` (LANGUAGE, STUDY, TRIVIA, GEOGRAPHY) |
-| `learning/Note.kt` | `Note` (one fact the user writes), `NoteType`, `Direction` |
-| `learning/ReviewState.kt` | How well a note is known: step, `MasteryLevel`, due date; `Grade` |
+| `learning/Note.kt` | `Note`: one card, with its one `game` and the fields that game uses (table in the KDoc); `NoteType`, `Direction` |
+| `learning/ReviewState.kt` | Hidden spaced-repetition state per card: step, `MasteryLevel` (geography only), due date; `Grade` |
 | `learning/ReviewRecord.kt` | One answered card, kept for stats; `ReviewContext` |
-| `learning/SpacedRepetition.kt` | When a card comes back (the 1 → 3 → 8 → 21 → 45 → 90 day ladder) |
-| `learning/Game.kt` | Every game, with Free/Plus and "can stop the alarm" |
-| `learning/GameEligibility.kt` | Which games a note can be played as, and which one fits its level |
-| `learning/CardBuilder.kt` | `CardContent` (what each card shows) and `CardBuilder` (note → card, wrong options) |
+| `learning/SpacedRepetition.kt` | When a card is due again (1 → 3 → 8 → 21 → 45 → 90 days); due cards are more likely to come up |
+| `learning/Game.kt` | Every game, with Free/Plus |
+| `learning/GameEligibility.kt` | The five card games, which can be asked both ways, and Name vs Find for geography |
+| `learning/CardBuilder.kt` | `CardContent` (what each card shows) and `CardBuilder` (card → what the morning screen shows, per game; borrowed wrong answers; accent letters) |
 | `learning/AnswerMatcher.kt` | Forgiving check for typed answers (accents, typos, articles) |
-| `learning/SentenceGap.kt` | Finds the word in its example sentence, for Fill the gap |
+| `learning/SentenceGap.kt` | Fill the gap: the [bracketed] word in a sentence |
 | `learning/GeoRegion.kt` | Map regions (Europe … World): continents and map bounds |
 | `learning/Country.kt` | A country's facts (code, name, continent, size, nearby countries) |
 | `learning/LearningRepositories.kt` | `DeckRepository`, `NoteRepository`, `ReviewRepository` interfaces |
@@ -143,7 +143,7 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | `commonMain/mapper/Mappers.kt` | Entity ↔ domain model |
 | `androidMain/DatabaseModule.kt` | Koin `databaseModule` (opened lazily) |
 | `iosMain/IosDatabaseBuilder.kt` | iOS database location |
-| `schemas/…/1.json` | Exported schema. Changing an entity needs a new version and a migration |
+| `schemas/…/1.json`, `2.json` | Exported schemas. Version 2 added `game`, `isTrue`, `pairs` to notes (auto-migration). Changing an entity needs a new version and a migration |
 
 ## `core:data`: repository implementations
 
@@ -151,7 +151,7 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 |---|---|
 | `RoomRepositories.kt` | Room-backed `Deck`, `Note`, `Review` and `WakeAlarm` repositories |
 | `SafeLocal.kt` | Wraps database writes so failures become `DataError.Local` |
-| `SampleDeckSeeder.kt` | The sample Spanish deck for the test bench |
+| `SampleDeckSeeder.kt` | The sample Spanish deck for the test bench: a card of every game |
 | `GeoDeckSeeder.kt` | Builds a geography deck for a region from the map's country list |
 | `DataModule.kt` | Koin `dataModule` (repositories, seeders, `Clock`) |
 
@@ -195,7 +195,7 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 
 | File | What's in it |
 |---|---|
-| `domain/WakeSessionPlanner.kt` | Picks this morning's cards: silencing + bonus per mode, geography plans, Preview all games, Quick math fallbacks |
+| `domain/WakeSessionPlanner.kt` | Picks this morning's cards: random, weighted toward due cards, per mode; geography plans; Preview all games; Quick math fallbacks |
 | `presentation/WakeUpState.kt` | MVI State, `CardUi` (Choice, Typing, Match, FindOnMap), Actions, Events |
 | `presentation/WakeUpViewModel.kt` | Answers, grading, saving reviews, stopping the alarm, the wake-up check, loading the map |
 | `presentation/WakeUpScreen.kt` | `WakeUpRoot` and the screens: card page, bonus offer, "You're up!", "Still with me?", palettes |
@@ -244,7 +244,7 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 | Test tools on the phone | `AlarmTestBench.kt` (opened from the alarm list) |
 | A version or library | `gradle/libs.versions.toml` |
 
-**Adding a new game** touches: `Game.kt` → `CardContent` + a builder in `CardBuilder.kt` → `GameEligibility.kt` (when it's allowed, where it sits on the level path) → `WakeSessionPlanner.kt` (when it's picked, Preview) → `WakeUpState.kt` (`CardUi`) → `WakeUpViewModel.kt` (`toUi`, answer handling, grade) → `WakeUpCards.kt` / `WakeUpScreen.kt` (UI) → tests in `core:domain` and `feature:wakeup:domain` → `docs/HOW_IT_WORKS.md` (games table, which game when, grading).
+**Adding a new game** touches: `Game.kt` → `Note.kt` (which fields it uses; a database version if it needs new ones) → `CardContent` + a builder in `CardBuilder.kt` (and `build()`) → `GameEligibility.CARD_GAMES` → `WakeUpState.kt` (`CardUi`) → `WakeUpViewModel.kt` (`toUi`, answer handling, grade) → `WakeUpCards.kt` / `WakeUpScreen.kt` (UI) → tests in `core:domain` and `feature:wakeup:domain` → `docs/HOW_IT_WORKS.md` (games table, which game when, grading).
 
 **Adding a new module**: see the checklist under "How modules are wired".
 

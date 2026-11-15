@@ -46,14 +46,15 @@ object AnswerMatcher {
             .filter { it.isLetterOrDigit() || it.isWhitespace() }
             .split(Regex("\\s+"))
             .filter { it.isNotEmpty() }
-        val articles = ARTICLES[language].orEmpty()
+        // Decks don't say their language, so without one any known article is dropped.
+        val articles = language?.let { ARTICLES[it] } ?: ALL_ARTICLES
         val withoutArticle = if (words.size > 1 && words.first() in articles) words.drop(1) else words
         return withoutArticle.joinToString(" ")
     }
 
     /** French and Italian glue articles on with an apostrophe: "l'amour" → "amour". */
     private fun stripElision(text: String, language: String?): String {
-        if (language != "fr" && language != "it") return text
+        if (language != null && language != "fr" && language != "it") return text
         val trimmed = text.trimStart()
         return ELISIONS.firstOrNull { trimmed.startsWith(it) }?.let { trimmed.removePrefix(it) } ?: text
     }
@@ -92,6 +93,8 @@ object AnswerMatcher {
         "it" to setOf("il", "lo", "la", "i", "gli", "le", "un", "uno", "una"),
         "de" to setOf("der", "die", "das", "den", "dem", "des", "ein", "eine", "einen"),
     )
+
+    private val ALL_ARTICLES: Set<String> = ARTICLES.values.flatten().toSet()
 
     private val ELISIONS = listOf("l'", "un'")
 
