@@ -16,12 +16,17 @@ data class SunupColors(
     val sunShadow: Color = Color(0xFFD99A12),
     val sunOutline: Color = Color(0xFFE89B0C),
     val onSun: Color = Color(0xFF3A2400),
+    /** Soft sun background for friendly banners, e.g. "Rings in 8 h 19 min". */
+    val sunSoft: Color = Color(0xFFFFF1D6),
+    val onSunSoft: Color = Color(0xFF8A4B00),
     val cheek: Color = Color(0xFFFF8A6B),
 
     // Secondary brand color
     val indigo: Color = Color(0xFF3B3F9E),
     val indigoShadow: Color = Color(0xFF252870),
     val indigoContainer: Color = Color(0xFFEEEFFF),
+    /** Outline and edge of a selected option on [indigoContainer]. */
+    val indigoSoft: Color = Color(0xFF6E73E0),
     val onIndigo: Color = Color(0xFFFFFFFF),
 
     // Daytime screens

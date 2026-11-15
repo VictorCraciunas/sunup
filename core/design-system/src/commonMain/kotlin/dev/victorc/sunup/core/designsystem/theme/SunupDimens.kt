@@ -33,6 +33,12 @@ data class SunupSizes(
     val pressDepth: Dp = 4.dp,
     /** Smallest touch target (PRD: at least 44). */
     val minTouchTarget: Dp = 48.dp,
+    /** Outline of cards, chips and inputs. */
+    val border: Dp = 2.dp,
+    /** Pip next to a line of text, e.g. the "next alarm" banner. */
+    val pipBadge: Dp = 44.dp,
+    /** Pip as the main picture of a screen, e.g. an empty list. */
+    val pipHero: Dp = 140.dp,
     /** Geography map: circle drawn around countries too small to tap. */
     val mapSmallCountry: Dp = 9.dp,
     /** Geography map: a tap this close to a small country's circle counts for it. */

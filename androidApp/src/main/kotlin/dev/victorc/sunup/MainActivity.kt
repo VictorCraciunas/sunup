@@ -49,8 +49,8 @@ class MainActivity : ComponentActivity() {
             }
 
             App(
-                extraContent = {
-                    // TODO(M4): remove, or hide behind a debug menu, once real alarm screens exist.
+                testBench = {
+                    // TODO(M4): remove once onboarding and the deck screens exist.
                     AlarmTestBench(
                         scheduler = scheduler,
                         store = store,

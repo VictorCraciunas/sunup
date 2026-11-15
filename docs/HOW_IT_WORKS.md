@@ -2,6 +2,16 @@
 
 The current rules of the app, in plain words. Keep this in sync with the code: when a rule changes, change it here in the same commit. What's built vs. planned lives in [ROADMAP.md](../ROADMAP.md); why things are this way is under "Decisions since the PRD" there.
 
+## Setting alarms
+
+The app opens on the **alarm list**: each alarm's time, days, deck and mode, with a switch, and a banner saying when the next one rings ("Rings in 8 h 19 min"). Tap an alarm to edit it, or **+** to add one.
+
+**The editor:** time (hours step by 1, minutes by 5; tap the time to type an exact one), repeat days (none = rings once, then switches itself off), wake-up mode, and the deck the cards come from (**Any deck** = the first deck). It shows when the alarm will ring. **Save alarm** always switches the alarm on. Existing alarms can be deleted (asks first).
+
+**Two copies, engine first:** the alarm engine keeps its own small copy of each alarm (time, days, on/off) that works before the phone is unlocked; the app's database keeps the rest. Saving tells the engine first, so a failed database write never costs an alarm ("The alarm will ring, but its settings didn't save"). Opening the list brings the two in line: a one-off alarm that rang shows as off, and an alarm only the engine knows about is added to the list.
+
+If Android doesn't allow exact alarms, saving fails with a message pointing to "Alarms & reminders" in the phone's settings.
+
 ## The morning, step by step
 
 1. **The alarm rings.** Starts soft and gets louder over about 50 seconds, on the alarm volume (rings in silent mode). Vibrates. Shows the ringing screen over the lock screen.
@@ -108,6 +118,6 @@ Users don't build games; they write **notes** and Sunup turns each note into the
 
 ## Testing without waiting for an alarm
 
-Test bench (below the home placeholder): **Load sample Spanish deck** (12 words; 3 at Match level, 3 at Type it level, 6 new), or pick a **Map** region and **Load geography deck**. Choose the **Deck for test alarms** (loading a deck selects it) and a **Mode**, then **Ring in 1 minute**, or **Preview all games** (plays each game once, no alarm, saves nothing; Name the country and Find on the map are added when a geography deck exists).
+Test bench (the **Test bench** link at the bottom of the alarm list): **Load sample Spanish deck** (12 words; 3 at Match level, 3 at Type it level, 6 new), or pick a **Map** region and **Load geography deck**. Choose the **Deck for test alarms** (loading a deck selects it) and a **Mode**, then **Ring in 1 minute**, or **Preview all games** (plays each game once, no alarm, saves nothing; Name the country and Find on the map are added when a geography deck exists).
 
 The map file (outlines, plus each country's nearby countries) is built from Natural Earth's countries file with `python tools/geo/build_countries.py <ne_50m_admin_0_countries.geojson>`; it writes `core/geo/src/commonMain/composeResources/files/geo/countries.json`. `--update-nearby` recomputes just the nearby countries in that file, without the download. The **ring log** shows scheduled vs. actual ring times, skips and cancels.

@@ -29,6 +29,8 @@ All versions live in `gradle/libs.versions.toml`; never hardcode a version in a 
 :core:data                     Repository implementations, sample and geography deck seeders
 :core:design-system            SunupTheme tokens and shared components (SunupButton, Pip)
 :core:geo                      Country map file loader and the interactive map (geography games)
+:feature:alarms:domain         Saving alarms (engine first, then database) and keeping both in step
+:feature:alarms:presentation   The alarm list (home) and the alarm editor
 :feature:wakeup:domain         Morning flow planning (which cards, per mode)
 :feature:wakeup:presentation   Morning flow screens and ViewModel
 tools/geo/                     Script that builds the map file from Natural Earth
@@ -36,7 +38,8 @@ build-logic/                   Convention plugins
 iosApp/                        Xcode project
 ```
 File-by-file details: [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md).
-Feature modules are `:feature:<name>:{domain,data,presentation}`. Features never depend on each other; shared code moves to `:core:*`. Create a module only when code needs it.
+Feature modules are `:feature:<name>:{domain,data,presentation}`.
+Wiring rules (details and a checklist in [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md), "How modules are wired"): use `api` for a module whose types appear in your public signatures (constructors, return types), `implementation` otherwise; `androidApp` depends directly on every module whose Koin module `SunupApplication` registers; screens are reached through `shared`'s `App.kt`. Features never depend on each other; shared code moves to `:core:*`. Create a module only when code needs it.
 
 Convention plugins (apply these, don't repeat config):
 - `sunup.kmp.library`: KMP for Android + iOS, namespace taken from the module path, test dependencies included
@@ -50,7 +53,7 @@ Convention plugins (apply these, don't repeat config):
 - UI uses `SunupTheme.colors / typography / spacing / shapes / sizes`, never raw hex or dp values in feature code.
 - Every synced record gets a UUID, `updatedAt` and `deletedAt` so sync can be added later without a migration.
 - No ads, upsells or paywalls anywhere in the morning flow.
-- Animations respect the system's reduce-motion setting.
+- Animations respect the system's reduce-motion setting: use `reduceMotion()` and the helpers in `core:design-system/motion` (`riseIn`, `wobbleWhenOn`). Raised cards and chips use `SunupRaised`.
 
 ## Commands
 ```bash

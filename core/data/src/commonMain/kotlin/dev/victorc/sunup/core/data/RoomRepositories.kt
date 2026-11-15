@@ -94,7 +94,13 @@ class RoomWakeAlarmRepository(
     private val clock: Clock,
 ) : WakeAlarmRepository {
 
+    override fun observeAll(): Flow<List<WakeAlarm>> = dao.observeAll().map { list -> list.map { it.toDomain() } }
+
     override suspend fun get(id: String): WakeAlarm? = dao.get(id)?.toDomain()
+
+    override suspend fun delete(id: String): EmptyResult<DataError.Local> = safeLocal {
+        dao.softDelete(id, now = clock.now().toEpochMilliseconds())
+    }
 
     override suspend fun save(alarm: WakeAlarm): EmptyResult<DataError.Local> = safeLocal {
         val now = clock.now().toEpochMilliseconds()

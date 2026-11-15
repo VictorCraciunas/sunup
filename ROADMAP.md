@@ -63,8 +63,10 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 
 ## M4 · The rest of the app
 - [ ] Onboarding and permissions
-- [ ] Alarm list and editor
-- [ ] Home
+- [x] Alarm list and editor: `:feature:alarms`. List with switches and "Rings in…", editor with time, days, mode, deck, delete. Saves to the engine first, then the database; the list syncs one-off alarms that rang. The app now opens on the list; the test bench is behind a link. Mockup look: raised cards, chips and + button (`SunupRaised`), cards and sections rise in, ticking time digits, chips wobble when picked; all off with "Remove animations".
+- [ ] Later in the editor: pre-alarm, sound, label (not built yet, so not shown)
+- [ ] iOS: Koin isn't started on iOS yet, so the app screens need that before they run there (M5)
+- [ ] Home (original mockup): start screen with the next alarm, deck progress and the week; its alarm card opens the Alarms list
 - [ ] Decks: create a deck, quick add, paste a list, note editor, deck detail
 - [ ] Streaks
 
@@ -87,6 +89,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - v1.4 Squads
 
 ## Decisions since the PRD
+- Home vs. Alarms (two mockups): the original **Home** (next alarm, deck progress, this week's sunrises) becomes the start screen once streaks and deck progress exist; tapping its alarm card opens the **Alarms** list (Improvements A2), where alarms are added and edited. Until then the app opens on the Alarms list.
 - Morning flow: one easy card stops the alarm, then a 60 s check and an optional quiet bonus round (Normal mode).
 - All 9 card games ship in the MVP. Build the sentence, Listen & pick and Say it stay Plus-only, as a test of whether they're worth paying for.
 - Geography (inspired by map quizzes like Seterra, in Sunup's own look): built-in region decks played on the map: Name the country (pick from 4) while a country is new, Find on the map once it is known. Same counts as other decks (1 + 2 bonus, Heavy 3). Any country can stop the alarm. Countries are picked at random from the whole region, never twice in one morning; spaced repetition only decides which map game a country gets. Map data: Natural Earth, public domain. The region lives in the deck's built-in pack id, so no database change.
