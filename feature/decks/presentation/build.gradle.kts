@@ -18,5 +18,9 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
         }
+        androidMain.dependencies {
+            // Import: the system file picker for a .json file.
+            implementation(libs.androidx.activity.compose)
+        }
     }
 }

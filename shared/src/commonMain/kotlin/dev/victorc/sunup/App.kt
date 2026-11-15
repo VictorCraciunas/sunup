@@ -36,6 +36,7 @@ import dev.victorc.sunup.feature.decks.presentation.CardEditorRoot
 import dev.victorc.sunup.feature.decks.presentation.DeckDetailRoot
 import dev.victorc.sunup.feature.decks.presentation.DeckListRoot
 import dev.victorc.sunup.feature.decks.presentation.GamePickerScreen
+import dev.victorc.sunup.feature.decks.presentation.ImportRoot
 import dev.victorc.sunup.feature.decks.presentation.NewDeckRoot
 import kotlinx.serialization.Serializable
 
@@ -55,6 +56,9 @@ private data class AlarmEditorRoute(val alarmId: String? = null)
 
 @Serializable
 private data object NewDeckRoute
+
+@Serializable
+private data object ImportRoute
 
 @Serializable
 private data class DeckRoute(val deckId: String)
@@ -124,6 +128,16 @@ private fun SunupNavHost(navController: NavHostController, testBench: (@Composab
             DeckListRoot(
                 onOpenDeck = { id -> navController.navigate(DeckRoute(id)) },
                 onNewDeck = { navController.navigate(NewDeckRoute) },
+                onImport = { navController.navigate(ImportRoute) },
+            )
+        }
+        composable<ImportRoute> {
+            ImportRoot(
+                // The new deck replaces this screen, so Back goes to the deck list.
+                onCreated = { id ->
+                    navController.navigate(DeckRoute(id)) { popUpTo<ImportRoute> { inclusive = true } }
+                },
+                onClose = { navController.popBackStack() },
             )
         }
         composable<NewDeckRoute> {

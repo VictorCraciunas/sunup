@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 
 /** Back arrow and screen title, the top of every inner screen. */
@@ -93,6 +94,9 @@ fun SunupTextField(
     singleLine: Boolean = true,
     accent: Color? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+    textStyle: TextStyle = SunupTheme.typography.body,
 ) {
     val colors = SunupTheme.colors
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.xs)) {
@@ -101,8 +105,10 @@ fun SunupTextField(
             value = value,
             onValueChange = onValueChange,
             singleLine = singleLine,
+            minLines = minLines,
+            maxLines = maxLines,
             placeholder = placeholder?.let { { Text(it, color = colors.inkMuted) } },
-            textStyle = SunupTheme.typography.body.copy(color = colors.ink),
+            textStyle = textStyle.copy(color = colors.ink),
             shape = SunupTheme.shapes.button,
             keyboardOptions = keyboardOptions,
             colors = OutlinedTextFieldDefaults.colors(

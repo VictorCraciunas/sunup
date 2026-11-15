@@ -10,6 +10,7 @@ import org.koin.dsl.module
 val decksModule = module {
     viewModel { DeckListViewModel(decks = get(), notes = get(), alarms = get(), atlasSource = get(), geoSeeder = get()) }
     viewModel { NewDeckViewModel(decks = get()) }
+    viewModel { ImportViewModel(decks = get(), notes = get()) }
     viewModel { params ->
         DeckDetailViewModel(deckId = params.get(0), decks = get(), notes = get(), alarms = get(), cards = get())
     }

@@ -69,7 +69,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [ ] Home (original mockup): start screen with the next alarm, deck progress and the week; its alarm card opens the Alarms list
 - [x] Decks part 1: cards with one game each (database version 2: `game`, `isTrue`, `pairs`; old notes became Pick from 4), random morning cards weighted toward due ones, any card stops the alarm, True or false plays the user's statement, Match pairs holds its own pairs, Fill the gap uses [brackets], accent keys from the deck's letters, articles dropped for any language. Sample deck has every game.
 - [x] Decks part 2: `:feature:decks`. Bottom bar (Alarm · Decks), My decks / Browse packs (map regions added and removed here), New deck, Deck detail with filter and settings (rename, delete), game picker, card forms for the five games (new and edit, Save & add another, delete). Not yet: exam date, free deck limit, Import (part 3).
-- [ ] Decks part 3: Import a deck with your own AI (mockup D5)
+- [x] Decks part 3: Import a deck with your own AI (mockup D5). Import button on the Decks tab, the prompt to copy (five games + a full English example), paste or upload a .json file (Android), forgiving importer (chat text, fences, curly quotes, other field and game names, guessed games), preview with editable name and skipped cards, create. Not on iOS yet: file upload.
 - [ ] Streaks
 
 ## M5 · iOS

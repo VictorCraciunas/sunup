@@ -77,8 +77,8 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `core:geo` | `core:domain` | `core:design-system`, coroutines, serialization |
 | `feature:alarms:domain` | `core:domain`, `core:alarm` | coroutines |
 | `feature:alarms:presentation` | — | `feature:alarms:domain`, `core:design-system`, lifecycle, Koin |
-| `feature:decks:domain` | `core:domain` | coroutines |
-| `feature:decks:presentation` | — | `feature:decks:domain`, `core:design-system`, `core:geo`, `core:data`, lifecycle, Koin |
+| `feature:decks:domain` | `core:domain` | coroutines, serialization (Import) |
+| `feature:decks:presentation` | — | `feature:decks:domain`, `core:design-system`, `core:geo`, `core:data`, lifecycle, Koin (+ activity-compose on Android, for the file picker) |
 | `feature:wakeup:domain` | `core:domain` | coroutines |
 | `feature:wakeup:presentation` | — | `feature:wakeup:domain`, `core:alarm`, `core:design-system`, `core:geo`, lifecycle, Koin |
 | `shared` | — | `core:domain`, `core:design-system`, `feature:alarms:presentation`, `feature:decks:presentation`, lifecycle, navigation, serialization |
@@ -201,11 +201,14 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 
 | File | What's in it |
 |---|---|
+| `domain/DeckImport.kt` | Import: `DeckImport.PROMPT` (what the user copies into their AI), `DeckImport.parse` (the AI's JSON → `ImportedDeck` with `CardDraft`s and `SkippedCard`s), `ImportError` |
 | `domain/CardDraft.kt` | `CardDraft` (what a card form holds, one shape for every game), `CardProblem` (why it can't be saved), `CardDrafts.check` / `toNote` (form → card) |
 | `presentation/DeckListViewModel.kt` / `DeckListScreen.kt` | The Decks tab (mockup D1): My decks with card counts and alarms, New deck; Browse packs with the map regions (add = load the region, remove = delete its deck) |
 | `presentation/NewDeckScreen.kt` | New deck (D2): name, Language / Study / Trivia. ViewModel in the same file |
 | `presentation/DeckDetailViewModel.kt` / `DeckDetailScreen.kt` | Deck detail (D3): card count, alarms using it, Add a card, filter by game, card rows (with "can't play yet"), settings dialog (rename, delete). Also `GamePickerScreen` (D4) |
 | `presentation/CardEditorViewModel.kt` / `CardEditorScreen.kt` | The card form for each game (E1–E5), new or editing; Save & add another, Done, Delete card |
+| `presentation/ImportViewModel.kt` / `ImportScreen.kt` | Import a deck (D5): copy the prompt, paste or upload, preview with an editable name and skipped cards, create |
+| `presentation/FilePicker.kt` (+ `androidMain` / `iosMain`) | `rememberTextFilePicker`: the system file picker for the .json file (Android); not on iOS yet |
 | `presentation/DeckText.kt` | Game and deck-kind names, badges and colours, card summaries, `CardProblem` messages |
 | `presentation/DecksModule.kt` | Koin `decksModule` |
 
@@ -235,6 +238,8 @@ Nothing here may touch the network or the database. Alarms and the ring log are 
 ## Key flows
 
 **Setting an alarm**: `AlarmEditorViewModel` → `AlarmService.save` → `AlarmScheduler.schedule` (engine store + `setAlarmClock`) → then `WakeAlarmRepository.save` (database). Opening the list runs `AlarmService.syncWithEngine`.
+
+**Importing a deck**: Decks tab → `ImportScreen` (copy `DeckImport.PROMPT`) → user's AI → paste or file → `DeckImport.parse` → preview → `DeckRepository.saveDeck` + `CardDrafts.toNote` + `NoteRepository.saveNote` per card → the new deck opens.
 
 **Making a card**: Decks tab → `DeckDetailScreen` → `GamePickerScreen` → `CardEditorScreen` → `CardDrafts.toNote` → `NoteRepository.saveNote` (creates its review state). The deck detail and the morning planner read it back through `NoteRepository`.
 

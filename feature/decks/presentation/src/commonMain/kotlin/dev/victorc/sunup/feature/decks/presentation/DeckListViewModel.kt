@@ -59,6 +59,7 @@ sealed interface DeckListAction {
     data class OnTab(val tab: DeckTab) : DeckListAction
     data class OnOpenDeck(val deckId: String) : DeckListAction
     data object OnNewDeck : DeckListAction
+    data object OnImport : DeckListAction
     data class OnTogglePack(val region: GeoRegion) : DeckListAction
     data object OnConfirmRemove : DeckListAction
     data object OnCancelRemove : DeckListAction
@@ -68,6 +69,7 @@ sealed interface DeckListAction {
 sealed interface DeckListEvent {
     data class OpenDeck(val deckId: String) : DeckListEvent
     data object OpenNewDeck : DeckListEvent
+    data object OpenImport : DeckListEvent
 }
 
 class DeckListViewModel(
@@ -132,6 +134,7 @@ class DeckListViewModel(
             }
             is DeckListAction.OnOpenDeck -> viewModelScope.launch { _events.send(DeckListEvent.OpenDeck(action.deckId)) }
             DeckListAction.OnNewDeck -> viewModelScope.launch { _events.send(DeckListEvent.OpenNewDeck) }
+            DeckListAction.OnImport -> viewModelScope.launch { _events.send(DeckListEvent.OpenImport) }
             is DeckListAction.OnTogglePack -> togglePack(action.region)
             DeckListAction.OnConfirmRemove -> removePack()
             DeckListAction.OnCancelRemove -> _state.update { it.copy(confirmRemove = null) }

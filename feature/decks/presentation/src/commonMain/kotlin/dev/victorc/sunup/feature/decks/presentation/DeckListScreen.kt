@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.victorc.sunup.core.designsystem.components.Pip
 import dev.victorc.sunup.core.designsystem.components.PipMood
 import dev.victorc.sunup.core.designsystem.components.SunupButton
+import dev.victorc.sunup.core.designsystem.components.SunupButtonStyle
 import dev.victorc.sunup.core.designsystem.components.SunupFieldLabel
 import dev.victorc.sunup.core.designsystem.components.SunupRaised
 import dev.victorc.sunup.core.designsystem.motion.riseIn
@@ -44,17 +45,19 @@ import org.koin.compose.viewmodel.koinViewModel
 
 /** The Decks tab: My decks and Browse packs (mockup D1). */
 @Composable
-fun DeckListRoot(onOpenDeck: (deckId: String) -> Unit, onNewDeck: () -> Unit) {
+fun DeckListRoot(onOpenDeck: (deckId: String) -> Unit, onNewDeck: () -> Unit, onImport: () -> Unit) {
     val viewModel = koinViewModel<DeckListViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val openDeck by rememberUpdatedState(onOpenDeck)
     val newDeck by rememberUpdatedState(onNewDeck)
+    val openImport by rememberUpdatedState(onImport)
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
                 is DeckListEvent.OpenDeck -> openDeck(event.deckId)
                 DeckListEvent.OpenNewDeck -> newDeck()
+                DeckListEvent.OpenImport -> openImport()
             }
         }
     }
@@ -166,10 +169,24 @@ private fun MyDecks(state: DeckListState, onAction: (DeckListAction) -> Unit) {
             DeckCard(deck, onClick = { onAction(DeckListAction.OnOpenDeck(deck.id)) }, modifier = Modifier.riseIn(index))
         }
     }
-    SunupButton(
-        text = "New deck",
-        onClick = { onAction(DeckListAction.OnNewDeck) },
+    Row(
         modifier = Modifier.riseIn(state.decks.size),
+        horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.sm),
+    ) {
+        SunupButton(text = "New deck", onClick = { onAction(DeckListAction.OnNewDeck) }, modifier = Modifier.weight(1f))
+        SunupButton(
+            text = "Import",
+            onClick = { onAction(DeckListAction.OnImport) },
+            style = SunupButtonStyle.Secondary,
+            modifier = Modifier.weight(1f),
+        )
+    }
+    Text(
+        "Import: let ChatGPT or Claude make a whole deck for you.",
+        style = SunupTheme.typography.bodySmall,
+        color = colors.inkMuted,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 
