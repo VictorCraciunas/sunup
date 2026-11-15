@@ -6,6 +6,12 @@ import dev.victorc.sunup.core.geo.GeoAtlas
 /** Opening the morning flow with this id plays every game once, without an alarm, and saves nothing. */
 const val PREVIEW_ALARM_ID = "preview"
 
+/**
+ * Opening the morning flow with `"preview:<alarm id>"` plays that alarm's morning (its deck and
+ * mode) as practice: no sound, no wake-up check, nothing saved. Home's "Preview tomorrow's wake-up".
+ */
+const val PREVIEW_ALARM_PREFIX = "preview:"
+
 data class WakeUpState(
     val phase: WakePhase = WakePhase.LOADING,
     val card: CardUi? = null,
@@ -23,6 +29,8 @@ data class WakeUpState(
     val ringingAgain: Boolean = false,
     /** Country outlines, loaded only when this morning has a geography card. */
     val atlas: GeoAtlas? = null,
+    /** "Up at 07:03 · 13 sunrises in a row", once the alarm was stopped by answering. */
+    val upLine: String? = null,
 )
 
 enum class WakePhase { LOADING, SILENCING, BONUS_OFFER, BONUS, DONE }

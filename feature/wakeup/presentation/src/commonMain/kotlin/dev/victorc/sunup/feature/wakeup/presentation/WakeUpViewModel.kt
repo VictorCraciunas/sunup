@@ -14,10 +14,14 @@ import dev.victorc.sunup.core.domain.learning.ReviewRepository
 import dev.victorc.sunup.core.domain.learning.SpacedRepetition
 import dev.victorc.sunup.core.domain.Result
 import dev.victorc.sunup.core.geo.GeoAtlasSource
+import dev.victorc.sunup.core.domain.wakeup.Streaks
 import dev.victorc.sunup.core.domain.wakeup.TEST_ALARM_ID
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
 import dev.victorc.sunup.core.domain.wakeup.WakeMode
+import dev.victorc.sunup.core.domain.wakeup.WakeOutcome
+import dev.victorc.sunup.core.domain.wakeup.WakeSession
+import dev.victorc.sunup.core.domain.wakeup.WakeSessionRepository
 import dev.victorc.sunup.feature.wakeup.domain.MorningCard
 import dev.victorc.sunup.feature.wakeup.domain.WakePlan
 import dev.victorc.sunup.feature.wakeup.domain.WakeSessionPlanner
@@ -35,9 +39,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -47,6 +54,7 @@ class WakeUpViewModel(
     private val planner: WakeSessionPlanner,
     private val alarms: WakeAlarmRepository,
     private val reviews: ReviewRepository,
+    private val sessions: WakeSessionRepository,
     private val scheduler: AlarmScheduler,
     private val atlasSource: GeoAtlasSource,
     private val clock: Clock,
@@ -63,8 +71,11 @@ class WakeUpViewModel(
     private var cards: List<MorningCard> = emptyList()
     private var shownAt: Instant = clock.now()
 
-    /** Trying the games from the test bench: no alarm, no wake-up check, nothing saved. */
-    private val isPreview = alarmId == PREVIEW_ALARM_ID
+    /** Trying the games (test bench) or an alarm's morning (Home): no alarm, no wake-up check, nothing saved. */
+    private val isPreview = alarmId == PREVIEW_ALARM_ID || alarmId.startsWith(PREVIEW_ALARM_PREFIX)
+
+    /** Home's preview: the alarm whose morning to play. */
+    private val previewedAlarmId = if (alarmId.startsWith(PREVIEW_ALARM_PREFIX)) alarmId.removePrefix(PREVIEW_ALARM_PREFIX) else null
 
     // Wake-up check: after the alarm stops, a soft re-ring is always scheduled 60 s ahead.
     // Every touch on this screen pushes it back. If the user leaves Sunup, the alarm engine
@@ -77,6 +88,11 @@ class WakeUpViewModel(
     private var checkDeadline: Instant? = null
     private var lastScheduledAt: Instant? = null
     private var tickerJob: Job? = null
+
+    // This morning, for streaks and Home. Only real alarms make one.
+    private val countsForStreak get() = !isPreview && !isFollowUpRing && alarmId != TEST_ALARM_ID
+    private var session: WakeSession? = null
+    private val sessionWrites = Mutex()
 
     init {
         if (isFollowUpRing) {
@@ -91,25 +107,26 @@ class WakeUpViewModel(
 
     private fun loadPlan() {
         viewModelScope.launch {
-            val loaded = if (isPreview) {
-                planner.preview()
-            } else {
-                // The alarm's settings live in the database, which can be locked right after a reboot.
-                val alarm = if (alarmId == TEST_ALARM_ID) {
-                    // Onboarding's test ring: one card, no wake-up check.
-                    WakeAlarm(id = TEST_ALARM_ID, time = LocalTime(0, 0), label = "Test alarm", mode = WakeMode.GENTLE)
-                } else try {
-                    alarms.get(alarmId)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    null
-                }
-                planner.plan(alarm)
-            }
+            val loaded = if (alarmId == PREVIEW_ALARM_ID) planner.preview() else planner.plan(loadAlarm())
             val playable = withMapLoaded(loaded)
             plan = playable
+            if (countsForStreak) startSession()
             startPhase(WakePhase.SILENCING, playable.silencing)
+        }
+    }
+
+    /** The alarm's settings live in the database, which can be locked right after a reboot: null then. */
+    private suspend fun loadAlarm(): WakeAlarm? {
+        // Onboarding's test ring: one card, no wake-up check.
+        if (alarmId == TEST_ALARM_ID) {
+            return WakeAlarm(id = TEST_ALARM_ID, time = LocalTime(0, 0), label = "Test alarm", mode = WakeMode.GENTLE)
+        }
+        return try {
+            alarms.get(previewedAlarmId ?: alarmId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -150,6 +167,7 @@ class WakeUpViewModel(
             WakeUpAction.OnEmergencyStop -> {
                 _state.update { it.copy(alarmStopped = true, stoppedWithoutCard = true, phase = WakePhase.DONE) }
                 viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
+                updateSession { if (it.outcome == WakeOutcome.UP) it else it.copy(outcome = WakeOutcome.STOPPED_WITHOUT_CARD) }
             }
             WakeUpAction.OnFinish -> viewModelScope.launch {
                 // Cancel first: the screen (and this scope) goes away right after Close.
@@ -286,9 +304,11 @@ class WakeUpViewModel(
             )
         }
         record(cards[current.position], grades, current.phase)
+        if (current.phase == WakePhase.BONUS) updateSession { it.copy(bonusCards = it.bonusCards + 1) }
         if (stopsAlarm) {
             viewModelScope.launch { _events.send(WakeUpEvent.StopAlarm) }
             startWakeCheck()
+            markUp(silencingCards = cards.size)
         }
     }
 
@@ -357,6 +377,50 @@ class WakeUpViewModel(
             )
             // A failed write only loses one review; it must never interrupt waking up.
             viewModelScope.launch { reviews.recordReview(record, nextState) }
+        }
+    }
+
+    // This morning's record
+
+    @OptIn(ExperimentalUuidApi::class)
+    private fun startSession() {
+        val now = clock.now()
+        val started = WakeSession(
+            id = Uuid.random().toString(),
+            alarmId = alarmId,
+            date = now.toLocalDateTime(timeZone()).date,
+            rangAt = now,
+        )
+        session = started
+        viewModelScope.launch { sessionWrites.withLock { sessions.save(started) } }
+    }
+
+    /** A failed write only loses this morning from the streak; it must never interrupt waking up. */
+    private fun updateSession(change: (WakeSession) -> WakeSession) {
+        val updated = session?.let(change) ?: return
+        session = updated
+        viewModelScope.launch { sessionWrites.withLock { sessions.save(updated) } }
+    }
+
+    /** Stopped by answering: a sunrise. Then "Up at 07:03 · 13 sunrises in a row". */
+    private fun markUp(silencingCards: Int) {
+        if (!countsForStreak) return
+        val now = clock.now()
+        updateSession { it.copy(outcome = WakeOutcome.UP, upAt = now, silencingCards = silencingCards) }
+        val mine = session ?: return
+        viewModelScope.launch {
+            val saved = try {
+                sessionWrites.withLock { sessions.observeAll().first() }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyList()
+            }
+            val local = now.toLocalDateTime(timeZone())
+            val streak = Streaks.current(saved.filter { it.id != mine.id } + mine, local.date)
+            val time = "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+            val line = if (streak <= 1) "Up at $time · day 1 of your streak" else "Up at $time · $streak sunrises in a row"
+            _state.update { it.copy(upLine = line) }
         }
     }
 

@@ -21,13 +21,36 @@ The first time the app opens (nothing saved yet says it's done), it shows six sc
    - **Autostart** (Xiaomi, Redmi, Poco, Samsung, Oppo, Realme, OnePlus, Vivo, Huawei, Honor only): opens the maker's screen, or Sunup's app info if it moved, with a hint of what to switch on. Android can't check this one, so it counts as done once opened.
    - **Try a test alarm**: rings softly in 10 seconds (it needs Exact alarms). It plays as Gentle: one card stops it, no wake-up check, nothing saved except that card's review.
    - **Continue** always works, even with rows not done.
-6. **How hard is it to get you up?** (mockup C2): Gentle, Normal (Recommended) or Heavy sleeper, with "Your morning" step by step. **Set my 07:00 alarm** saves the first alarm (the chosen time, days and mode, no label), remembers that onboarding is done, and opens the alarm list (or the Decks tab, for My own cards). If exact alarms aren't allowed it says so and stays.
+6. **How hard is it to get you up?** (mockup C2): Gentle, Normal (Recommended) or Heavy sleeper, with "Your morning" step by step. **Set my 07:00 alarm** saves the first alarm (the chosen time, days and mode, no label), remembers that onboarding is done, and opens Home (or the Decks tab, for My own cards). If exact alarms aren't allowed it says so and stays.
 
 Onboarding shows again only if the app's data is cleared. If remembering "done" fails, it shows again next time (the alarm is already set).
 
+## Home
+
+After the first run the app opens on **Home**, the Alarm tab (the original Home mockup):
+
+- **Top:** "sunup", the streak (Pip and "12": sunrises in a row) and the number of cards answered in every morning, bonus cards included.
+- **Alarm card** (big, indigo): the alarm that rings next, with "Today", "Tomorrow" or the weekday, its time, days, deck and mode, and an on/off switch. Switching it off on Home keeps it on the card as "Off · enjoy the sleep-in" (so it doesn't jump to another alarm under your finger) until you leave Home; when you come back, the card shows the next alarm to ring again. With every alarm off, it shows the earliest one, off. (The alarm list is sorted by time of day; Home picks by the next ring, so days matter.) Tapping the card opens the **alarm list**. No alarms at all: "No alarm set" and **Add alarm**.
+- **Deck card:** the deck that alarm uses (Any deck = the first deck), with "24 of 60 cards learned" (countries for a map). Learned = answered right and not forgotten since. Tapping it opens the deck. No decks: "No deck yet", **Go to Decks**.
+- **This week:** Monday to Sunday: a sun for a sunrise, a dash for a missed morning, a glowing ring for today, a dashed ring for no alarm or days still to come; "3 sunrises".
+- **Preview tomorrow's wake-up:** plays that alarm's morning (its deck and mode) on the ringing screen, without sound, without the wake-up check, saving nothing.
+
+## Streaks
+
+Every time the morning screen opens for a real alarm, Sunup keeps a record of that morning: when it rang, how it ended, how many cards. The test alarm, previews, test bench "Preview all games" and the wake-up check's re-rings don't make one.
+
+| The day | Streak |
+|---|---|
+| An alarm stopped by answering (a **sunrise**) | +1 |
+| An alarm rang and wasn't answered: **Emergency stop**, or left ringing | back to 0 |
+| No alarm rang (a day off, e.g. a weekend) | unchanged, never breaks it |
+| Today, before its sunrise | unchanged until the alarm is answered |
+
+One sunrise is enough for a day, even if another alarm that day was missed. If the ringing screen never opened (e.g. full-screen alarms not allowed and the user never tapped the notification), that morning isn't recorded, so it counts as no alarm. **"You're up!"** shows "Up at 07:03 · 13 sunrises in a row" ("day 1 of your streak" for the first). No streak freezes yet.
+
 ## Setting alarms
 
-After the first run the app opens on the **alarm list**: each alarm's time, days, deck and mode, with a switch, and a banner saying when the next one rings ("Rings in 8 h 19 min"). Tap an alarm to edit it, or **+** to add one.
+The **alarm list** (from Home's alarm card): each alarm's time, days, deck and mode, with a switch, and a banner saying when the next one rings ("Rings in 8 h 19 min"). Tap an alarm to edit it, or **+** to add one. Back returns to Home.
 
 **The editor:** time (hours step by 1, minutes by 5; tap the time to type an exact one), repeat days (none = rings once, then switches itself off), wake-up mode, and the deck the cards come from (**Any deck** = the first deck). It shows when the alarm will ring. **Save alarm** always switches the alarm on. Existing alarms can be deleted (asks first).
 

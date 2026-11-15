@@ -9,6 +9,7 @@ import dev.victorc.sunup.core.database.entity.DeckEntity
 import dev.victorc.sunup.core.database.entity.NoteEntity
 import dev.victorc.sunup.core.database.entity.ReviewLogEntity
 import dev.victorc.sunup.core.database.entity.ReviewStateEntity
+import dev.victorc.sunup.core.database.entity.WakeSessionEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -130,4 +131,13 @@ interface AlarmDao {
 
     @Query("UPDATE alarms SET deletedAt = :now, updatedAt = :now WHERE id = :id")
     suspend fun softDelete(id: String, now: Long)
+}
+
+@Dao
+interface WakeSessionDao {
+    @Upsert
+    suspend fun upsert(session: WakeSessionEntity)
+
+    @Query("SELECT * FROM wake_sessions WHERE deletedAt IS NULL ORDER BY rangAt DESC")
+    fun observeAll(): Flow<List<WakeSessionEntity>>
 }

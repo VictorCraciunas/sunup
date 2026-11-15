@@ -84,6 +84,21 @@ data class ReviewLogEntity(
     val deletedAt: Long? = null,
 )
 
+/** One morning (see WakeSession). Never on the ring path: written by the morning screen. */
+@Entity(tableName = "wake_sessions", indices = [Index("epochDay")])
+data class WakeSessionEntity(
+    @PrimaryKey val id: String,
+    val alarmId: String,
+    val epochDay: Long,
+    val rangAt: Long,
+    val outcome: String,
+    val upAt: Long?,
+    val silencingCards: Int,
+    val bonusCards: Int,
+    val updatedAt: Long,
+    val deletedAt: Long? = null,
+)
+
 @Entity(tableName = "alarms")
 data class AlarmEntity(
     @PrimaryKey val id: String,

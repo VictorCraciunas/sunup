@@ -254,6 +254,15 @@ private fun Done(state: WakeUpState, onAction: (WakeUpAction) -> Unit) {
         Spacer(Modifier.weight(0.5f))
         Pip(PipMood.HAPPY, modifier = Modifier.align(Alignment.CenterHorizontally), size = 140.dp)
         Text("You're up!", style = SunupTheme.typography.display, color = palette.text, modifier = Modifier.align(Alignment.CenterHorizontally))
+        state.upLine?.let {
+            Text(
+                it,
+                style = SunupTheme.typography.title,
+                color = SunupTheme.colors.onSunSoft,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         if (state.stoppedWithoutCard) {
             Text(
                 "Stopped without a card. That's okay, see you tomorrow.",

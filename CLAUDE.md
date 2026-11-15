@@ -29,7 +29,7 @@ All versions live in `gradle/libs.versions.toml`; never hardcode a version in a 
 :core:data                     Repository implementations, settings (DataStore), sample and geography deck seeders
 :core:design-system            SunupTheme tokens and shared components (SunupButton, SunupRaised, SunupStepper, Pip)
 :core:geo                      Country map file loader and the interactive map (geography games)
-:feature:alarms:presentation   The alarm list (home) and the alarm editor
+:feature:alarms:presentation   Home (the Alarm tab: streak, next alarm, deck progress, week), the alarm list and the editor
 :feature:decks:domain          Card forms: what each game's form holds, checking it, turning it into a card
 :feature:decks:presentation    The Decks tab: My decks / Browse packs, New deck, Deck detail, game picker, card editor
 :feature:onboarding:presentation  First-run screens and the permission checklist; saves the first alarm

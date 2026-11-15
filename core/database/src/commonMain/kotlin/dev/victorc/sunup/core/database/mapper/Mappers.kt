@@ -5,6 +5,7 @@ import dev.victorc.sunup.core.database.entity.DeckEntity
 import dev.victorc.sunup.core.database.entity.NoteEntity
 import dev.victorc.sunup.core.database.entity.ReviewLogEntity
 import dev.victorc.sunup.core.database.entity.ReviewStateEntity
+import dev.victorc.sunup.core.database.entity.WakeSessionEntity
 import dev.victorc.sunup.core.domain.learning.Deck
 import dev.victorc.sunup.core.domain.learning.DeckKind
 import dev.victorc.sunup.core.domain.learning.Direction
@@ -18,6 +19,8 @@ import dev.victorc.sunup.core.domain.learning.ReviewRecord
 import dev.victorc.sunup.core.domain.learning.ReviewState
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
 import dev.victorc.sunup.core.domain.wakeup.WakeMode
+import dev.victorc.sunup.core.domain.wakeup.WakeOutcome
+import dev.victorc.sunup.core.domain.wakeup.WakeSession
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 import kotlinx.datetime.DayOfWeek
@@ -169,6 +172,31 @@ fun AlarmEntity.toDomain() = WakeAlarm(
     deckId = deckId,
     mode = enumOrDefault(mode, WakeMode.NORMAL),
     preAlarm = preAlarm,
+)
+
+// Mornings
+
+fun WakeSession.toEntity(updatedAt: Long) = WakeSessionEntity(
+    id = id,
+    alarmId = alarmId,
+    epochDay = date.toEpochDays(),
+    rangAt = rangAt.toEpochMilliseconds(),
+    outcome = outcome.name,
+    upAt = upAt?.toEpochMilliseconds(),
+    silencingCards = silencingCards,
+    bonusCards = bonusCards,
+    updatedAt = updatedAt,
+)
+
+fun WakeSessionEntity.toDomain() = WakeSession(
+    id = id,
+    alarmId = alarmId,
+    date = LocalDate.fromEpochDays(epochDay),
+    rangAt = Instant.fromEpochMilliseconds(rangAt),
+    outcome = enumOrDefault(outcome, WakeOutcome.RINGING),
+    upAt = upAt?.let { Instant.fromEpochMilliseconds(it) },
+    silencingCards = silencingCards,
+    bonusCards = bonusCards,
 )
 
 // Helpers

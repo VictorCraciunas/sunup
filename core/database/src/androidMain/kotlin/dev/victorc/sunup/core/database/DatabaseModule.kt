@@ -23,4 +23,5 @@ val databaseModule = module {
     single { get<SunupDatabase>().reviewStateDao() }
     single { get<SunupDatabase>().reviewLogDao() }
     single { get<SunupDatabase>().alarmDao() }
+    single { get<SunupDatabase>().wakeSessionDao() }
 }

@@ -19,6 +19,7 @@ val wakeUpModule = module {
             planner = get(),
             alarms = get(),
             reviews = get(),
+            sessions = get(),
             scheduler = get(),
             atlasSource = get(),
             clock = get(),

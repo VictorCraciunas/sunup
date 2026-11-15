@@ -114,6 +114,8 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `wakeup/WakeAlarm.kt` | An alarm as the user sets it up (deck, `WakeMode`, label); `TEST_ALARM_ID` (onboarding's test ring) |
 | `settings/AppSettingsRepository.kt` | Small app settings: whether onboarding is done |
 | `wakeup/WakeAlarmRepository.kt` | Its repository interface |
+| `wakeup/WakeSession.kt` | One morning (`WakeSession`, `WakeOutcome`: RINGING, UP, STOPPED_WITHOUT_CARD) and `WakeSessionRepository` |
+| `wakeup/Streaks.kt` | The streak rules: `current`, `week` (`DayMark` per day), `cardsAnswered` |
 
 ## `core:alarm`: the alarm engine (Rule #1 lives here)
 
@@ -145,18 +147,18 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | File | What's in it |
 |---|---|
 | `commonMain/SunupDatabase.kt` | The Room database and `buildSunupDatabase()` |
-| `commonMain/entity/Entities.kt` | Tables: decks, notes, review_states, review_log, alarms (all with `updatedAt` / `deletedAt`) |
+| `commonMain/entity/Entities.kt` | Tables: decks, notes, review_states, review_log, alarms, wake_sessions (all with `updatedAt` / `deletedAt`) |
 | `commonMain/dao/Daos.kt` | All DAOs |
 | `commonMain/mapper/Mappers.kt` | Entity ↔ domain model |
 | `androidMain/DatabaseModule.kt` | Koin `databaseModule` (opened lazily) |
 | `iosMain/IosDatabaseBuilder.kt` | iOS database location |
-| `schemas/…/1.json`, `2.json` | Exported schemas. Version 2 added `game`, `isTrue`, `pairs` to notes (auto-migration). Changing an entity needs a new version and a migration |
+| `schemas/…/1.json`, `2.json`, `3.json` | Exported schemas. Version 2 added `game`, `isTrue`, `pairs` to notes; version 3 added `wake_sessions` (both auto-migrations). Changing an entity needs a new version and a migration |
 
 ## `core:data`: repository implementations
 
 | File | What's in it |
 |---|---|
-| `RoomRepositories.kt` | Room-backed `Deck`, `Note`, `Review` and `WakeAlarm` repositories |
+| `RoomRepositories.kt` | Room-backed `Deck`, `Note`, `Review`, `WakeAlarm` and `WakeSession` repositories |
 | `SafeLocal.kt` | Wraps database writes so failures become `DataError.Local` |
 | `SampleDeckSeeder.kt` | The sample Spanish deck for the test bench: a card of every game |
 | `GeoDeckSeeder.kt` | Builds a geography deck for a region from the map's country list |
@@ -190,19 +192,21 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | `MapProjection.kt` | Lon/lat ↔ screen, pinch/drag limits, zooming in on a country |
 | `CountryMap.kt` | The interactive map composable: colors, tiny-country circles, labels, taps |
 
-## `feature:alarms`: the alarm list and editor
+## `feature:alarms`: Home, the alarm list and editor
 
 Saving goes through `AlarmService` in `core:alarm`.
 
 | File | What's in it |
 |---|---|
+| `presentation/HomeViewModel.kt` | Home state (`HomeAlarmUi`, `DeckProgressUi`, `WeekDayUi`), actions, events: the alarm shown on the card, its deck's progress, streak and week from `Streaks` |
+| `presentation/HomeScreen.kt` | `HomeRoot` / `HomeScreen`: streak and cards chips, the alarm card with its switch, deck card, This week, Preview button |
 | `presentation/AlarmListViewModel.kt` | List state (`AlarmItemUi`), actions, events; runs the sync when the list opens; ticks every minute for "Rings in…" |
-| `presentation/AlarmListScreen.kt` | `AlarmListRoot` / `AlarmListScreen`: header with +, next-alarm banner, alarm cards with switches, empty state, test bench link |
+| `presentation/AlarmListScreen.kt` | `AlarmListRoot` / `AlarmListScreen`: Back, title and +, next-alarm banner, alarm cards with switches, empty state, test bench link |
 | `presentation/AlarmEditorViewModel.kt` | Editor state and actions: time, days, mode, deck, save, delete |
 | `presentation/AlarmEditorScreen.kt` | `AlarmEditorRoot` / `AlarmEditorScreen`: time steppers and time dialog, day chips, mode segments, deck list, delete confirm |
 | `presentation/AlarmText.kt` | "Mon–Fri", "Rings in 8 h 19 min", mode names and hints |
 | `presentation/AlarmErrors.kt` | Messages for `AlarmError` |
-| `presentation/AlarmsModule.kt` | Koin `alarmsModule` |
+| `presentation/AlarmsModule.kt` | Koin `alarmsModule` (Home, list, editor) |
 
 ## `feature:decks`: making decks and cards
 
@@ -237,8 +241,8 @@ Saving goes through `AlarmService` in `core:alarm`.
 | File | What's in it |
 |---|---|
 | `domain/WakeSessionPlanner.kt` | Picks this morning's cards: random, weighted toward due cards, per mode; geography plans; Preview all games; Quick math fallbacks |
-| `presentation/WakeUpState.kt` | MVI State, `CardUi` (Choice, Typing, Match, FindOnMap), Actions, Events |
-| `presentation/WakeUpViewModel.kt` | Answers, grading, saving reviews, stopping the alarm, the wake-up check, loading the map; plays `TEST_ALARM_ID` as Gentle |
+| `presentation/WakeUpState.kt` | MVI State, `CardUi` (Choice, Typing, Match, FindOnMap), Actions, Events; `PREVIEW_ALARM_ID`, `PREVIEW_ALARM_PREFIX` |
+| `presentation/WakeUpViewModel.kt` | Answers, grading, saving reviews, stopping the alarm, the wake-up check, loading the map; plays `TEST_ALARM_ID` as Gentle; `preview:<alarm id>` as practice; writes this morning's `WakeSession` and the "Up at 07:03" streak line |
 | `presentation/WakeUpScreen.kt` | `WakeUpRoot` and the screens: card page, bonus offer, "You're up!", "Still with me?", palettes |
 | `presentation/WakeUpCards.kt` | Card pieces: prompt card, options, match grid, typing input, map areas, feedback panel |
 | `presentation/WakeUpModule.kt` | Koin `wakeUpModule` (planner, ViewModel, map source) |
@@ -248,16 +252,18 @@ Saving goes through `AlarmService` in `core:alarm`.
 | File | What's in it |
 |---|---|
 | `androidApp/.../SunupApplication.kt` | Starts Koin with every module (also runs before first unlock) |
-| `androidApp/.../MainActivity.kt` | Home screen; opens the ringing screen while an alarm rings |
-| `androidApp/.../alarm/AlarmRingingActivity.kt` | Shows `WakeUpRoot` over the lock screen; also opens Preview all games |
+| `androidApp/.../MainActivity.kt` | Shows `App()`; opens the ringing screen while an alarm rings, and for Home's preview |
+| `androidApp/.../alarm/AlarmRingingActivity.kt` | Shows `WakeUpRoot` over the lock screen; also opens Preview all games and Home's preview of one alarm |
 | `androidApp/.../alarm/AlarmTestBench.kt` | Temporary debug panel: permissions, sample decks, modes, test alarms, ring log |
 | `androidApp/src/main/AndroidManifest.xml` | Activities |
-| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise the alarm list), the Alarm and Decks tabs with the bottom bar, every inner screen, the test bench |
+| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm tab (Home) and Decks tab with the bottom bar, every inner screen, the test bench |
 | `shared/.../MainViewController.kt` | iOS entry into Compose |
 
 ## Key flows
 
-**First run**: `App.kt` → `rememberOnboardingDone()` (DataStore) → false: `onboardingGraph` → the mode screen's "Set my alarm" → `OnboardingViewModel.finish`: `GeoDeckSeeder` (geography) → `AlarmService.save` → `AppSettingsRepository.setOnboardingDone` → `App.kt` opens the alarm list (or the Decks tab). The test alarm: `AlarmScheduler.scheduleFollowUp(TEST_ALARM_ID, now + 10 s)`.
+**First run**: `App.kt` → `rememberOnboardingDone()` (DataStore) → false: `onboardingGraph` → the mode screen's "Set my alarm" → `OnboardingViewModel.finish`: `GeoDeckSeeder` (geography) → `AlarmService.save` → `AppSettingsRepository.setOnboardingDone` → `App.kt` opens Home (or the Decks tab). The test alarm: `AlarmScheduler.scheduleFollowUp(TEST_ALARM_ID, now + 10 s)`.
+
+**Streaks**: `WakeUpViewModel` saves a `WakeSession` when the morning screen opens (RINGING), marks it UP when the last silencing card is answered (or STOPPED_WITHOUT_CARD on Emergency stop), and counts bonus cards → `WakeSessionRepository` → `HomeViewModel` reads them all and asks `Streaks` for the streak and the week.
 
 **Setting an alarm**: `AlarmEditorViewModel` → `AlarmService.save` → `AlarmScheduler.schedule` (engine store + `setAlarmClock`) → then `WakeAlarmRepository.save` (database). Opening the list runs `AlarmService.syncWithEngine`.
 
@@ -286,6 +292,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | The map's look or touch handling | `CountryMap.kt`, `MapProjection.kt` |
 | Map data (names, regions, neighbours) | `tools/geo/build_countries.py`, then rebuild `countries.json` |
 | Database tables | `Entities.kt`, `Daos.kt`, `Mappers.kt`, then a schema version and migration |
+| Home, or how streaks count | `HomeViewModel.kt` / `HomeScreen.kt`; rules in `core:domain`'s `Streaks.kt`, then `docs/HOW_IT_WORKS.md` |
 | The alarm list or editor | `feature:alarms` (saving and syncing: `core:alarm`'s `AlarmService.kt`) |
 | The first-run screens or the permission checklist | `feature:onboarding` (Android checks: `PhonePermissions.android.kt`, `AlarmPermissions.kt`) |
 | The deck screens or a card form | `feature:decks` (form rules: `CardDraft.kt`) |
@@ -299,4 +306,4 @@ Saving goes through `AlarmService` in `core:alarm`.
 
 ## Tests
 
-Each module's tests sit in its `src/commonTest`: alarm scheduling and the store (`core:alarm`), mappers (`core:database`), spaced repetition, eligibility, card building and answer checking (`core:domain`), map parsing and projection (`core:geo`), the morning planner (`feature:wakeup:domain`), the alarm service (`core:alarm`), alarm list text (`feature:alarms:presentation`). All run with `./gradlew testAndroidHostTest`.
+Each module's tests sit in its `src/commonTest`: alarm scheduling and the store (`core:alarm`), mappers (`core:database`), spaced repetition, eligibility, card building, answer checking and streaks (`core:domain`), map parsing and projection (`core:geo`), the morning planner (`feature:wakeup:domain`), the alarm service (`core:alarm`), alarm list text (`feature:alarms:presentation`). All run with `./gradlew testAndroidHostTest`.

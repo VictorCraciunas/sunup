@@ -5,6 +5,7 @@ import dev.victorc.sunup.core.database.dao.DeckDao
 import dev.victorc.sunup.core.database.dao.NoteDao
 import dev.victorc.sunup.core.database.dao.ReviewLogDao
 import dev.victorc.sunup.core.database.dao.ReviewStateDao
+import dev.victorc.sunup.core.database.dao.WakeSessionDao
 import dev.victorc.sunup.core.database.mapper.toDomain
 import dev.victorc.sunup.core.database.mapper.toEntity
 import dev.victorc.sunup.core.domain.DataError
@@ -19,6 +20,8 @@ import dev.victorc.sunup.core.domain.learning.ReviewRepository
 import dev.victorc.sunup.core.domain.learning.ReviewState
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarm
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
+import dev.victorc.sunup.core.domain.wakeup.WakeSession
+import dev.victorc.sunup.core.domain.wakeup.WakeSessionRepository
 import kotlin.time.Clock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -125,5 +128,17 @@ class RoomWakeAlarmRepository(
         val now = clock.now().toEpochMilliseconds()
         val createdAt = dao.get(alarm.id)?.createdAt ?: now
         dao.upsert(alarm.toEntity(createdAt = createdAt, updatedAt = now))
+    }
+}
+
+class RoomWakeSessionRepository(
+    private val dao: WakeSessionDao,
+    private val clock: Clock,
+) : WakeSessionRepository {
+
+    override fun observeAll(): Flow<List<WakeSession>> = dao.observeAll().map { list -> list.map { it.toDomain() } }
+
+    override suspend fun save(session: WakeSession): EmptyResult<DataError.Local> = safeLocal {
+        dao.upsert(session.toEntity(updatedAt = clock.now().toEpochMilliseconds()))
     }
 }

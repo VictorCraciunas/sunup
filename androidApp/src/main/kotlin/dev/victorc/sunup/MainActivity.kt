@@ -49,6 +49,9 @@ class MainActivity : ComponentActivity() {
             }
 
             App(
+                onPreviewMorning = { alarmId ->
+                    startActivity(AlarmRingingActivity.previewIntent(this@MainActivity, alarmId))
+                },
                 testBench = {
                     // Debug tools for real-phone testing (ring log, quick test alarms). TODO: drop before release.
                     AlarmTestBench(

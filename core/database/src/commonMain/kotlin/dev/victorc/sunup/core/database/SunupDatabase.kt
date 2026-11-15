@@ -11,11 +11,13 @@ import dev.victorc.sunup.core.database.dao.DeckDao
 import dev.victorc.sunup.core.database.dao.NoteDao
 import dev.victorc.sunup.core.database.dao.ReviewLogDao
 import dev.victorc.sunup.core.database.dao.ReviewStateDao
+import dev.victorc.sunup.core.database.dao.WakeSessionDao
 import dev.victorc.sunup.core.database.entity.AlarmEntity
 import dev.victorc.sunup.core.database.entity.DeckEntity
 import dev.victorc.sunup.core.database.entity.NoteEntity
 import dev.victorc.sunup.core.database.entity.ReviewLogEntity
 import dev.victorc.sunup.core.database.entity.ReviewStateEntity
+import dev.victorc.sunup.core.database.entity.WakeSessionEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
@@ -26,12 +28,15 @@ import kotlinx.coroutines.IO
         ReviewStateEntity::class,
         ReviewLogEntity::class,
         AlarmEntity::class,
+        WakeSessionEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
     autoMigrations = [
         // 2: cards have one game each (game, isTrue, pairs on notes).
         AutoMigration(from = 1, to = 2),
+        // 3: one row per morning (wake_sessions), for streaks and Home.
+        AutoMigration(from = 2, to = 3),
     ],
 )
 @ConstructedBy(SunupDatabaseConstructor::class)
@@ -41,6 +46,7 @@ abstract class SunupDatabase : RoomDatabase() {
     abstract fun reviewStateDao(): ReviewStateDao
     abstract fun reviewLogDao(): ReviewLogDao
     abstract fun alarmDao(): AlarmDao
+    abstract fun wakeSessionDao(): WakeSessionDao
 
     companion object {
         const val FILE_NAME = "sunup.db"

@@ -15,6 +15,7 @@ import dev.victorc.sunup.core.alarm.RingingState
 import dev.victorc.sunup.core.alarm.WakeUpScreenState
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 import dev.victorc.sunup.feature.wakeup.presentation.PREVIEW_ALARM_ID
+import dev.victorc.sunup.feature.wakeup.presentation.PREVIEW_ALARM_PREFIX
 import dev.victorc.sunup.feature.wakeup.presentation.WakeUpRoot
 
 /**
@@ -30,6 +31,7 @@ class AlarmRingingActivity : ComponentActivity() {
 
         // Recreated (e.g. rotated) mid-flow: keep going. Opened from an old notification: nothing to show.
         val id = savedInstanceState?.getString(KEY_ALARM_ID)
+            ?: intent.getStringExtra(EXTRA_PREVIEW_ALARM)?.let { PREVIEW_ALARM_PREFIX + it }
             ?: PREVIEW_ALARM_ID.takeIf { intent.getBooleanExtra(EXTRA_PREVIEW, false) }
             ?: RingingState.current.value?.alarmId
         if (id == null) {
@@ -89,9 +91,14 @@ class AlarmRingingActivity : ComponentActivity() {
     companion object {
         private const val KEY_ALARM_ID = "alarm_id"
         private const val EXTRA_PREVIEW = "dev.victorc.sunup.extra.PREVIEW"
+        private const val EXTRA_PREVIEW_ALARM = "dev.victorc.sunup.extra.PREVIEW_ALARM"
 
         /** Plays every game once without an alarm, for trying them out. Saves nothing. */
         fun previewIntent(context: Context): Intent =
             Intent(context, AlarmRingingActivity::class.java).putExtra(EXTRA_PREVIEW, true)
+
+        /** Plays [alarmId]'s morning (its deck and mode) without sound, as practice. Saves nothing. */
+        fun previewIntent(context: Context, alarmId: String): Intent =
+            Intent(context, AlarmRingingActivity::class.java).putExtra(EXTRA_PREVIEW_ALARM, alarmId)
     }
 }

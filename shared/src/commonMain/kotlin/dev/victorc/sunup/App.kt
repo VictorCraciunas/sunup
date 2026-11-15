@@ -32,6 +32,7 @@ import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 import dev.victorc.sunup.core.domain.learning.Game
 import dev.victorc.sunup.feature.alarms.presentation.AlarmEditorRoot
 import dev.victorc.sunup.feature.alarms.presentation.AlarmListRoot
+import dev.victorc.sunup.feature.alarms.presentation.HomeRoot
 import dev.victorc.sunup.feature.decks.presentation.CardEditorRoot
 import dev.victorc.sunup.feature.decks.presentation.DeckDetailRoot
 import dev.victorc.sunup.feature.decks.presentation.DeckListRoot
@@ -45,13 +46,17 @@ import kotlinx.serialization.Serializable
 
 // Tabs (with the bottom bar)
 
+/** The Alarm tab: Home. */
 @Serializable
-private data object AlarmListRoute
+private data object HomeRoute
 
 @Serializable
 private data object DeckListRoute
 
 // Inner screens
+
+@Serializable
+private data object AlarmListRoute
 
 /** Null [alarmId]: a new alarm. */
 @Serializable
@@ -77,13 +82,17 @@ private data class CardRoute(val deckId: String, val game: String, val cardId: S
 private data object TestBenchRoute
 
 /**
- * Root of the app: onboarding the first time, then the Alarm and Decks tabs, their inner
- * screens, and (Android debug) the test bench.
+ * Root of the app: onboarding the first time, then the Alarm tab (Home) and the Decks tab,
+ * their inner screens, and (Android debug) the test bench.
  *
  * @param testBench the debug test bench; when set, the alarm list links to it.
+ * @param onPreviewMorning plays an alarm's morning as practice (Android: the ringing screen); null hides Home's preview button
  */
 @Composable
-fun App(testBench: (@Composable () -> Unit)? = null) {
+fun App(
+    testBench: (@Composable () -> Unit)? = null,
+    onPreviewMorning: ((alarmId: String) -> Unit)? = null,
+) {
     SunupTheme {
         // Until the settings file is read (a moment), just the background, so neither the
         // onboarding nor the alarm list flashes up by mistake.
@@ -91,21 +100,21 @@ fun App(testBench: (@Composable () -> Unit)? = null) {
             null -> Box(Modifier.fillMaxSize().background(SunupTheme.colors.background))
             else -> {
                 // Decided once: finishing onboarding navigates away by itself.
-                val start: Any = remember { if (onboardingDone) AlarmListRoute else OnboardingRoute }
-                SunupRoot(start, testBench)
+                val start: Any = remember { if (onboardingDone) HomeRoute else OnboardingRoute }
+                SunupRoot(start, testBench, onPreviewMorning)
             }
         }
     }
 }
 
 @Composable
-private fun SunupRoot(start: Any, testBench: (@Composable () -> Unit)?) {
+private fun SunupRoot(start: Any, testBench: (@Composable () -> Unit)?, onPreviewMorning: ((String) -> Unit)?) {
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val destination = entry?.destination
-    val onAlarms = destination?.hasRoute<AlarmListRoute>() == true
+    val onHome = destination?.hasRoute<HomeRoute>() == true
     val onDecks = destination?.hasRoute<DeckListRoute>() == true
-    val showBar = onAlarms || onDecks
+    val showBar = onHome || onDecks
 
     Column(Modifier.fillMaxSize().background(SunupTheme.colors.background)) {
         Box(
@@ -114,12 +123,12 @@ private fun SunupRoot(start: Any, testBench: (@Composable () -> Unit)?) {
                 // The bar takes the system navigation area; screens above it mustn't pad for it again.
                 .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
         ) {
-            SunupNavHost(navController, start, testBench)
+            SunupNavHost(navController, start, testBench, onPreviewMorning)
         }
         if (showBar) {
             SunupNavBar(
                 items = listOf(
-                    NavBarItem("Alarm", NavIcon.ALARM, selected = onAlarms, onClick = { navController.switchTab(AlarmListRoute) }),
+                    NavBarItem("Alarm", NavIcon.ALARM, selected = onHome, onClick = { navController.switchTab(HomeRoute) }),
                     NavBarItem("Decks", NavIcon.DECKS, selected = onDecks, onClick = { navController.switchTab(DeckListRoute) }),
                 ),
             )
@@ -128,17 +137,32 @@ private fun SunupRoot(start: Any, testBench: (@Composable () -> Unit)?) {
 }
 
 @Composable
-private fun SunupNavHost(navController: NavHostController, start: Any, testBench: (@Composable () -> Unit)?) {
+private fun SunupNavHost(
+    navController: NavHostController,
+    start: Any,
+    testBench: (@Composable () -> Unit)?,
+    onPreviewMorning: ((String) -> Unit)?,
+) {
     NavHost(navController = navController, startDestination = start) {
         onboardingGraph(navController) { openDecks ->
-            // Onboarding is gone from the back stack: Back from the alarm list leaves the app.
-            navController.navigate(AlarmListRoute) { popUpTo<OnboardingRoute> { inclusive = true } }
+            // Onboarding is gone from the back stack: Back from Home leaves the app.
+            navController.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } }
             if (openDecks) navController.switchTab(DeckListRoute)
         }
 
+        composable<HomeRoute> {
+            HomeRoot(
+                onOpenAlarms = { navController.navigate(AlarmListRoute) },
+                onNewAlarm = { navController.navigate(AlarmEditorRoute()) },
+                onOpenDeck = { id -> navController.navigate(DeckRoute(id)) },
+                onOpenDecks = { navController.switchTab(DeckListRoute) },
+                onPreview = onPreviewMorning,
+            )
+        }
         composable<AlarmListRoute> {
             AlarmListRoot(
                 onOpenEditor = { id -> navController.navigate(AlarmEditorRoute(id)) },
+                onBack = { navController.popBackStack() },
                 onOpenTestBench = testBench?.let { { navController.navigate(TestBenchRoute) } },
             )
         }
@@ -212,11 +236,11 @@ private fun SunupNavHost(navController: NavHostController, start: Any, testBench
 
 /**
  * Bottom bar tabs: one copy of each tab, and the tab keeps its place when you come back.
- * The alarm list is always the bottom of the stack (the graph's start can be onboarding).
+ * Home is always the bottom of the stack (the graph's start can be onboarding).
  */
 private fun NavHostController.switchTab(route: Any) {
     navigate(route) {
-        popUpTo<AlarmListRoute> { saveState = true }
+        popUpTo<HomeRoute> { saveState = true }
         launchSingleTop = true
         restoreState = true
     }
@@ -234,7 +258,7 @@ private fun TestBenchScreen(onBack: () -> Unit, content: @Composable () -> Unit)
             .padding(SunupTheme.spacing.screen),
         verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),
     ) {
-        TextButton(onClick = onBack) { Text("‹ Alarms", color = SunupTheme.colors.indigo) }
+        TextButton(onClick = onBack) { Text("‹ Back", color = SunupTheme.colors.indigo) }
         content()
     }
 }

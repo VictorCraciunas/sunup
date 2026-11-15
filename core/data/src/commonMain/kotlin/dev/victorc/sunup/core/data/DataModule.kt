@@ -5,6 +5,7 @@ import dev.victorc.sunup.core.domain.learning.NoteRepository
 import dev.victorc.sunup.core.domain.learning.ReviewRepository
 import dev.victorc.sunup.core.domain.settings.AppSettingsRepository
 import dev.victorc.sunup.core.domain.wakeup.WakeAlarmRepository
+import dev.victorc.sunup.core.domain.wakeup.WakeSessionRepository
 import kotlin.time.Clock
 import org.koin.dsl.module
 
@@ -16,6 +17,7 @@ val dataModule = module {
     single<NoteRepository> { RoomNoteRepository(notes = get(), states = get(), clock = get()) }
     single<ReviewRepository> { RoomReviewRepository(states = get(), log = get(), clock = get()) }
     single<WakeAlarmRepository> { RoomWakeAlarmRepository(dao = get(), clock = get()) }
+    single<WakeSessionRepository> { RoomWakeSessionRepository(dao = get(), clock = get()) }
     single { SampleDeckSeeder(decks = get(), notes = get()) }
     single { GeoDeckSeeder(decks = get(), notes = get()) }
 }

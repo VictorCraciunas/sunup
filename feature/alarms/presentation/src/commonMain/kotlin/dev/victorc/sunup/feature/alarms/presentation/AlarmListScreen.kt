@@ -35,19 +35,22 @@ import dev.victorc.sunup.core.designsystem.components.Pip
 import dev.victorc.sunup.core.designsystem.components.PipMood
 import dev.victorc.sunup.core.designsystem.components.SunupButton
 import dev.victorc.sunup.core.designsystem.components.SunupRaised
+import dev.victorc.sunup.core.designsystem.components.SunupTopBar
 import dev.victorc.sunup.core.designsystem.motion.riseIn
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * The alarm list, the app's home for now.
+ * Every alarm, opened from Home's alarm card.
  *
  * @param onOpenEditor null id: a new alarm
+ * @param onBack back to Home
  * @param onOpenTestBench shows a link to the debug test bench when set (Android debug only)
  */
 @Composable
 fun AlarmListRoot(
     onOpenEditor: (alarmId: String?) -> Unit,
+    onBack: () -> Unit,
     onOpenTestBench: (() -> Unit)? = null,
 ) {
     val viewModel = koinViewModel<AlarmListViewModel>()
@@ -61,7 +64,7 @@ fun AlarmListRoot(
             }
         }
     }
-    AlarmListScreen(state, viewModel::onAction, onOpenTestBench)
+    AlarmListScreen(state, viewModel::onAction, onBack, onOpenTestBench)
 }
 
 // TODO(M4): move user-facing text to string resources once localization is set up.
@@ -69,6 +72,7 @@ fun AlarmListRoot(
 fun AlarmListScreen(
     state: AlarmListState,
     onAction: (AlarmListAction) -> Unit,
+    onBack: () -> Unit,
     onOpenTestBench: (() -> Unit)? = null,
 ) {
     val colors = SunupTheme.colors
@@ -82,8 +86,7 @@ fun AlarmListScreen(
             .padding(horizontal = spacing.screen, vertical = spacing.lg),
         verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Alarms", style = SunupTheme.typography.headline, color = colors.ink, modifier = Modifier.weight(1f))
+        SunupTopBar(title = "Alarms", onBack = onBack) {
             AddButton(onClick = { onAction(AlarmListAction.OnAdd) })
         }
 
