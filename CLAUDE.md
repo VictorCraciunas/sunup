@@ -33,6 +33,7 @@ All versions live in `gradle/libs.versions.toml`; never hardcode a version in a 
 :feature:decks:domain          Card forms: what each game's form holds, checking it, turning it into a card
 :feature:decks:presentation    The Decks tab: My decks / Browse packs, New deck, Deck detail, game picker, card editor
 :feature:onboarding:presentation  First-run screens and the permission checklist; saves the first alarm
+:feature:progress:presentation The Progress tab: streak, learned, remembered, cards per morning, month of sunrises, milestones
 :feature:wakeup:domain         Morning flow planning (which cards, per mode)
 :feature:wakeup:presentation   Morning flow screens and ViewModel
 tools/geo/                     Script that builds the map file from Natural Earth

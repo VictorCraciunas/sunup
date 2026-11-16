@@ -42,6 +42,7 @@ import dev.victorc.sunup.feature.decks.presentation.NewDeckRoot
 import dev.victorc.sunup.feature.onboarding.presentation.OnboardingRoute
 import dev.victorc.sunup.feature.onboarding.presentation.onboardingGraph
 import dev.victorc.sunup.feature.onboarding.presentation.rememberOnboardingDone
+import dev.victorc.sunup.feature.progress.presentation.ProgressRoot
 import kotlinx.serialization.Serializable
 
 // Tabs (with the bottom bar)
@@ -52,6 +53,9 @@ private data object HomeRoute
 
 @Serializable
 private data object DeckListRoute
+
+@Serializable
+private data object ProgressRoute
 
 // Inner screens
 
@@ -114,7 +118,8 @@ private fun SunupRoot(start: Any, testBench: (@Composable () -> Unit)?, onPrevie
     val destination = entry?.destination
     val onHome = destination?.hasRoute<HomeRoute>() == true
     val onDecks = destination?.hasRoute<DeckListRoute>() == true
-    val showBar = onHome || onDecks
+    val onProgress = destination?.hasRoute<ProgressRoute>() == true
+    val showBar = onHome || onDecks || onProgress
 
     Column(Modifier.fillMaxSize().background(SunupTheme.colors.background)) {
         Box(
@@ -130,6 +135,7 @@ private fun SunupRoot(start: Any, testBench: (@Composable () -> Unit)?, onPrevie
                 items = listOf(
                     NavBarItem("Alarm", NavIcon.ALARM, selected = onHome, onClick = { navController.switchTab(HomeRoute) }),
                     NavBarItem("Decks", NavIcon.DECKS, selected = onDecks, onClick = { navController.switchTab(DeckListRoute) }),
+                    NavBarItem("Progress", NavIcon.PROGRESS, selected = onProgress, onClick = { navController.switchTab(ProgressRoute) }),
                 ),
             )
         }
@@ -169,6 +175,10 @@ private fun SunupNavHost(
         composable<AlarmEditorRoute> { entry ->
             val route = entry.toRoute<AlarmEditorRoute>()
             AlarmEditorRoot(alarmId = route.alarmId, onClose = { navController.popBackStack() })
+        }
+
+        composable<ProgressRoute> {
+            ProgressRoot()
         }
 
         composable<DeckListRoute> {

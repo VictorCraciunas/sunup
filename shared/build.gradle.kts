@@ -22,6 +22,7 @@ kotlin {
             implementation(projects.feature.alarms.presentation)
             implementation(projects.feature.decks.presentation)
             implementation(projects.feature.onboarding.presentation)
+            implementation(projects.feature.progress.presentation)
 
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)

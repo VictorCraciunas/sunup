@@ -9,6 +9,7 @@ import dev.victorc.sunup.core.database.databaseModule
 import dev.victorc.sunup.feature.alarms.presentation.alarmsModule
 import dev.victorc.sunup.feature.decks.presentation.decksModule
 import dev.victorc.sunup.feature.onboarding.presentation.onboardingModule
+import dev.victorc.sunup.feature.progress.presentation.progressModule
 import dev.victorc.sunup.feature.wakeup.presentation.wakeUpModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -32,6 +33,7 @@ class SunupApplication : Application() {
                 alarmsModule,
                 decksModule,
                 onboardingModule,
+                progressModule,
                 wakeUpModule,
             )
         }

@@ -36,6 +36,7 @@ dependencies {
     implementation(projects.feature.alarms.presentation)
     implementation(projects.feature.decks.presentation)
     implementation(projects.feature.onboarding.presentation)
+    implementation(projects.feature.progress.presentation)
     implementation(projects.feature.wakeup.presentation)
 
     implementation(libs.androidx.activity.compose)

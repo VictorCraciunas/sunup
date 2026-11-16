@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.victorc.sunup.core.domain.learning.DeckLimits
 import dev.victorc.sunup.core.designsystem.components.Pip
 import dev.victorc.sunup.core.designsystem.components.PipMood
 import dev.victorc.sunup.core.designsystem.components.SunupButton
@@ -188,6 +189,15 @@ private fun MyDecks(state: DeckListState, onAction: (DeckListAction) -> Unit) {
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),
     )
+    if (!state.loading) {
+        Text(
+            "${state.ownDecks} of ${DeckLimits.FREE_DECKS} free decks · maps don't count",
+            style = SunupTheme.typography.bodySmall,
+            color = if (state.ownDecks >= DeckLimits.FREE_DECKS) colors.onSunSoft else colors.inkMuted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 @Composable

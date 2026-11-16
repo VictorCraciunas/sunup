@@ -65,6 +65,7 @@ private class FakeReviews(private val states: List<ReviewState>) : ReviewReposit
     override suspend fun saveStates(states: List<ReviewState>): EmptyResult<DataError.Local> = Result.Success(Unit)
     override suspend fun recordReview(record: ReviewRecord, newState: ReviewState): EmptyResult<DataError.Local> =
         Result.Success(Unit)
+    override fun observeAllReviews(): Flow<List<ReviewRecord>> = flowOf(emptyList())
 }
 
 private object FixedClock : Clock {

@@ -109,6 +109,8 @@ class RoomReviewRepository(
             log.insert(record.toEntity())
             states.upsert(newState.toEntity(updatedAt = clock.now().toEpochMilliseconds()))
         }
+
+    override fun observeAllReviews(): Flow<List<ReviewRecord>> = log.observeAll().map { list -> list.map { it.toDomain() } }
 }
 
 class RoomWakeAlarmRepository(

@@ -116,6 +116,9 @@ interface ReviewLogDao {
 
     @Query("SELECT * FROM review_log WHERE reviewedAt >= :from AND reviewedAt < :until AND deletedAt IS NULL ORDER BY reviewedAt")
     suspend fun between(from: Long, until: Long): List<ReviewLogEntity>
+
+    @Query("SELECT * FROM review_log WHERE deletedAt IS NULL ORDER BY reviewedAt")
+    fun observeAll(): Flow<List<ReviewLogEntity>>
 }
 
 @Dao

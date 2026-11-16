@@ -49,6 +49,19 @@ Every time the morning screen opens for a real alarm, Sunup keeps a record of th
 
 One sunrise is enough for a day, even if another alarm that day was missed. If the ringing screen never opened (e.g. full-screen alarms not allowed and the user never tapped the notification), that morning isn't recorded, so it counts as no alarm. **"You're up!"** shows "07:03 · day 13" and a Streak tile with "+1" floating up. No streak freezes yet.
 
+## Progress
+
+The third tab (mockup 11). A **Week / Month** toggle sets what the boxes count:
+
+- **Streak:** the same as Home.
+- **This week / This month:** new cards answered right for the first time in that week or month.
+- **Remembered:** of the cards that came back (seen before), the share answered right the first time; "–" until one has.
+- **Week: Cards per morning:** a bar per day (bonus included; "–" for none) and "Avg wake-up 7:02", the average time the alarm was answered this week.
+- **Month: November sunrises:** every day as a sun (woke up), beige (missed), blue (day off, no alarm), a ring (today) or pale (still to come); "17 of 20 mornings" = sunrises out of the days an alarm rang. ‹ › go to earlier months (the stat boxes follow).
+- **Milestones:** First week (a 7-day streak), 100 cards (answered in mornings), 30 days (a 30-day streak). The streak ones use the best streak ever, so a broken streak never takes a medal back. Locked ones say what's left ("17 days to go").
+
+Pip's tip from the mockup ("try 5 cards by default") isn't there: card counts are fixed by the wake-up mode.
+
 ## Setting alarms
 
 The **alarm list** (from Home's alarm card): each alarm's time, days, deck and mode, with a switch, and a banner saying when the next one rings ("Rings in 8 h 19 min"). Tap an alarm to edit it, or **+** to add one. Back returns to Home.
@@ -151,7 +164,7 @@ Users don't write notes for Sunup to turn into games any more; they make **cards
 - Wrong answers are the card's own first, then borrowed from other cards in the same deck.
 - Cards made before cards had games (the old word and question notes) became **Pick from 4** cards.
 - **Geography decks** are built in: one card per country (name, its two-letter code, and its closest neighbours in the region as wrong answers). Loading a deck again updates the cards and keeps what was learned. The map comes with the app (Natural Earth, public domain), so it works offline.
-- **Free limit:** a few decks (number to decide), unlimited with Plus. Built-in decks (sample, maps) don't count. Not enforced yet.
+- **Free limit: 5 decks** (made or imported). Built-in decks (sample, maps) don't count. My decks shows "3 of 5 free decks · maps don't count"; at 5, **New deck** and **Import** show "You have 5 decks, the most on the free plan. Delete one to make room." instead of opening. Plus (unlimited) isn't built yet, so the app doesn't mention it.
 
 ## Reliability rules
 

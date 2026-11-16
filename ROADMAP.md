@@ -63,7 +63,6 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [x] ~~A2 wake-up check screen~~: built, then dropped (one screen too many); the check stays a chip
 - [x] A3 bonus round screen (dawn, the cards waiting with NEW CARD / PRACTICE, Let's go / Not today) and A4 "You're up!" (confetti, Pip jumping in a bright sky, 07:03 · day N, Correct / Cards / Streak tiles with +1, This morning). Not built: A3's "+1 bonus sun for Pip's sky", A4's Share
 - [x] A4 weather and next-event tiles, switched on from Home (location and calendar asked only then). Weather: MET Norway (free, credit shown) for the approximate location, fetched after the alarm stops; calendar read on the phone. Not on iOS yet
-- [ ] Morning screens in the improvements' look: A1 card
 - [ ] More motion: Pip rising between screens, new-card pop, haptics
 
 ## M4 · The rest of the app
@@ -73,9 +72,11 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [ ] iOS: Koin isn't started on iOS yet, so the app screens need that before they run there (M5)
 - [x] Home (original mockup): the Alarm tab's start screen. Streak and cards-answered chips, next-alarm card with a switch (opens the alarm list), the deck's progress (cards learned), this week's sunrises, Preview tomorrow's wake-up. The alarm list is now an inner screen with Back. Not yet: Progress and Friends tabs, weather and calendar tiles, Share, Pip's sky
 - [x] Decks part 1: cards with one game each (database version 2: `game`, `isTrue`, `pairs`; old notes became Pick from 4), random morning cards weighted toward due ones, any card stops the alarm, True or false plays the user's statement, Match pairs holds its own pairs, Fill the gap uses [brackets], accent keys from the deck's letters, articles dropped for any language. Sample deck has every game.
-- [x] Decks part 2: `:feature:decks`. Bottom bar (Alarm · Decks), My decks / Browse packs (map regions added and removed here), New deck, Deck detail with filter and settings (rename, delete), game picker, card forms for the five games (new and edit, Save & add another, delete). Not yet: exam date, free deck limit, Import (part 3).
+- [x] Decks part 2: `:feature:decks`. Bottom bar (Alarm · Decks), My decks / Browse packs (map regions added and removed here), New deck, Deck detail with filter and settings (rename, delete), game picker, card forms for the five games (new and edit, Save & add another, delete). Not yet: free deck limit, Import (part 3). Exam date: dropped.
 - [x] Decks part 3: Import a deck with your own AI (mockup D5). Import button on the Decks tab, the prompt to copy (five games + a full English example), paste or upload a .json file (Android), forgiving importer (chat text, fences, curly quotes, other field and game names, guessed games), preview with editable name and skipped cards, create. Not on iOS yet: file upload.
 - [x] Streaks: one record per morning (`wake_sessions`, database version 3), written by the morning screen. A sunrise adds 1, a missed alarm (Emergency stop or left ringing) resets, days without an alarm are skipped; today can't break it. Shown on Home and "You're up!". Not yet: streak freezes, milestones
+
+- [x] Progress tab (mockup 11): `:feature:progress`. Week/Month toggle; Streak, Learned (new cards right for the first time), Remembered (cards that came back, right first time); cards per morning with the average wake-up; the month's sunrises with ‹ › to earlier months; milestones (7-day and 30-day best streak, 100 cards). Not built: Pip's tip, Friends tab
 
 ## M5 · iOS
 - [ ] AlarmKit in Swift behind `AlarmScheduler`
@@ -102,7 +103,10 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - **Import with your own AI, instead of a Sunup AI generator:** "Import deck" shows a ready prompt to copy into ChatGPT or Claude; the AI answers with the deck as JSON; the user pastes it (or uploads the .json file), sees a preview, and creates the deck. Free, no server, no AI cost. The same importer can read CSV and Anki later. Mockup 10 (AI generator) and "Fill in" (v1.2) are dropped.
 - **Onboarding matches today's app (M4):** no "I already have an account" (no accounts yet); the goal choices are World geography, My own cards and Quick math (no language or fun-facts packs exist; import is with your own AI, not Anki/Quizlet/CSV); no "cards each morning" (the wake-up mode decides); the promise lists only what's built (no ads, one card stops the alarm, the wake-up check). The permission screen adds "Show over lock screen" (needed on Android 14+). The test bench stays, debug only, until before release.
 - **Weather from MET Norway (M4):** free, no key, commercial use allowed with the credit "Weather data from MET Norway" (check their terms again before release, and add a contact URL to the User-Agent). Open-Meteo's free tier is non-commercial only. Location: the phone's approximate location, rounded to ~1 km; only that is sent.
-- **Free limit = number of decks:** free users can have a few decks (number to decide), however they're made; Plus means unlimited decks.
+- **Free limit = number of decks:** free users can have **5 decks** (for now; revisit later), however they're made; built-in packs don't count; Plus means unlimited decks. Enforced on the Decks tab (M4).
+- **No exam date (M4):** decks don't get an exam date. (The spaced-repetition code can still take one; nothing sets it.)
+- **No A1 card restyle (M4):** the card screen while ringing keeps its current look; mockup 6's ringing screen comes before it.
+- **Preview:** only Home's "Preview tomorrow's wake-up" (from the Home mockup). A preview button per alarm was an idea, not in the mockups; not planned.
 - Home vs. Alarms (two mockups): the original **Home** (next alarm, deck progress, this week's sunrises) is the Alarm tab's start screen; tapping its alarm card opens the **Alarms** list (Improvements A2), where alarms are added and edited.
 - **Streak rules (M4):** a sunrise = an alarm stopped by answering. Emergency stop or an alarm left ringing resets the streak; days with no alarm never break it. Kept as one record per morning, not worked out from the card log, so Quick math mornings and Emergency stops count too.
 - Morning flow: one easy card stops the alarm, then a 60 s check and an optional quiet bonus round (Normal mode).
@@ -122,6 +126,5 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - Built-in packs: who writes them, and how big are they?
 - Note types: are Word and Question enough, or add a True/false statement type?
 - Paste a list: free or Plus?
-- Free limit: decided as a number of decks (see decisions); how many is still open.
 - Snooze vs. emergency stop; pre-alarm in the MVP?
 - Pricing, how many free decks (e.g. 3?), final name.

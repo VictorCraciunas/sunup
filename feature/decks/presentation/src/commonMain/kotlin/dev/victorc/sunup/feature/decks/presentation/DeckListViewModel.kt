@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.victorc.sunup.core.data.GeoDeckSeeder
 import dev.victorc.sunup.core.domain.Result
 import dev.victorc.sunup.core.domain.learning.DeckKind
+import dev.victorc.sunup.core.domain.learning.DeckLimits
 import dev.victorc.sunup.core.domain.learning.DeckRepository
 import dev.victorc.sunup.core.domain.learning.GeoRegion
 import dev.victorc.sunup.core.domain.learning.NoteRepository
@@ -33,6 +34,8 @@ data class DeckListState(
     /** A pack the user asked to remove, waiting for "Remove". */
     val confirmRemove: GeoRegion? = null,
     val message: String? = null,
+    /** Made or imported decks; maps don't count toward the free limit. */
+    val ownDecks: Int = 0,
 )
 
 data class DeckItemUi(
@@ -111,12 +114,13 @@ class DeckListViewModel(
                     },
                 )
             }
-            items to addedPacks
+            Triple(items, addedPacks, DeckLimits.ownDecks(deckList))
         }
-            .onEach { (items, addedPacks) ->
+            .onEach { (items, addedPacks, own) ->
                 _state.update { state ->
                     state.copy(
                         loading = false,
+                        ownDecks = own,
                         decks = items,
                         packs = state.packs.map { it.copy(added = it.region in addedPacks) },
                     )
@@ -133,13 +137,27 @@ class DeckListViewModel(
                 if (action.tab == DeckTab.BROWSE) loadPackSizes()
             }
             is DeckListAction.OnOpenDeck -> viewModelScope.launch { _events.send(DeckListEvent.OpenDeck(action.deckId)) }
-            DeckListAction.OnNewDeck -> viewModelScope.launch { _events.send(DeckListEvent.OpenNewDeck) }
-            DeckListAction.OnImport -> viewModelScope.launch { _events.send(DeckListEvent.OpenImport) }
+            DeckListAction.OnNewDeck -> ifRoomForADeck { _events.send(DeckListEvent.OpenNewDeck) }
+            DeckListAction.OnImport -> ifRoomForADeck { _events.send(DeckListEvent.OpenImport) }
             is DeckListAction.OnTogglePack -> togglePack(action.region)
             DeckListAction.OnConfirmRemove -> removePack()
             DeckListAction.OnCancelRemove -> _state.update { it.copy(confirmRemove = null) }
             DeckListAction.OnDismissMessage -> _state.update { it.copy(message = null) }
         }
+    }
+
+    /** New deck and Import stop at the free limit, with a note instead of the screen. */
+    private fun ifRoomForADeck(open: suspend () -> Unit) {
+        if (_state.value.ownDecks >= DeckLimits.FREE_DECKS) {
+            _state.update {
+                it.copy(
+                    message = "You have ${DeckLimits.FREE_DECKS} decks, the most on the free plan. " +
+                        "Delete one to make room. Maps don't count.",
+                )
+            }
+            return
+        }
+        viewModelScope.launch { open() }
     }
 
     /** "45 countries" under each map, read from the bundled map once. */

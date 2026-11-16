@@ -31,7 +31,7 @@ import androidx.compose.ui.semantics.semantics
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 
 /** The icons the bottom bar can show, drawn so no icon library is needed. */
-enum class NavIcon { ALARM, DECKS }
+enum class NavIcon { ALARM, DECKS, PROGRESS }
 
 data class NavBarItem(
     val label: String,
@@ -97,6 +97,13 @@ private fun NavIconImage(icon: NavIcon, tint: Color) {
                 drawRoundRect(tint, Offset(w * 0.14f, w * 0.3f), Size(w * 0.56f, w * 0.56f), corner, style = line)
                 drawLine(tint, Offset(w * 0.32f, w * 0.14f), Offset(w * 0.76f, w * 0.14f), line.width, StrokeCap.Round)
                 drawLine(tint, Offset(w * 0.86f, w * 0.24f), Offset(w * 0.86f, w * 0.66f), line.width, StrokeCap.Round)
+            }
+            NavIcon.PROGRESS -> {
+                // Three bars on a baseline, as in the mockup.
+                drawLine(tint, Offset(w * 0.18f, w * 0.84f), Offset(w * 0.18f, w * 0.42f), line.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.42f, w * 0.84f), Offset(w * 0.42f, w * 0.16f), line.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.66f, w * 0.84f), Offset(w * 0.66f, w * 0.54f), line.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.06f, w * 0.84f), Offset(w * 0.94f, w * 0.84f), line.width, StrokeCap.Round)
             }
         }
     }

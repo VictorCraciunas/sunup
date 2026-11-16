@@ -35,6 +35,7 @@ feature:alarms:presentation ─────► core:alarm, core:design-system
 feature:decks:presentation ──────► feature:decks:domain, core:design-system, core:geo, core:data
 feature:decks:domain ────────────► core:domain
 feature:onboarding:presentation ─► core:alarm, core:design-system, core:geo, core:data
+feature:progress:presentation ───► core:domain, core:design-system
 feature:wakeup:presentation ─────► feature:wakeup:domain, core:alarm, core:design-system, core:geo
 feature:wakeup:domain ────────► core:domain
 
@@ -58,7 +59,7 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 
 **Who builds a class needs its constructor's types.** Koin modules call constructors, so the module holding the Koin `module { }` needs every type in those constructors, directly or through `api`.
 
-**`androidApp` must depend directly on every module whose Koin module it registers.** `SunupApplication.kt` imports `alarmModule`, `databaseModule`, `settingsStoreModule`, `morningInfoModule`, `dataModule`, `alarmsModule`, `decksModule`, `onboardingModule`, `wakeUpModule`, so `androidApp/build.gradle.kts` lists `core:alarm`, `core:database`, `core:data` and each of those feature presentation modules itself. Getting them through `shared` doesn't count: `shared` uses `implementation`.
+**`androidApp` must depend directly on every module whose Koin module it registers.** `SunupApplication.kt` imports `alarmModule`, `databaseModule`, `settingsStoreModule`, `morningInfoModule`, `dataModule`, `alarmsModule`, `decksModule`, `onboardingModule`, `progressModule`, `wakeUpModule`, so `androidApp/build.gradle.kts` lists `core:alarm`, `core:database`, `core:data` and each of those feature presentation modules itself. Getting them through `shared` doesn't count: `shared` uses `implementation`.
 
 **Screens are reached through `shared`.** `App.kt` (in `shared`) holds the navigation, so `shared` depends on each feature's presentation module whose `Root` composable (or nav graph, like `onboardingGraph`) it shows. The morning flow is the exception: `AlarmRingingActivity` in `androidApp` shows `WakeUpRoot` directly.
 
@@ -79,11 +80,12 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `feature:alarms:presentation` | — | `core:alarm`, `core:design-system`, lifecycle, Koin (+ activity-compose on Android, for Home's permission prompts) |
 | `feature:decks:domain` | `core:domain` | coroutines, serialization (Import) |
 | `feature:decks:presentation` | — | `feature:decks:domain`, `core:design-system`, `core:geo`, `core:data`, lifecycle, Koin (+ activity-compose on Android, for the file picker) |
+| `feature:progress:presentation` | — | `core:domain`, `core:design-system`, kotlinx-datetime, lifecycle, Koin |
 | `feature:onboarding:presentation` | — | `core:alarm`, `core:design-system`, `core:geo`, `core:data`, lifecycle, navigation, serialization, Koin (+ activity-compose on Android, for the permission prompts) |
 | `feature:wakeup:domain` | `core:domain` | coroutines |
 | `feature:wakeup:presentation` | — | `feature:wakeup:domain`, `core:alarm`, `core:design-system`, `core:geo`, lifecycle, Koin |
-| `shared` | — | `core:domain`, `core:design-system`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:onboarding:presentation`, lifecycle, navigation, serialization |
-| `androidApp` | — | `shared`, `core:alarm`, `core:data`, `core:database`, `core:design-system`, `core:geo`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:onboarding:presentation`, `feature:wakeup:presentation`, activity, Compose, Koin |
+| `shared` | — | `core:domain`, `core:design-system`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:onboarding:presentation`, `feature:progress:presentation`, lifecycle, navigation, serialization |
+| `androidApp` | — | `shared`, `core:alarm`, `core:data`, `core:database`, `core:design-system`, `core:geo`, `feature:alarms:presentation`, `feature:decks:presentation`, `feature:onboarding:presentation`, `feature:progress:presentation`, `feature:wakeup:presentation`, activity, Compose, Koin |
 
 **Checklist: adding a module**
 1. `include(":…")` in `settings.gradle.kts`.
@@ -99,6 +101,7 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 |---|---|
 | `Result.kt`, `DataError.kt` | `Result<T, E>`, `map / onSuccess / onFailure`, `DataError.Local / Network` |
 | `learning/Deck.kt` | `Deck`, `DeckKind` (LANGUAGE, STUDY, TRIVIA, GEOGRAPHY) |
+| `learning/DeckLimits.kt` | The free plan's limit: 5 own decks (built-in packs don't count) |
 | `learning/Note.kt` | `Note`: one card, with its one `game` and the fields that game uses (table in the KDoc); `NoteType`, `Direction` |
 | `learning/ReviewState.kt` | Hidden spaced-repetition state per card: step, `MasteryLevel` (geography only), due date; `Grade` |
 | `learning/ReviewRecord.kt` | One answered card, kept for stats; `ReviewContext` |
@@ -110,13 +113,14 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 | `learning/SentenceGap.kt` | Fill the gap: the [bracketed] word in a sentence |
 | `learning/GeoRegion.kt` | Map regions (Europe … World): continents and map bounds |
 | `learning/Country.kt` | A country's facts (code, name, continent, size, nearby countries) |
-| `learning/LearningRepositories.kt` | `DeckRepository`, `NoteRepository`, `ReviewRepository` interfaces |
+| `learning/LearningRepositories.kt` | `DeckRepository`, `NoteRepository`, `ReviewRepository` (incl. `observeAllReviews` for Progress) interfaces |
 | `wakeup/WakeAlarm.kt` | An alarm as the user sets it up (deck, `WakeMode`, label); `TEST_ALARM_ID` (onboarding's test ring) |
 | `settings/AppSettingsRepository.kt` | Small app settings: whether onboarding is done, the "You're up!" weather and calendar switches |
 | `morning/MorningInfo.kt` | "You're up!" extras: `WeatherToday`, `WeatherCondition`, `CalendarEvent`, the `WeatherSource` / `CalendarSource` interfaces, `MorningInfoSettings` |
 | `wakeup/WakeAlarmRepository.kt` | Its repository interface |
 | `wakeup/WakeSession.kt` | One morning (`WakeSession`, `WakeOutcome`: RINGING, UP, STOPPED_WITHOUT_CARD) and `WakeSessionRepository` |
 | `wakeup/Streaks.kt` | The streak rules: `current`, `week` (`DayMark` per day), `cardsAnswered` |
+| `wakeup/Progress.kt` | `DayRange` (a week or month) and the Progress tab's numbers: best streak, cards per day, average wake-up, mornings, learned, remembered |
 
 ## `core:alarm`: the alarm engine (Rule #1 lives here)
 
@@ -181,7 +185,7 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | `theme/SunupDimens.kt` | Spacing, shapes, sizes (touch targets, map circle sizes) |
 | `theme/SunupTheme.kt` | `SunupTheme { }` and the `SunupTheme.colors / typography / spacing / shapes / sizes` accessors |
 | `components/SunupButton.kt` | The chunky 3D button |
-| `components/SunupNavBar.kt` | The bottom bar (Alarm · Decks) with drawn icons |
+| `components/SunupNavBar.kt` | The bottom bar (Alarm · Decks · Progress) with drawn icons |
 | `components/SunupFormParts.kt` | `SunupTopBar` (back + title), `SunupBackButton`, `SunupFieldLabel`, `SunupTextField` (labelled text box) |
 | `components/SunupTimeParts.kt` | `SunupStepper` (hours or minutes with arrows and ticking digits), `SunupDayChip`, `SunupIconButton`, `SunupChevron`. Used by the alarm editor and onboarding |
 | `components/SunupRaised.kt` | Any surface with the mockups' darker edge underneath (cards, chips, segments, the + button); tappable ones sink when pressed |
@@ -243,6 +247,14 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `presentation/OnboardingText.kt` | Day names, goal and mode texts, "Your morning" steps |
 | `presentation/OnboardingModule.kt` | Koin `onboardingModule` |
 
+## `feature:progress`: the Progress tab
+
+| File | What's in it |
+|---|---|
+| `presentation/ProgressViewModel.kt` | `ProgressState` (stats, `BarUi`, `MonthCellUi`, `MilestoneUi`), `Period`, actions; reads every morning and every answer |
+| `presentation/ProgressScreen.kt` | `ProgressRoot` / `ProgressScreen`: Week/Month toggle, stat boxes, cards-per-morning bars, month grid with ‹ ›, milestone medals |
+| `presentation/ProgressModule.kt` | Koin `progressModule` |
+
 ## `feature:wakeup`: the morning flow
 
 | File | What's in it |
@@ -266,7 +278,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `androidApp/.../alarm/AlarmRingingActivity.kt` | Shows `WakeUpRoot` over the lock screen; also opens Preview all games and Home's preview of one alarm |
 | `androidApp/.../alarm/AlarmTestBench.kt` | Temporary debug panel: permissions, sample decks, modes, test alarms, ring log |
 | `androidApp/src/main/AndroidManifest.xml` | Activities |
-| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm tab (Home) and Decks tab with the bottom bar, every inner screen, the test bench |
+| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm (Home), Decks and Progress tabs with the bottom bar, every inner screen, the test bench |
 | `shared/.../MainViewController.kt` | iOS entry into Compose |
 
 ## Key flows
@@ -316,4 +328,4 @@ Saving goes through `AlarmService` in `core:alarm`.
 
 ## Tests
 
-Each module's tests sit in its `src/commonTest`: alarm scheduling and the store (`core:alarm`), mappers (`core:database`), spaced repetition, eligibility, card building, answer checking and streaks (`core:domain`), map parsing and projection (`core:geo`), the morning planner (`feature:wakeup:domain`), the alarm service (`core:alarm`), alarm list text (`feature:alarms:presentation`). All run with `./gradlew testAndroidHostTest`.
+Each module's tests sit in its `src/commonTest`: alarm scheduling and the store (`core:alarm`), mappers (`core:database`), spaced repetition, eligibility, card building, answer checking and streaks and progress (`core:domain`), the forecast reader (`core:data`), map parsing and projection (`core:geo`), the morning planner (`feature:wakeup:domain`), the alarm service (`core:alarm`), alarm list text (`feature:alarms:presentation`). All run with `./gradlew testAndroidHostTest`.

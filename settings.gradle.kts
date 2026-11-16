@@ -47,5 +47,7 @@ include(":feature:decks:presentation")
 
 include(":feature:onboarding:presentation")
 
+include(":feature:progress:presentation")
+
 include(":feature:wakeup:domain")
 include(":feature:wakeup:presentation")

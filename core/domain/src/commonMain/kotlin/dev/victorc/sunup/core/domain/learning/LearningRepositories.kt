@@ -41,4 +41,7 @@ interface ReviewRepository {
 
     /** Logs the answer and stores the card's new schedule. */
     suspend fun recordReview(record: ReviewRecord, newState: ReviewState): EmptyResult<DataError.Local>
+
+    /** Every answer ever logged, oldest first. For the Progress tab. */
+    fun observeAllReviews(): Flow<List<ReviewRecord>>
 }
