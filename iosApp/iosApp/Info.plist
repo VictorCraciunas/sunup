@@ -6,5 +6,11 @@
 	<true/>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Sunup sets your wake-up alarms, so they ring like the Clock app's, even in silent mode.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Sunup shows your next event today when you wake up. Your calendar stays on your phone.</string>
+	<key>NSLocationDefaultAccuracyReduced</key>
+	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Sunup shows today's weather when you wake up. Only your approximate location is used.</string>
 </dict>
 </plist>

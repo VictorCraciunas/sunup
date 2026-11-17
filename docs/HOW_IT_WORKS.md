@@ -181,7 +181,8 @@ Users don't write notes for Sunup to turn into games any more; they make **cards
 - Apple shows its own alarm screen with **Stop** (can't be hidden) and **Wake up with Pip**, which opens Sunup on the morning flow for that alarm (ringing screen, card, bonus round, "You're up!").
 - **Stop follow-up:** every ring also sets a soft alarm 3 minutes later. Answering the card cancels it and sets the one for the next ring. So pressing Stop and going back to sleep still gets a second ring. A follow-up that's already waiting is kept if the app is opened and closed without answering. If Sunup isn't opened for days, only the next ring has a follow-up.
 - AlarmKit may ignore "soft": follow-ups and the wake-up check can ring at the normal alarm volume. The wake-up check can't tell if the phone is in use, so it always rings.
-- Onboarding's checklist has one row on iOS: **Alarms** (Apple's prompt). Weather and next event aren't on iOS yet, so Home hides their switches; Import has no file upload (paste works).
+- Onboarding's checklist has one row on iOS: **Alarms** (Apple's prompt). Import has no file upload yet (paste works).
+- Weather and next event work as on Android, switched on from Home. Weather asks for location "while using the app", approximate by default; the next event asks for full calendar access (Apple has no read-only option). Apple asks only once: after "Don't Allow", Home says to turn it on in Settings.
 
 ## Testing without waiting for an alarm
 

@@ -79,4 +79,14 @@ class MetNorwayForecastTest {
         assertThat(MetNorwayForecast.parse("not json", now, zone)).isNull()
         assertThat(MetNorwayForecast.parse("""{"properties":{}}""", now, zone)).isNull()
     }
+
+    @Test
+    fun addressSendsTwoDecimalsOnly() {
+        assertThat(MetNorwayForecast.url(59.91387, 10.75225))
+            .isEqualTo("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=59.91&lon=10.75")
+        assertThat(MetNorwayForecast.url(-33.8688, -0.004))
+            .isEqualTo("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=-33.87&lon=0.00")
+        assertThat(MetNorwayForecast.url(-0.5, 151.2))
+            .isEqualTo("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=-0.50&lon=151.20")
+    }
 }

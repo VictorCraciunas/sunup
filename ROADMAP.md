@@ -83,9 +83,10 @@ Branch `feature/m5-ios`, written without a Mac: nothing here has been built yet.
 - [x] (untested) The app starts on iOS: `startSunup` with Koin, the engine's file, the database, settings; the morning flow shown over the app
 - [x] (untested) AlarmKit in Swift behind `AlarmScheduler` (`AlarmKitBridgeImpl.swift` via `IosPlatformAlarmClock`): one-off and weekly alarms, "Wake up with Pip" opens the card (`OpenMorningIntent`)
 - [x] (untested) Follow-up alarm scheduled up front (3 min after each ring) and cancelled by the card
-- [x] (untested) Onboarding asks for AlarmKit; Home hides weather and calendar on iOS
+- [x] (untested) Onboarding asks for AlarmKit
 - [ ] On the Mac: build `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`, then the Xcode project (iOS 26 deployment target), fix what doesn't compile
-- [ ] Weather (Core Location) and next event (EventKit) on iOS; file upload for Import
+- [x] (untested) Weather (Core Location + MET Norway) and next event (EventKit) on iOS
+- [ ] File upload for Import on iOS
 - [ ] Test "starts soft, gets louder" (AlarmKit may only use the ringer volume)
 - [ ] Testing on a real iPhone (iOS 26+)
 

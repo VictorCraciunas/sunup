@@ -15,7 +15,6 @@ import dev.victorc.sunup.core.domain.morning.WeatherToday
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.time.Clock
 import kotlinx.coroutines.Dispatchers
@@ -39,8 +38,7 @@ class MetNorwayWeatherSource(
             return@withContext Result.Error(DataError.Network.UNAUTHORIZED)
         }
         val location = approximateLocation() ?: return@withContext Result.Error(DataError.Network.NOT_FOUND)
-        // Two decimals: about 1 km. Enough for the weather, and MET asks for no more than four.
-        val url = String.format(Locale.US, FORECAST_URL, location.latitude, location.longitude)
+        val url = MetNorwayForecast.url(location.latitude, location.longitude)
         try {
             val connection = URL(url).openConnection() as HttpURLConnection
             try {
@@ -96,7 +94,6 @@ class MetNorwayWeatherSource(
     }
 
     private companion object {
-        const val FORECAST_URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.2f&lon=%.2f"
         // TODO: add a contact URL for the app once it has a website (MET Norway asks for one).
         const val USER_AGENT = "Sunup-Android/0.1 (dev.victorc.sunup)"
         const val TIMEOUT_MILLIS = 6_000

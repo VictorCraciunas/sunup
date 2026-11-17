@@ -285,6 +285,10 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `shared/src/iosMain/.../ios/IosPlatformAlarmClock.kt` | The engine's `PlatformAlarmClock` on iOS: one-off and weekly alarms, and the soft "stop follow-up" 3 minutes after each ring |
 | `shared/src/iosMain/.../ios/IosMorning.kt` | Which morning is open (from "Wake up with Pip" or Home's preview); cancels the stop follow-up once the card is answered |
 | `shared/src/iosMain/.../ios/IosStorage.kt` | `IosStateFile` (the engine's JSON file, written atomically) and the app's folders |
+| `core:data/iosMain/IosWeatherSource.kt` | Weather on iOS: approximate location (Core Location), then MET Norway over `NSURLSession`; parsed by `MetNorwayForecast` like Android |
+| `core:data/iosMain/IosCalendarSource.kt` | Next timed event today on iOS (EventKit) |
+| `core:data/iosMain/MorningInfoModule.ios.kt` | iOS `morningInfoModule` (the two above) |
+| `feature:alarms:presentation/iosMain/MorningPermissions.ios.kt` | Apple's location and calendar prompts behind Home's "On You're up!" switches |
 | `core:alarm/iosMain/IosAlarmAuthorization.kt` | AlarmKit allowed? / ask: filled in at start-up, read by onboarding |
 | `iosApp/iosApp/iOSApp.swift` | Calls `startSunup` with the AlarmKit bridge, then shows Compose |
 | `iosApp/iosApp/AlarmKitBridgeImpl.swift` | AlarmKit in Swift: authorization, fixed and weekly schedules, Apple's alarm screen with "Wake up with Pip", stable UUIDs from Sunup's ids |

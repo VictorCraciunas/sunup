@@ -171,7 +171,7 @@ fun HomeScreen(state: HomeState, onAction: (HomeAction) -> Unit, canPreview: Boo
                 )
             }
 
-            if (permissions.supported) MorningExtrasCard(state, permissions, onAction, Modifier.riseIn(4))
+            MorningExtrasCard(state, permissions, onAction, Modifier.riseIn(4))
         }
     }
 }

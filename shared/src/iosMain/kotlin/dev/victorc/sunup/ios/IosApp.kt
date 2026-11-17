@@ -10,15 +10,10 @@ import dev.victorc.sunup.core.alarm.PlatformAlarmClock
 import dev.victorc.sunup.core.data.SETTINGS_FILE_NAME
 import dev.victorc.sunup.core.data.createSettingsDataStore
 import dev.victorc.sunup.core.data.dataModule
+import dev.victorc.sunup.core.data.morningInfoModule
 import dev.victorc.sunup.core.database.SunupDatabase
 import dev.victorc.sunup.core.database.buildSunupDatabase
 import dev.victorc.sunup.core.database.iosDatabaseBuilder
-import dev.victorc.sunup.core.domain.DataError
-import dev.victorc.sunup.core.domain.Result
-import dev.victorc.sunup.core.domain.morning.CalendarEvent
-import dev.victorc.sunup.core.domain.morning.CalendarSource
-import dev.victorc.sunup.core.domain.morning.WeatherSource
-import dev.victorc.sunup.core.domain.morning.WeatherToday
 import dev.victorc.sunup.feature.alarms.presentation.alarmsModule
 import dev.victorc.sunup.feature.decks.presentation.decksModule
 import dev.victorc.sunup.feature.onboarding.presentation.onboardingModule
@@ -50,7 +45,8 @@ fun startSunup(alarmKit: AlarmKitBridge) {
         modules(
             iosAlarmModule(platform),
             iosDatabaseModule,
-            iosPlatformDataModule,
+            iosSettingsStoreModule,
+            morningInfoModule,
             dataModule,
             alarmsModule,
             decksModule,
@@ -87,22 +83,9 @@ private val iosDatabaseModule = module {
     single { get<SunupDatabase>().wakeSessionDao() }
 }
 
-/**
- * Android's settingsStoreModule and morningInfoModule. Weather and the next event aren't on
- * iOS yet (Core Location, EventKit): Home hides their switches there.
- */
-private val iosPlatformDataModule = module {
+/** Android's settingsStoreModule: the small settings file, in Documents. */
+private val iosSettingsStoreModule = module {
     single { createSettingsDataStore(documentsPath(SETTINGS_FILE_NAME)) }
-    factory<WeatherSource> { NoWeather }
-    factory<CalendarSource> { NoCalendar }
-}
-
-private object NoWeather : WeatherSource {
-    override suspend fun today(): Result<WeatherToday, DataError.Network> = Result.Error(DataError.Network.UNKNOWN)
-}
-
-private object NoCalendar : CalendarSource {
-    override suspend fun nextEventToday(): CalendarEvent? = null
 }
 
 private const val ALARM_FILE_NAME = "alarms.json"

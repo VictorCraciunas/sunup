@@ -2,6 +2,7 @@ package dev.victorc.sunup.core.data
 
 import dev.victorc.sunup.core.domain.morning.WeatherCondition
 import dev.victorc.sunup.core.domain.morning.WeatherToday
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
@@ -20,6 +21,20 @@ import kotlinx.serialization.json.jsonPrimitive
  * https://api.met.no/weatherapi/locationforecast/2.0/documentation
  */
 object MetNorwayForecast {
+
+    /**
+     * The forecast address for a rough location. Two decimals: about 1 km, enough for the
+     * weather (MET asks for no more than four), and all that leaves the phone.
+     */
+    fun url(latitude: Double, longitude: Double): String =
+        "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${twoDecimals(latitude)}&lon=${twoDecimals(longitude)}"
+
+    private fun twoDecimals(value: Double): String {
+        val hundredths = (value * 100).roundToInt()
+        val sign = if (hundredths < 0) "-" else ""
+        val size = abs(hundredths)
+        return "$sign${size / 100}.${(size % 100).toString().padStart(2, '0')}"
+    }
 
     /** Null when the answer can't be read. */
     fun parse(json: String, now: Instant, zone: TimeZone): WeatherToday? = try {
