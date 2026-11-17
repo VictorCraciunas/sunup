@@ -79,7 +79,7 @@ class DefaultAlarmScheduler(
             return Result.Success(null)
         }
 
-        return when (val result = platform.set(alarm.id, next)) {
+        return when (val result = platform.setAlarm(alarm, next)) {
             is Result.Success -> {
                 store.record(RingEvent(alarm.id, RingEvent.Type.SCHEDULED, at = now, expected = next))
                 Result.Success(next)

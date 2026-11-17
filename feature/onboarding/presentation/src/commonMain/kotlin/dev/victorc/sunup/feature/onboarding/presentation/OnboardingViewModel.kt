@@ -187,5 +187,5 @@ private val TEST_ALARM_DELAY = 10.seconds
 
 // TODO(M4): move user-facing text to string resources once localization is set up.
 private const val EXACT_ALARMS_PROBLEM =
-    "Sunup isn't allowed to ring on time yet. Go back and allow Exact alarms, then try again."
+    "Sunup isn't allowed to set alarms yet. Go back and allow alarms, then try again."
 private const val NOT_SCHEDULED_PROBLEM = "The phone didn't accept the alarm. Please try again."

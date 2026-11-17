@@ -389,6 +389,7 @@ private fun PermissionRow(permission: PhonePermission, subtitle: String, done: B
                 PhonePermission.LOCK_SCREEN -> EmojiBadge("🔒", colors.daySky)
                 PhonePermission.BATTERY -> EmojiBadge("🔋", colors.correctContainer)
                 PhonePermission.AUTOSTART -> EmojiBadge("⚡", colors.wrongContainer)
+                PhonePermission.ALARMS -> EmojiBadge("⏰", colors.sunSoft)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                 Text(permission.title(), style = SunupTheme.typography.title, color = colors.ink)
@@ -412,6 +413,7 @@ private fun PhonePermission.title(): String = when (this) {
     PhonePermission.LOCK_SCREEN -> "Show over lock screen"
     PhonePermission.BATTERY -> "Battery: no limits"
     PhonePermission.AUTOSTART -> "Autostart"
+    PhonePermission.ALARMS -> "Alarms"
 }
 
 private fun PhonePermission.subtitle(state: OnboardingState, autostartHint: String): String = when (this) {
@@ -424,6 +426,7 @@ private fun PhonePermission.subtitle(state: OnboardingState, autostartHint: Stri
     PhonePermission.LOCK_SCREEN -> "So your card opens the moment it rings"
     PhonePermission.BATTERY -> "Stops the phone from putting Sunup to sleep"
     PhonePermission.AUTOSTART -> autostartHint
+    PhonePermission.ALARMS -> "So Sunup rings like the Clock app, even in silent mode"
 }
 
 @Composable

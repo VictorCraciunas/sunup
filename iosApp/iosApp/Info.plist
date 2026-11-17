@@ -4,5 +4,7 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>Sunup sets your wake-up alarms, so they ring like the Clock app's, even in silent mode.</string>
 </dict>
 </plist>

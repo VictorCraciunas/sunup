@@ -13,6 +13,9 @@ enum class PhonePermission {
 
     /** Xiaomi, Samsung and similar phones only. The app can't check it, so it counts once opened. */
     AUTOSTART,
+
+    /** iOS: AlarmKit, so alarms ring like the Clock app's. */
+    ALARMS,
 }
 
 /**

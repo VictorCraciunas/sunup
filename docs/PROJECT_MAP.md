@@ -279,7 +279,17 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `androidApp/.../alarm/AlarmTestBench.kt` | Temporary debug panel: permissions, sample decks, modes, test alarms, ring log |
 | `androidApp/src/main/AndroidManifest.xml` | Activities |
 | `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm (Home), Decks and Progress tabs with the bottom bar, every inner screen, the test bench |
-| `shared/.../MainViewController.kt` | iOS entry into Compose |
+| `shared/.../MainViewController.kt` | iOS entry into Compose: the app, with the morning flow on top when one is open (its own ViewModel store per morning) |
+| `shared/src/iosMain/.../ios/IosApp.kt` | `startSunup(alarmKit)`: iOS Koin (engine, database, settings, the features), then registers every alarm with AlarmKit again |
+| `shared/src/iosMain/.../ios/AlarmKitBridge.kt` | The Swift-facing interface to AlarmKit (plain types) |
+| `shared/src/iosMain/.../ios/IosPlatformAlarmClock.kt` | The engine's `PlatformAlarmClock` on iOS: one-off and weekly alarms, and the soft "stop follow-up" 3 minutes after each ring |
+| `shared/src/iosMain/.../ios/IosMorning.kt` | Which morning is open (from "Wake up with Pip" or Home's preview); cancels the stop follow-up once the card is answered |
+| `shared/src/iosMain/.../ios/IosStorage.kt` | `IosStateFile` (the engine's JSON file, written atomically) and the app's folders |
+| `core:alarm/iosMain/IosAlarmAuthorization.kt` | AlarmKit allowed? / ask: filled in at start-up, read by onboarding |
+| `iosApp/iosApp/iOSApp.swift` | Calls `startSunup` with the AlarmKit bridge, then shows Compose |
+| `iosApp/iosApp/AlarmKitBridgeImpl.swift` | AlarmKit in Swift: authorization, fixed and weekly schedules, Apple's alarm screen with "Wake up with Pip", stable UUIDs from Sunup's ids |
+| `iosApp/iosApp/OpenMorningIntent.swift` | The App Intent behind "Wake up with Pip": opens Sunup on that alarm's card |
+| `iosApp/iosApp/Info.plist` | `NSAlarmKitUsageDescription`. Deployment target iOS 26 (AlarmKit) |
 
 ## Key flows
 

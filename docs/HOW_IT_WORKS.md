@@ -175,6 +175,14 @@ Users don't write notes for Sunup to turn into games any more; they make **cards
 - A ringing alarm stops on its own after 15 minutes (logged as TIMED_OUT).
 - No ads, upsells or paywalls anywhere in the morning.
 
+## iOS (not tested yet: needs a Mac and an iPhone on iOS 26)
+
+- Alarms go through Apple's **AlarmKit** (iOS 26+). Weekly alarms are repeated by AlarmKit itself, so they keep ringing even if Sunup isn't opened; one-off alarms ring once. Every app start registers all alarms again (a one-off whose time has passed turns off).
+- Apple shows its own alarm screen with **Stop** (can't be hidden) and **Wake up with Pip**, which opens Sunup on the morning flow for that alarm (ringing screen, card, bonus round, "You're up!").
+- **Stop follow-up:** every ring also sets a soft alarm 3 minutes later. Answering the card cancels it and sets the one for the next ring. So pressing Stop and going back to sleep still gets a second ring. A follow-up that's already waiting is kept if the app is opened and closed without answering. If Sunup isn't opened for days, only the next ring has a follow-up.
+- AlarmKit may ignore "soft": follow-ups and the wake-up check can ring at the normal alarm volume. The wake-up check can't tell if the phone is in use, so it always rings.
+- Onboarding's checklist has one row on iOS: **Alarms** (Apple's prompt). Weather and next event aren't on iOS yet, so Home hides their switches; Import has no file upload (paste works).
+
 ## Testing without waiting for an alarm
 
 Test bench (the **Test bench** link at the bottom of the alarm list): **Load sample Spanish deck** (12 cards, every game), or pick a **Map** region and **Load geography deck**. Choose the **Deck for test alarms** (loading a deck selects it) and a **Mode**, then **Ring in 1 minute**, or **Preview all games** (one card of each game in the first deck, plus Name the country and Find on the map when a geography deck exists; no alarm, saves nothing).

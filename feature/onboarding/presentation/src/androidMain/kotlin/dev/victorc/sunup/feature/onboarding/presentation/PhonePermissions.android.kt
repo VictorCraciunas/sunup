@@ -83,6 +83,8 @@ actual fun rememberPhonePermissions(): PhonePermissions {
                 PhonePermission.BATTERY -> open(checks.batteryRequest(), checks.batterySettings())
                 PhonePermission.AUTOSTART ->
                     if (autostart != null && open(*autostart.screens.toTypedArray())) autostartOpened = true
+                // iOS only (AlarmKit); never listed on Android.
+                PhonePermission.ALARMS -> Unit
             }
         },
     )

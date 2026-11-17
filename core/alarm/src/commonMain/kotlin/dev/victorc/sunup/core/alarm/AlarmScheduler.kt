@@ -54,6 +54,13 @@ data class RingOptions(
 interface PlatformAlarmClock {
     fun set(alarmId: String, at: Instant, options: RingOptions = RingOptions()): EmptyResult<ScheduleError>
     fun cancel(alarmId: String)
+
+    /**
+     * Registers a saved alarm whose next ring is [next]. Android: one ring at a time (the
+     * receiver registers the next). iOS: AlarmKit repeats weekly alarms itself, because the
+     * app isn't woken when an alarm rings, so it gets the whole alarm.
+     */
+    fun setAlarm(alarm: Alarm, next: Instant): EmptyResult<ScheduleError> = set(alarm.id, next)
 }
 
 /**

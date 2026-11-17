@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
  * and the calendar. Asked only when the user turns a switch on.
  */
 class MorningPermissions(
+    /** False where weather and calendar aren't built yet (iOS): Home hides the switches. */
+    val supported: Boolean = true,
     val locationAllowed: Boolean,
     val calendarAllowed: Boolean,
     /** Shows the system prompt if needed; [onResult] gets whether it's allowed now. */

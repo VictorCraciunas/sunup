@@ -29,5 +29,16 @@ kotlin {
             implementation(libs.androidx.navigation.compose)
             implementation(libs.kotlinx.serialization.json)
         }
+        iosMain.dependencies {
+            // iOS start-up (IosApp.kt): Koin with the engine, database and settings, and the
+            // morning flow shown over the app (Android shows it from its own activity).
+            implementation(projects.core.alarm)
+            implementation(projects.core.data)
+            implementation(projects.core.database)
+            implementation(projects.feature.wakeup.presentation)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
+        }
     }
 }
