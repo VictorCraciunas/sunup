@@ -79,7 +79,7 @@ Ticked once it has worked on a real phone (see the test results below); the rest
 - [x] Progress tab (mockup 11): `:feature:progress`. Week/Month toggle; Streak, Learned (new cards right for the first time), Remembered (cards that came back, right first time); cards per morning with the average wake-up; the month's sunrises with ‹ › to earlier months; milestones (7-day and 30-day best streak, 100 cards). Not built: Pip's tip, Friends tab
 
 ## M5 · iOS
-Branch `feature/m5-ios`, written without a Mac: nothing here has been built yet.
+Written without a Mac on `feature/m5-ios`, then merged into `main` before any iOS build: nothing here has been built yet.
 - [x] (untested) The app starts on iOS: `startSunup` with Koin, the engine's file, the database, settings; the morning flow shown over the app
 - [x] (untested) AlarmKit in Swift behind `AlarmScheduler` (`AlarmKitBridgeImpl.swift` via `IosPlatformAlarmClock`): one-off and weekly alarms, "Wake up with Pip" opens the card (`OpenMorningIntent`)
 - [x] (untested) Follow-up alarm scheduled up front (3 min after each ring) and cancelled by the card
@@ -91,7 +91,7 @@ Branch `feature/m5-ios`, written without a Mac: nothing here has been built yet.
 - [ ] Testing on a real iPhone (iOS 26+)
 
 ## M6 · Release prep
-- [ ] Crashlytics and analytics
+- [ ] Crash reports with Sentry and analytics with PostHog (see decisions); neither may delay the ring
 - [ ] RevenueCat for Plus
 - [ ] Privacy policy and store listings
 - [ ] Closed testing
@@ -123,7 +123,11 @@ Branch `feature/m5-ios`, written without a Mac: nothing here has been built yet.
 - A deck needs at least 4 notes before alarms use it (the choice games take wrong answers from the deck). Below that the alarm uses Quick math, and the deck screen should say how many more to add (M4).
 - Users write notes (Word or Question); the app turns each note into the games. Without AI, wrong answers come from other notes in the same deck, so Pick / True or false / Match unlock at 4 notes.
 - Only Pick the meaning and True or false can stop the alarm. Say it always has a "Can't speak now" skip.
-- No backend in the MVP. At v1.1 add one service, most likely Supabase. Firebase stays for crash reports, analytics and push.
+- **Backend, analytics, crashes (decided 2026-11-19):**
+  - **Supabase** is the backend from v1.1 (accounts, backup and sync). Postgres matches Room's tables, Room stays the only database on the phone, and `supabase-kt` works from shared Kotlin. The few server jobs (deleting an account, RevenueCat's "bought Plus", later push to friends) are Supabase Edge Functions in TypeScript. No backend in the MVP.
+  - **PostHog** for analytics: funnels, retention, per-user steps, surveys, feature flags. Official Kotlin Multiplatform SDK (`com.posthog:posthog-kmp`, still 0.x). Session replay, if used, masks card text and deck names and stays off the ringing and morning screens.
+  - **Sentry** for crash reports: official Kotlin Multiplatform SDK (`io.sentry:sentry-kotlin-multiplatform`) with mature native crash reports, which matter most for alarm crashes. Its docs say Compose Multiplatform isn't fully tested and recommend CocoaPods on iOS (SPM is documented too); check both when adding it. If it's a poor fit, PostHog's own error tracking is the fallback.
+  - Push to other people's phones (v1.3 friends) still needs FCM on Android and APNs on iOS, sent from an Edge Function. Firebase isn't used otherwise.
 - "Fill in" for new words needs a server, so it moves to v1.2.
 - SKIE and per-screen SwiftUI are dropped for the MVP; the Swift surface is just `AlarmScheduler`.
 - Android ships first; iOS is built and tested on the Mac.
@@ -133,4 +137,4 @@ Branch `feature/m5-ios`, written without a Mac: nothing here has been built yet.
 - Note types: are Word and Question enough, or add a True/false statement type?
 - Paste a list: free or Plus?
 - Snooze vs. emergency stop; pre-alarm in the MVP?
-- Pricing, how many free decks (e.g. 3?), final name.
+- Pricing, final name. (Free decks: 5 for now, see decisions.)
