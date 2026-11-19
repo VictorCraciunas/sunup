@@ -86,7 +86,7 @@ Branch `feature/m5-ios`, written without a Mac: nothing here has been built yet.
 - [x] (untested) Onboarding asks for AlarmKit
 - [ ] On the Mac: build `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`, then the Xcode project (iOS 26 deployment target), fix what doesn't compile
 - [x] (untested) Weather (Core Location + MET Norway) and next event (EventKit) on iOS
-- [ ] File upload for Import on iOS
+- [x] (untested) File upload for Import on iOS (Files picker)
 - [ ] Test "starts soft, gets louder" (AlarmKit may only use the ringer volume)
 - [ ] Testing on a real iPhone (iOS 26+)
 

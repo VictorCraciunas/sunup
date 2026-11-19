@@ -230,7 +230,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `presentation/DeckDetailViewModel.kt` / `DeckDetailScreen.kt` | Deck detail (D3): card count, alarms using it, Add a card, filter by game, card rows (with "can't play yet"), settings dialog (rename, delete). Also `GamePickerScreen` (D4) |
 | `presentation/CardEditorViewModel.kt` / `CardEditorScreen.kt` | The card form for each game (E1–E5), new or editing; Save & add another, Done, Delete card |
 | `presentation/ImportViewModel.kt` / `ImportScreen.kt` | Import a deck (D5): copy the prompt, paste or upload, preview with an editable name and skipped cards, create |
-| `presentation/FilePicker.kt` (+ `androidMain` / `iosMain`) | `rememberTextFilePicker`: the system file picker for the .json file (Android); not on iOS yet |
+| `presentation/FilePicker.kt` (+ `androidMain` / `iosMain`) | `rememberTextFilePicker`: the system file picker for the .json file (Android's document picker; Apple's Files picker on iOS) |
 | `presentation/DeckText.kt` | Game and deck-kind names, badges and colours, card summaries, `CardProblem` messages |
 | `presentation/DecksModule.kt` | Koin `decksModule` |
 
