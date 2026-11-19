@@ -14,14 +14,14 @@ One codebase, released step by step. The MVP is the first public release, not a 
 - [ ] CI on GitHub Actions, with a macOS runner for the iOS build
 
 ## M1 · Android alarm engine
-Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's tested on a real phone.
-- [ ] `:core:alarm` with the shared `AlarmScheduler` interface and `NextRingTime` (weekdays, daylight saving)
-- [ ] `setAlarmClock()` scheduling, `USE_EXACT_ALARM` (Android 13+)
-- [ ] Foreground service (`systemExempted`) that starts the sound first, ramping from soft to loud, with a beep fallback
-- [ ] Full-screen ringing screen over the lock screen; without that permission it rings as a notification
+Ticked once it has worked on a real phone (see the test results below); the rest is written but not checked on a phone yet.
+- [x] `:core:alarm` with the shared `AlarmScheduler` interface and `NextRingTime` (weekdays, daylight saving)
+- [x] `setAlarmClock()` scheduling, `USE_EXACT_ALARM` (Android 13+)
+- [x] Foreground service (`systemExempted`) that starts the sound first. Not checked yet: the soft-to-loud ramp heard all the way, the beep fallback
+- [x] Full-screen ringing screen over the lock screen. Not checked yet: ringing as a notification without that permission
 - [ ] Reschedule after reboot, time or time zone change, and app update; a one-off alarm missed while the phone was off is turned off
 - [ ] Direct boot: alarms and the ring log live in device-protected storage (one card for the ringing screen comes in M3)
-- [ ] Ring log of scheduled vs. actual ring time, shown in the temporary Alarm test bench
+- [x] Ring log of scheduled vs. actual ring time, shown in the temporary Alarm test bench
 - [ ] Real-device test matrix (Xiaomi, Samsung): reboot, app killed, Doze, silent, Do Not Disturb
 - [ ] Later: ring right away after a reboot if an alarm was missed in the last few minutes
 
@@ -41,7 +41,7 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [x] Spaced repetition: ladder 1 → 3 → 8 → 21 → 45 → 90 days, exam dates, level-up path, with tests
 - [x] Forgiving answer checking (case, punctuation, articles, accents, small typos), with tests
 - [x] Which games each note can play, and which can stop the alarm, with tests
-- [ ] Repositories: added with the first feature that uses them (M3)
+- [x] Repositories: added with the first feature that uses them (M3 part 1, `:core:data`)
 - [x] Streaks: built in M4 (see there)
 - [ ] Built-in pack format and loading: waiting on the built-in pack decision
 
@@ -62,18 +62,18 @@ Code is written on `feature/m1-alarm-engine`; nothing is ticked until it's teste
 - [x] Ringing screen (mockup 6) before the first card: day and time, Pip rising from behind a hill and wiggling, rays turning, rings pulsing, twinkling stars, sound bars, "I'm up, let's go" (no snooze). Pip can turn its rays (`rayTurn`); `typography.clockHero`
 - [x] ~~A2 wake-up check screen~~: built, then dropped (one screen too many); the check stays a chip
 - [x] A3 bonus round screen (dawn, the cards waiting with NEW CARD / PRACTICE, Let's go / Not today) and A4 "You're up!" (confetti, Pip jumping in a bright sky, 07:03 · day N, Correct / Cards / Streak tiles with +1, This morning). Not built: A3's "+1 bonus sun for Pip's sky", A4's Share
-- [x] A4 weather and next-event tiles, switched on from Home (location and calendar asked only then). Weather: MET Norway (free, credit shown) for the approximate location, fetched after the alarm stops; calendar read on the phone. Not on iOS yet
+- [x] A4 weather and next-event tiles, switched on from Home (location and calendar asked only then). Weather: MET Norway (free, credit shown) for the approximate location, fetched after the alarm stops; calendar read on the phone. iOS: see M5
 - [ ] More motion: Pip rising between screens, new-card pop, haptics
 
 ## M4 · The rest of the app
 - [x] Onboarding and permissions: `:feature:onboarding`. Welcome → what to learn (World geography with a region, My own cards, Quick math) → rise time and days → promise → permission checklist (mockup C1: notifications, exact alarms, lock screen, battery, Autostart on the phones that have it, test alarm in 10 s) → wake-up mode (C2) → saves the first alarm. Shown once (DataStore flag). `AlarmService` moved to `core:alarm` so onboarding can save alarms without depending on the alarms feature; the time stepper and day chips moved to the design system.
 - [x] Alarm list and editor: `:feature:alarms`. List with switches and "Rings in…", editor with time, days, mode, deck, delete. Saves to the engine first, then the database; the list syncs one-off alarms that rang. The app now opens on the list; the test bench is behind a link. Mockup look: raised cards, chips and + button (`SunupRaised`), cards and sections rise in, ticking time digits, chips wobble when picked; all off with "Remove animations".
 - [ ] Later in the editor: pre-alarm, sound, label (not built yet, so not shown)
-- [ ] iOS: Koin isn't started on iOS yet, so the app screens need that before they run there (M5)
-- [x] Home (original mockup): the Alarm tab's start screen. Streak and cards-answered chips, next-alarm card with a switch (opens the alarm list), the deck's progress (cards learned), this week's sunrises, Preview tomorrow's wake-up. The alarm list is now an inner screen with Back. Not yet: Progress and Friends tabs, weather and calendar tiles, Share, Pip's sky
+- [x] (untested) iOS: Koin is started on iOS by `startSunup` (M5)
+- [x] Home (original mockup): the Alarm tab's start screen. Streak and cards-answered chips, next-alarm card with a switch (opens the alarm list), the deck's progress (cards learned), this week's sunrises, Preview tomorrow's wake-up. The alarm list is now an inner screen with Back. Progress tab and the weather and calendar switches came later. Not built: Friends tab, Share, Pip's sky
 - [x] Decks part 1: cards with one game each (database version 2: `game`, `isTrue`, `pairs`; old notes became Pick from 4), random morning cards weighted toward due ones, any card stops the alarm, True or false plays the user's statement, Match pairs holds its own pairs, Fill the gap uses [brackets], accent keys from the deck's letters, articles dropped for any language. Sample deck has every game.
-- [x] Decks part 2: `:feature:decks`. Bottom bar (Alarm · Decks), My decks / Browse packs (map regions added and removed here), New deck, Deck detail with filter and settings (rename, delete), game picker, card forms for the five games (new and edit, Save & add another, delete). Not yet: free deck limit, Import (part 3). Exam date: dropped.
-- [x] Decks part 3: Import a deck with your own AI (mockup D5). Import button on the Decks tab, the prompt to copy (five games + a full English example), paste or upload a .json file (Android), forgiving importer (chat text, fences, curly quotes, other field and game names, guessed games), preview with editable name and skipped cards, create. Not on iOS yet: file upload.
+- [x] Decks part 2: `:feature:decks`. Bottom bar (Alarm · Decks), My decks / Browse packs (map regions added and removed here), New deck, Deck detail with filter and settings (rename, delete), game picker, card forms for the five games (new and edit, Save & add another, delete). Import came in part 3. Free deck limit: 5 of your own decks (built-in packs don't count, `DeckLimits`). Exam date: dropped.
+- [x] Decks part 3: Import a deck with your own AI (mockup D5). Import button on the Decks tab, the prompt to copy (five games + a full English example), paste or upload a .json file (Android), forgiving importer (chat text, fences, curly quotes, other field and game names, guessed games), preview with editable name and skipped cards, create. iOS file upload: see M5.
 - [x] Streaks: one record per morning (`wake_sessions`, database version 3), written by the morning screen. A sunrise adds 1, a missed alarm (Emergency stop or left ringing) resets, days without an alarm are skipped; today can't break it. Shown on Home and "You're up!". Not yet: streak freezes, milestones
 
 - [x] Progress tab (mockup 11): `:feature:progress`. Week/Month toggle; Streak, Learned (new cards right for the first time), Remembered (cards that came back, right first time); cards per morning with the average wake-up; the month's sunrises with ‹ › to earlier months; milestones (7-day and 30-day best streak, 100 cards). Not built: Pip's tip, Friends tab
