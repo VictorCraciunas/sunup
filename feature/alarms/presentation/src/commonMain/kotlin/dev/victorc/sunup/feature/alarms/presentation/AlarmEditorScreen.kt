@@ -17,9 +17,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,6 +40,9 @@ import dev.victorc.sunup.core.designsystem.components.SunupDayChip
 import dev.victorc.sunup.core.designsystem.components.SunupIconButton
 import dev.victorc.sunup.core.designsystem.components.SunupRaised
 import dev.victorc.sunup.core.designsystem.components.SunupStepper
+import dev.victorc.sunup.core.designsystem.components.SunupTextButton
+import dev.victorc.sunup.core.designsystem.components.SunupSheet
+import dev.victorc.sunup.core.designsystem.components.SunupButtonStyle
 import dev.victorc.sunup.core.designsystem.components.SunupTimeSheet
 import dev.victorc.sunup.core.designsystem.motion.riseIn
 import dev.victorc.sunup.core.designsystem.motion.wobbleWhenOn
@@ -138,12 +139,7 @@ fun AlarmEditorScreen(state: AlarmEditorState, onAction: (AlarmEditorAction) -> 
             enabled = !state.saving && !state.loading,
         )
         if (!state.isNew) {
-            TextButton(
-                onClick = { onAction(AlarmEditorAction.OnDelete) },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            ) {
-                Text("Delete alarm", color = colors.wrong)
-            }
+            SunupTextButton(text = "Delete alarm", color = colors.wrong, onClick = { onAction(AlarmEditorAction.OnDelete) })
         }
     }
 
@@ -159,17 +155,21 @@ fun AlarmEditorScreen(state: AlarmEditorState, onAction: (AlarmEditorAction) -> 
         )
     }
     if (state.confirmingDelete) {
-        AlertDialog(
-            onDismissRequest = { onAction(AlarmEditorAction.OnCancelDelete) },
-            title = { Text("Delete this alarm?") },
-            text = { Text("It won't ring again. This can't be undone.") },
-            confirmButton = {
-                TextButton(onClick = { onAction(AlarmEditorAction.OnConfirmDelete) }) { Text("Delete", color = colors.wrong) }
-            },
-            dismissButton = {
-                TextButton(onClick = { onAction(AlarmEditorAction.OnCancelDelete) }) { Text("Keep it") }
-            },
-        )
+        // The same panel as deleting a deck (mockup H1).
+        SunupSheet(title = "Delete this alarm?", onDismiss = { onAction(AlarmEditorAction.OnCancelDelete) }) {
+            val time = state.hour.toString().padStart(2, '0') + ":" + state.minute.toString().padStart(2, '0')
+            Text(
+                "The $time alarm won't ring again. This can't be undone.",
+                style = SunupTheme.typography.body,
+                color = colors.inkMuted,
+            )
+            SunupButton(
+                text = "Delete alarm",
+                style = SunupButtonStyle.Danger,
+                onClick = { close { onAction(AlarmEditorAction.OnConfirmDelete) } },
+            )
+            SunupTextButton(text = "Keep it", onClick = { close { onAction(AlarmEditorAction.OnCancelDelete) } })
+        }
     }
 }
 

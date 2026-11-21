@@ -19,6 +19,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -83,9 +84,12 @@ fun SunupSheet(
     }
 }
 
-/** A quiet full-width button with no box around it, e.g. Cancel or Keep it under a big button. */
+/**
+ * A quiet full-width button with no box around it, e.g. Cancel or Keep it under a big button.
+ * [color] null: indigo; pass `wrong` for one that starts deleting (Delete alarm).
+ */
 @Composable
-fun SunupTextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun SunupTextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, color: Color? = null) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -94,7 +98,7 @@ fun SunupTextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text.uppercase(), style = SunupTheme.typography.button, color = SunupTheme.colors.indigo)
+        Text(text.uppercase(), style = SunupTheme.typography.button, color = color ?: SunupTheme.colors.indigo)
     }
 }
 
