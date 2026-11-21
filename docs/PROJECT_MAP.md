@@ -209,7 +209,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | File | What's in it |
 |---|---|
 | `presentation/HomeViewModel.kt` | Home state (`HomeAlarmUi`, `DeckProgressUi`, `WeekDayUi`), actions, events: the alarm shown on the card, its deck's progress, streak and week from `Streaks` |
-| `presentation/HomeScreen.kt` | `HomeRoot` / `HomeScreen`: streak and cards chips, the alarm card with its switch, deck card, This week, Preview button, the "On You're up!" weather and calendar switches |
+| `presentation/HomeScreen.kt` | `HomeRoot` / `HomeScreen`: streak and cards chips, the alarm card with its switch and "All 3 ›", the floating New alarm button, deck card, This week, Preview button, the "On You're up!" weather and calendar switches |
 | `presentation/MorningPermissions.kt` (+ `androidMain` / `iosMain`) | `rememberMorningPermissions()`: location and calendar allowed?, and the prompts |
 | `presentation/AlarmListViewModel.kt` | List state (`AlarmItemUi`), actions, events; runs the sync when the list opens; ticks every minute for "Rings in…" |
 | `presentation/AlarmListScreen.kt` | `AlarmListRoot` / `AlarmListScreen`: Back, title and +, next-alarm banner, alarm cards with switches, empty state, test bench link |

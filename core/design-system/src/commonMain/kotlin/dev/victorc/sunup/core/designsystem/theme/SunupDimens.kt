@@ -35,6 +35,8 @@ data class SunupSizes(
     val minTouchTarget: Dp = 48.dp,
     /** Outline of cards, chips and inputs. */
     val border: Dp = 2.dp,
+    /** Soft drop shadow under a button that floats over the screen (Home's New alarm). */
+    val floatShadow: Dp = 12.dp,
     /** Pip next to a line of text, e.g. the "next alarm" banner. */
     val pipBadge: Dp = 44.dp,
     /** Pip as the main picture of a screen, e.g. an empty list. */

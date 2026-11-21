@@ -44,6 +44,8 @@ data class HomeState(
     val cardsAnswered: Int = 0,
     /** The big alarm card. Null when there are no alarms at all. */
     val alarm: HomeAlarmUi? = null,
+    /** How many alarms there are, on or off: the card's "All 3 ›". */
+    val alarmCount: Int = 0,
     /** The deck the next alarm uses. Null when there are no decks yet. */
     val deck: DeckProgressUi? = null,
     val week: List<WeekDayUi> = emptyList(),
@@ -253,6 +255,7 @@ class HomeViewModel(
             streak = Streaks.current(sessionList, today),
             cardsAnswered = Streaks.cardsAnswered(sessionList),
             alarm = alarmUi,
+            alarmCount = alarmList.size,
             deck = deck?.let { progress(it) },
             week = week,
             sunrisesThisWeek = week.count { it.mark == DayMark.SUNRISE },

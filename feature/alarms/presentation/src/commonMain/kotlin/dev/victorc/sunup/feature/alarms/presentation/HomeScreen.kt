@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -57,6 +59,7 @@ import dev.victorc.sunup.core.designsystem.components.PipMood
 import dev.victorc.sunup.core.designsystem.components.SunupButton
 import dev.victorc.sunup.core.designsystem.components.SunupButtonStyle
 import dev.victorc.sunup.core.designsystem.components.SunupRaised
+import dev.victorc.sunup.core.designsystem.motion.popIn
 import dev.victorc.sunup.core.designsystem.motion.reduceMotion
 import dev.victorc.sunup.core.designsystem.motion.riseIn
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
@@ -64,7 +67,8 @@ import dev.victorc.sunup.core.domain.wakeup.DayMark
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * Home, the Alarm tab's start screen (the original mockup).
+ * Home, the Alarm tab's start screen (the original mockup, plus the floating New alarm
+ * button from mockup F3).
  *
  * @param onPreview plays an alarm's morning as practice; null hides the button (no ringing screen on this platform yet)
  */
@@ -104,74 +108,95 @@ fun HomeRoot(
 fun HomeScreen(state: HomeState, onAction: (HomeAction) -> Unit, canPreview: Boolean, permissions: MorningPermissions) {
     val colors = SunupTheme.colors
     val spacing = SunupTheme.spacing
+    // With no alarm yet, the "No alarm set" card has the Add alarm button.
+    val showNewAlarm = !state.loading && state.alarm != null
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.background)
-            .safeContentPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = spacing.screen, vertical = spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(spacing.lg),
+            .safeContentPadding(),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-            Text(
-                "sunup",
-                style = SunupTheme.typography.headline,
-                color = colors.ink,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { heading() },
-            )
-            StatChip(
-                text = "${state.streak}",
-                description = if (state.streak == 1) "1 sunrise in a row" else "${state.streak} sunrises in a row",
-                face = colors.sunSoft,
-                ink = colors.onSunSoft,
-            ) {
-                Pip(PipMood.HAPPY, size = SunupTheme.spacing.xxl)
-            }
-            StatChip(
-                text = "${state.cardsAnswered}",
-                description = "${state.cardsAnswered} cards answered",
-                face = colors.daySky,
-                ink = colors.indigo,
-            ) {
-                Text("🃏", style = SunupTheme.typography.body)
-            }
-        }
-
-        state.message?.let { Message(it, onDismiss = { onAction(HomeAction.OnDismissMessage) }) }
-        if (!state.loading) {
-            val alarm = state.alarm
-            if (alarm != null) {
-                AlarmCard(alarm, onAction, Modifier.riseIn(0))
-            } else {
-                NoAlarmCard(onAdd = { onAction(HomeAction.OnAddAlarm) }, modifier = Modifier.riseIn(0))
-            }
-
-            val deck = state.deck
-            if (deck != null) {
-                DeckCard(deck, onOpen = { onAction(HomeAction.OnOpenDeck) }, modifier = Modifier.riseIn(1))
-            } else {
-                NoDeckCard(onOpen = { onAction(HomeAction.OnOpenDecks) }, modifier = Modifier.riseIn(1))
-            }
-
-            WeekCard(state, Modifier.riseIn(2))
-
-            if (alarm != null && canPreview) {
-                SunupButton(
-                    text = when (alarm.day) {
-                        "Today" -> "Preview today's wake-up"
-                        "Tomorrow" -> "Preview tomorrow's wake-up"
-                        else -> "Preview this wake-up"
-                    },
-                    onClick = { onAction(HomeAction.OnPreview) },
-                    modifier = Modifier.riseIn(3),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = spacing.screen, vertical = spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(spacing.lg),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                Text(
+                    "sunup",
+                    style = SunupTheme.typography.headline,
+                    color = colors.ink,
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { heading() },
                 )
+                StatChip(
+                    text = "${state.streak}",
+                    description = if (state.streak == 1) "1 sunrise in a row" else "${state.streak} sunrises in a row",
+                    face = colors.sunSoft,
+                    ink = colors.onSunSoft,
+                ) {
+                    Pip(PipMood.HAPPY, size = SunupTheme.spacing.xxl)
+                }
+                StatChip(
+                    text = "${state.cardsAnswered}",
+                    description = "${state.cardsAnswered} cards answered",
+                    face = colors.daySky,
+                    ink = colors.indigo,
+                ) {
+                    Text("🃏", style = SunupTheme.typography.body)
+                }
             }
 
-            MorningExtrasCard(state, permissions, onAction, Modifier.riseIn(4))
+            state.message?.let { Message(it, onDismiss = { onAction(HomeAction.OnDismissMessage) }) }
+            if (!state.loading) {
+                val alarm = state.alarm
+                if (alarm != null) {
+                    AlarmCard(alarm, state.alarmCount, onAction, Modifier.riseIn(0))
+                } else {
+                    NoAlarmCard(onAdd = { onAction(HomeAction.OnAddAlarm) }, modifier = Modifier.riseIn(0))
+                }
+
+                val deck = state.deck
+                if (deck != null) {
+                    DeckCard(deck, onOpen = { onAction(HomeAction.OnOpenDeck) }, modifier = Modifier.riseIn(1))
+                } else {
+                    NoDeckCard(onOpen = { onAction(HomeAction.OnOpenDecks) }, modifier = Modifier.riseIn(1))
+                }
+
+                WeekCard(state, Modifier.riseIn(2))
+
+                if (alarm != null && canPreview) {
+                    SunupButton(
+                        text = when (alarm.day) {
+                            "Today" -> "Preview today's wake-up"
+                            "Tomorrow" -> "Preview tomorrow's wake-up"
+                            else -> "Preview this wake-up"
+                        },
+                        onClick = { onAction(HomeAction.OnPreview) },
+                        // White, so the yellow New alarm button is the one that stands out.
+                        style = SunupButtonStyle.Secondary,
+                        modifier = Modifier.riseIn(3),
+                    )
+                }
+
+                MorningExtrasCard(state, permissions, onAction, Modifier.riseIn(4))
+            }
+            // Room to scroll the last card out from under the floating button.
+            if (showNewAlarm) Spacer(Modifier.height(SunupTheme.sizes.buttonHeight))
+        }
+        if (showNewAlarm) {
+            NewAlarmButton(
+                onClick = { onAction(HomeAction.OnAddAlarm) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    // The padding sits inside popIn, so the shadow has room and isn't cut off while it pops in.
+                    .popIn()
+                    .padding(spacing.xl),
+            )
         }
     }
 }
@@ -262,9 +287,49 @@ private fun StatChip(text: String, description: String, face: Color, ink: Color,
     }
 }
 
-/** The big indigo card: when the next alarm rings. Tap it for all alarms. */
+/**
+ * Always in Home's bottom corner, over the scrolling cards: the one obvious way to add an alarm
+ * (mockup F3). Before this, the only way was the alarm card, then the list's "+".
+ */
 @Composable
-private fun AlarmCard(alarm: HomeAlarmUi, onAction: (HomeAction) -> Unit, modifier: Modifier) {
+private fun NewAlarmButton(onClick: () -> Unit, modifier: Modifier) {
+    val colors = SunupTheme.colors
+    val stroke = SunupTheme.sizes.pressDepth
+    SunupRaised(
+        face = colors.sun,
+        edge = colors.sunShadow,
+        shape = SunupTheme.shapes.pill,
+        contentPadding = PaddingValues(horizontal = SunupTheme.spacing.xl),
+        contentAlignment = Alignment.Center,
+        onClick = onClick,
+        modifier = modifier
+            // The soft shadow from the mockup: it's what makes the button read as floating.
+            .shadow(
+                elevation = SunupTheme.sizes.floatShadow,
+                shape = SunupTheme.shapes.pill,
+                clip = false,
+                ambientColor = colors.ink,
+                spotColor = colors.ink,
+            )
+            .height(SunupTheme.sizes.buttonHeight + SunupTheme.sizes.pressDepth),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.sm),
+        ) {
+            Canvas(Modifier.size(SunupTheme.spacing.xl)) {
+                val width = stroke.toPx() * 0.8f
+                drawLine(colors.onSun, Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), width, StrokeCap.Round)
+                drawLine(colors.onSun, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), width, StrokeCap.Round)
+            }
+            Text("New alarm".uppercase(), style = SunupTheme.typography.button, color = colors.onSun)
+        }
+    }
+}
+
+/** The big indigo card: when the next alarm rings. Tap it for all alarms ("All 3 ›" says so). */
+@Composable
+private fun AlarmCard(alarm: HomeAlarmUi, alarmCount: Int, onAction: (HomeAction) -> Unit, modifier: Modifier) {
     val colors = SunupTheme.colors
     val on = alarm.enabled
     SunupRaised(
@@ -298,7 +363,24 @@ private fun AlarmCard(alarm: HomeAlarmUi, onAction: (HomeAction) -> Unit, modifi
                 )
             }
             Text(alarm.time, style = SunupTheme.typography.clock, color = colors.onIndigo)
-            Text(alarm.details, style = SunupTheme.typography.body, color = colors.onNightMuted)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.sm),
+            ) {
+                Text(
+                    alarm.details,
+                    style = SunupTheme.typography.body,
+                    color = colors.onNightMuted,
+                    modifier = Modifier.weight(1f),
+                )
+                // Only a hint for the eye: the whole card is the button ("See all alarms").
+                Text(
+                    (if (alarmCount > 1) "All $alarmCount ›" else "Alarms ›").uppercase(),
+                    style = SunupTheme.typography.label,
+                    color = if (on) colors.sun else colors.onIndigo,
+                    modifier = Modifier.clearAndSetSemantics {},
+                )
+            }
         }
     }
 }
