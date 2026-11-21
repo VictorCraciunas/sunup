@@ -293,7 +293,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `core:alarm/iosMain/IosAlarmAuthorization.kt` | AlarmKit allowed? / ask: filled in at start-up, read by onboarding |
 | `iosApp/iosApp/iOSApp.swift` | `SunupStartup.run()` (calls `startSunup` once with the AlarmKit bridge and the sound player), then shows Compose |
 | `iosApp/iosApp/StopAlarmIntent.swift` | The App Intent behind Apple's Stop: tells Kotlin, which sets the alarm to come back 30 seconds from now |
-| `iosApp/iosApp/MorningSoundPlayer.swift` | Sunup's own alarm sound after "Wake up with Pip": a chime made in code, heard in silent mode, soft to loud, rings again when Sunup comes back on screen |
+| `iosApp/iosApp/MorningSoundPlayer.swift` | Sunup's own alarm sound after "Wake up with Pip": a chime made in code, heard in silent mode, soft to loud, rings again when Sunup comes back on screen; keeps the phone's volume up while it rings (hidden `MPVolumeView` slider) and puts it back after |
 | `iosApp/iosApp/AlarmKitBridgeImpl.swift` | AlarmKit in Swift: authorization, fixed and weekly schedules, Apple's alarm screen with "Wake up with Pip", stable UUIDs from Sunup's ids |
 | `iosApp/iosApp/OpenMorningIntent.swift` | The App Intent behind "Wake up with Pip": opens Sunup on that alarm's card |
 | `iosApp/iosApp/Info.plist` | `NSAlarmKitUsageDescription`. Deployment target iOS 26 (AlarmKit) |

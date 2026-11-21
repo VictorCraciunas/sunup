@@ -8,8 +8,12 @@ package dev.victorc.sunup.ios
  * Not on the ring path: AlarmKit rings whether or not this works.
  */
 interface MorningSoundBridge {
-    /** Starts the looping sound, or starts it again if it was cut off. Heard in silent mode while Sunup is on screen. */
+    /**
+     * Starts the looping sound, or starts it again if it was cut off. Heard while Sunup is on
+     * screen, in silent mode and with the phone's volume turned down (it turns the volume up).
+     */
     fun start()
 
+    /** Stops the sound and puts the phone's volume back where it was. */
     fun stop()
 }
