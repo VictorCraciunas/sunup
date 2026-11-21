@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -70,7 +70,7 @@ internal fun OnboardingFrame(
         modifier = Modifier
             .fillMaxSize()
             .background(SunupTheme.colors.background)
-            .safeContentPadding()
+            .safeDrawingPadding()
             .padding(horizontal = spacing.screen, vertical = spacing.lg),
         verticalArrangement = Arrangement.spacedBy(spacing.lg),
     ) {

@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -115,7 +115,7 @@ fun HomeScreen(state: HomeState, onAction: (HomeAction) -> Unit, canPreview: Boo
         modifier = Modifier
             .fillMaxSize()
             .background(colors.background)
-            .safeContentPadding(),
+            .safeDrawingPadding(),
     ) {
         Column(
             modifier = Modifier

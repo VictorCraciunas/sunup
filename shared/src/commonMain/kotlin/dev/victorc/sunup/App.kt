@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -273,7 +273,7 @@ private fun TestBenchScreen(onBack: () -> Unit, content: @Composable () -> Unit)
         modifier = Modifier
             .fillMaxSize()
             .background(SunupTheme.colors.background)
-            .safeContentPadding()
+            .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
             .padding(SunupTheme.spacing.screen),
         verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),

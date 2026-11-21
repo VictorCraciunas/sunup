@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -59,7 +59,7 @@ internal fun BonusRoundScreen(state: WakeUpState, onAction: (WakeUpAction) -> Un
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .safeContentPadding()
+                .safeDrawingPadding()
                 .padding(horizontal = spacing.screen, vertical = spacing.xl),
             verticalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {

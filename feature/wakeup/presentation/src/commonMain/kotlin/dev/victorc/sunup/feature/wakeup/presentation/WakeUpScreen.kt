@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -146,7 +146,7 @@ private fun Page(palette: Palette, content: @Composable androidx.compose.foundat
         modifier = Modifier
             .fillMaxSize()
             .background(palette.background)
-            .safeContentPadding()
+            .safeDrawingPadding()
             .padding(SunupTheme.spacing.screen),
         verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),
         content = content,

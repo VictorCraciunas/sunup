@@ -54,6 +54,7 @@ Convention plugins (apply these, don't repeat config):
 - Errors: return `Result<T, E>` from `:core:domain`, never throw for expected failures. The layer that owns an exception catches it.
 - Presentation: MVI (State / Action / Event, ViewModel, Root + Screen composables).
 - UI uses `SunupTheme.colors / typography / spacing / shapes / sizes`, never raw hex or dp values in feature code.
+- Screens keep clear of the status bar, navigation bar and keyboard with `safeDrawingPadding()`, never `safeContentPadding()`: that one also adds the system's gesture margins (16 to 20 pt on each side on an iPhone), on top of `spacing.screen`.
 - Every synced record gets a UUID, `updatedAt` and `deletedAt` so sync can be added later without a migration.
 - No ads, upsells or paywalls anywhere in the morning flow.
 - Animations respect the system's reduce-motion setting: use `reduceMotion()` and the helpers in `core:design-system/motion` (`riseIn`, `wobbleWhenOn`). Raised cards and chips use `SunupRaised`.
