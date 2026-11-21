@@ -82,7 +82,7 @@ Ticked once it has worked on a real phone (see the test results below); the rest
 Written without a Mac, then built on one on 2026-11-21: it compiles (after three small fixes) and an alarm rings with Apple's screen. "(untested)" items still need checking on an iPhone.
 - [x] (untested) The app starts on iOS: `startSunup` with Koin, the engine's file, the database, settings; the morning flow shown over the app
 - [x] (untested) AlarmKit in Swift behind `AlarmScheduler` (`AlarmKitBridgeImpl.swift` via `IosPlatformAlarmClock`): one-off and weekly alarms, "Wake up with Pip" opens the card (`OpenMorningIntent`)
-- [x] (untested) Follow-up alarms every 3 minutes until the card is answered: five scheduled up front, set again from now on each dismissal (`StopAlarmIntent`, `OpenMorningIntent`)
+- [x] (untested) Follow-up alarms until the card is answered: back 30 seconds after Stop, 3 minutes after "Wake up with Pip" (`StopAlarmIntent`, `OpenMorningIntent`); five scheduled up front as a safety net
 - [x] (untested) Sunup's own alarm sound after "Wake up with Pip" (Apple's stops there), until the card is answered
 - [x] (untested) Onboarding asks for AlarmKit
 - [x] On the Mac: the Xcode project builds and runs (iOS 26 deployment target)

@@ -8,7 +8,9 @@ import dev.victorc.sunup.core.alarm.ScheduleError
 import dev.victorc.sunup.core.domain.EmptyResult
 import dev.victorc.sunup.core.domain.Result
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
@@ -16,8 +18,14 @@ import kotlinx.datetime.isoDayNumber
 /** Start of the suffix of the alarms that follow each ring on iOS, in case Apple's Stop was used instead of the card. */
 const val STOP_FOLLOW_UP_SUFFIX = ":stop"
 
-/** The alarm comes back this often for as long as the card isn't answered. */
+/**
+ * How far apart the follow-ups set ahead with every ring are, and how long "Wake up with Pip"
+ * gives to unlock and answer the card before the alarm comes back.
+ */
 private val STOP_FOLLOW_UP_EVERY = 3.minutes
+
+/** After Apple's Stop the alarm comes back this fast, again and again: stopping isn't worth it. */
+private val AFTER_STOP_EVERY = 30.seconds
 
 /**
  * How many follow-ups are set ahead. Every dismissal sets them again from that moment
@@ -39,11 +47,11 @@ fun alarmIdOfRing(ringId: String): String = ringId.replace(STOP_FOLLOW_UP_PATTER
  * The alarm engine's platform clock on iOS: AlarmKit through [AlarmKitBridge].
  *
  * Apple's alarm screen always has a Stop button, and the app isn't told when an alarm rings.
- * So every alarm also gets follow-ups every 3 minutes (PRD, "Android vs iOS"): a few are set
- * ahead, every dismissal sets them again from that moment ([dismissedWithoutCard]), and only
- * answering the card cancels them ([answered]). Dismissing just brings the alarm back 3 minutes
- * later. Weekly alarms are left to AlarmKit to repeat, so they keep ringing even if the app
- * isn't opened for days.
+ * So every alarm also gets follow-ups (PRD, "Android vs iOS"): a few are set ahead, 3 minutes
+ * apart; every dismissal sets them again from that moment ([dismissedWithoutCard]), 30 seconds
+ * apart after Stop and 3 minutes apart after "Wake up with Pip"; only answering the card cancels
+ * them ([answered]). Dismissing just brings the alarm back. Weekly alarms are left to AlarmKit
+ * to repeat, so they keep ringing even if the app isn't opened for days.
  */
 class IosPlatformAlarmClock(
     private val alarmKit: AlarmKitBridge,
@@ -88,15 +96,18 @@ class IosPlatformAlarmClock(
     }
 
     /**
-     * The alarm or one of its follow-ups was dismissed on Apple's alarm screen (Stop, or "Wake
-     * up with Pip") and the card isn't answered yet. The follow-ups start over from now: the
-     * next ring is 3 minutes after this moment, and dismissing never runs out of rings.
+     * The alarm or one of its follow-ups was dismissed on Apple's alarm screen and the card isn't
+     * answered yet. The follow-ups start over from now, so dismissing never runs out of rings.
+     *
+     * [stopped]: Apple's Stop was used, so the alarm is back in 30 seconds, and every 30 seconds
+     * after that. Otherwise it was "Wake up with Pip": 3 minutes, enough to unlock and answer.
      */
-    fun dismissedWithoutCard(alarmId: String) {
+    fun dismissedWithoutCard(alarmId: String, stopped: Boolean) {
         if (!alarmKit.isAuthorized()) return
         val now = clock.now()
+        val every = if (stopped) AFTER_STOP_EVERY else STOP_FOLLOW_UP_EVERY
         repeat(STOP_FOLLOW_UPS_AHEAD) { index ->
-            alarmKit.scheduleOnce(stopFollowUpId(alarmId, index), followUpTime(now, index), soft = true)
+            alarmKit.scheduleOnce(stopFollowUpId(alarmId, index), followUpTime(now, index, every), soft = true)
         }
     }
 
@@ -105,8 +116,8 @@ class IosPlatformAlarmClock(
     }
 
     /** Follow-up number [index] (0 = the first), counted from [from]: a ring, or the moment one was dismissed. */
-    private fun followUpTime(from: Instant, index: Int): Long =
-        (from + STOP_FOLLOW_UP_EVERY * (index + 1)).toEpochMilliseconds()
+    private fun followUpTime(from: Instant, index: Int, every: Duration = STOP_FOLLOW_UP_EVERY): Long =
+        (from + every * (index + 1)).toEpochMilliseconds()
 
     /**
      * The follow-ups for the ring at [next]. One that's already waiting for an earlier ring (it

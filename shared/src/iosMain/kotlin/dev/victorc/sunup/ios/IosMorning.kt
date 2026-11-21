@@ -35,7 +35,7 @@ object IosMorning {
     private var runs = 0
 
     /** The open morning's alarm was already stopped (card answered, emergency stop). */
-    private var stopped = false
+    private var alarmStopped = false
 
     /**
      * Shows the morning flow for [alarmId]. A stop follow-up plays its own alarm's morning: if
@@ -46,9 +46,9 @@ object IosMorning {
      */
     fun show(alarmId: String) {
         val morning = alarmIdOfRing(alarmId)
-        if (_open.value?.alarmId != morning || stopped) {
+        if (_open.value?.alarmId != morning || alarmStopped) {
             runs++
-            stopped = false
+            alarmStopped = false
             _open.value = OpenMorning(morning, runs)
         }
         if (!isPreview(morning) && !morning.endsWith(WAKE_CHECK_SUFFIX)) sound?.start()
@@ -56,14 +56,14 @@ object IosMorning {
 
     fun close() {
         sound?.stop()
-        stopped = false
+        alarmStopped = false
         _open.value = null
     }
 
     /** The alarm was stopped in Sunup: quiet now, cancel this morning's stop follow-ups, set the next ones. */
     internal fun answered(alarmId: String) {
         sound?.stop()
-        stopped = true
+        alarmStopped = true
         // Previews ring nothing, so there's nothing to cancel.
         if (isPreview(alarmId)) return
         val platform = clock ?: return
@@ -74,16 +74,24 @@ object IosMorning {
     }
 
     /**
-     * [ringId] (the alarm or one of its follow-ups) was dismissed on Apple's alarm screen: Stop,
-     * "slide to stop", or "Wake up with Pip". The card isn't answered yet, so the alarm is set to
-     * come back 3 minutes from now. Called by both intents in Swift, possibly in the background;
-     * it returns once every new ring has been handed to AlarmKit.
+     * Apple's Stop (or "slide to stop") was used on [ringId], the alarm or one of its follow-ups.
+     * The card isn't answered, so the alarm comes back in 30 seconds, and every 30 seconds after.
+     * Called by the stop intent in Swift, usually in the background; it returns once every new
+     * ring has been handed to AlarmKit.
      */
-    suspend fun dismissed(ringId: String) {
+    suspend fun stopped(ringId: String) = dismissed(ringId, stopped = true)
+
+    /**
+     * "Wake up with Pip" was tapped on [ringId]. The card isn't answered yet: if it still isn't
+     * in 3 minutes, the alarm comes back. Called by the open intent in Swift.
+     */
+    suspend fun wakingUp(ringId: String) = dismissed(ringId, stopped = false)
+
+    private suspend fun dismissed(ringId: String, stopped: Boolean) {
         val platform = clock ?: return
         // Only saved alarms come back. The test alarm and the wake-up check stop for good.
         val alarm = runCatching { store?.alarm(alarmIdOfRing(ringId)) }.getOrNull() ?: return
-        runCatching { platform.dismissedWithoutCard(alarm.id) }
+        runCatching { platform.dismissedWithoutCard(alarm.id, stopped) }
     }
 
     private fun isPreview(alarmId: String) = alarmId.startsWith(PREVIEW_ALARM_PREFIX) || alarmId == PREVIEW_ALARM_ID

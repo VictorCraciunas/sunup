@@ -21,7 +21,7 @@ struct OpenMorningIntent: LiveActivityIntent {
     func perform() async throws -> some IntentResult {
         SunupStartup.run()
         IosMorning.shared.show(alarmId: alarmId)
-        try? await IosMorning.shared.dismissed(ringId: alarmId)
+        try? await IosMorning.shared.wakingUp(ringId: alarmId)
         // iOS may suspend the app again (phone still locked): wait until AlarmKit has the new rings.
         await AlarmKitBridgeImpl.shared.settle()
         return .result()
