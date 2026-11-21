@@ -217,7 +217,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `presentation/AlarmListViewModel.kt` | List state (`AlarmItemUi`), actions, events; runs the sync when the list opens; ticks every minute for "Rings in…" |
 | `presentation/AlarmListScreen.kt` | `AlarmListRoot` / `AlarmListScreen`: Back, title and +, next-alarm banner, alarm cards with switches, empty state, test bench link |
 | `presentation/AlarmEditorViewModel.kt` | Editor state and actions: time, days, mode, deck, save, delete |
-| `presentation/AlarmEditorScreen.kt` | `AlarmEditorRoot` / `AlarmEditorScreen`: time steppers and the time wheels (`SunupTimeSheet`), day chips, mode segments, deck list, Delete alarm and its confirm panel (`SunupSheet`) |
+| `presentation/AlarmEditorScreen.kt` | `AlarmEditorRoot` / `AlarmEditorScreen`: time steppers and the time wheels (`SunupTimeSheet`), the Repeat card (switch and day chips, mockup J4), mode segments, deck list, Delete alarm and its confirm panel (`SunupSheet`) |
 | `presentation/AlarmText.kt` | "Mon–Fri", "Rings in 8 h 19 min", mode names and hints |
 | `presentation/AlarmErrors.kt` | Messages for `AlarmError` |
 | `presentation/AlarmsModule.kt` | Koin `alarmsModule` (Home, list, editor) |

@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,20 +102,7 @@ fun AlarmEditorScreen(state: AlarmEditorState, onAction: (AlarmEditorAction) -> 
 
         TimeCard(state, onAction, onPickTime = { pickingTime = true }, modifier = Modifier.riseIn(index = 0))
 
-        Section("Repeat on", Modifier.riseIn(index = 1)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                WEEK.forEach { day ->
-                    SunupDayChip(day = day.letter(), name = day.fullName(), on = day in state.days) {
-                        onAction(AlarmEditorAction.OnToggleDay(day))
-                    }
-                }
-            }
-            Text(
-                text = if (state.days.isEmpty()) "Rings once, then switches itself off." else repeatText(state.days),
-                style = SunupTheme.typography.bodySmall,
-                color = colors.inkMuted,
-            )
-        }
+        RepeatCard(state, onAction, Modifier.riseIn(index = 1))
 
         Section("Wake-up mode", Modifier.riseIn(index = 2)) {
             Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
@@ -214,6 +204,57 @@ private fun TimeCard(
                 Text(it, style = SunupTheme.typography.bodySmall, color = colors.indigo, textAlign = TextAlign.Center)
             }
             Text("Tap the time to pick any minute", style = SunupTheme.typography.bodySmall, color = colors.inkMuted, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+/**
+ * Mockup J4: a Repeat switch. On, the days show under it; off, the alarm rings once and then
+ * switches itself off.
+ */
+@Composable
+private fun RepeatCard(state: AlarmEditorState, onAction: (AlarmEditorAction) -> Unit, modifier: Modifier) {
+    val colors = SunupTheme.colors
+    SunupRaised(
+        face = colors.surface,
+        edge = colors.border,
+        outline = colors.border,
+        contentPadding = PaddingValues(horizontal = SunupTheme.spacing.lg, vertical = SunupTheme.spacing.md),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Repeat", style = SunupTheme.typography.title, color = colors.ink)
+                    Text(
+                        if (state.repeat) repeatText(state.days) else "Off: rings once, then switches itself off",
+                        style = SunupTheme.typography.bodySmall,
+                        color = colors.inkMuted,
+                    )
+                }
+                Switch(
+                    checked = state.repeat,
+                    onCheckedChange = { onAction(AlarmEditorAction.OnRepeat(it)) },
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = colors.sun,
+                        checkedThumbColor = colors.surface,
+                        checkedBorderColor = colors.sun,
+                        uncheckedTrackColor = colors.track,
+                        uncheckedThumbColor = colors.surface,
+                        uncheckedBorderColor = colors.border,
+                    ),
+                    modifier = Modifier.semantics { contentDescription = "Repeat" },
+                )
+            }
+            if (state.repeat) {
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    WEEK.forEach { day ->
+                        SunupDayChip(day = day.letter(), name = day.fullName(), on = day in state.days) {
+                            onAction(AlarmEditorAction.OnToggleDay(day))
+                        }
+                    }
+                }
+            }
         }
     }
 }

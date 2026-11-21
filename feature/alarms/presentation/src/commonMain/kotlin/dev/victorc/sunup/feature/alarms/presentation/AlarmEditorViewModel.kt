@@ -31,6 +31,9 @@ data class AlarmEditorState(
     val isNew: Boolean = true,
     val hour: Int = DEFAULT_TIME.hour,
     val minute: Int = DEFAULT_TIME.minute,
+    /** Off: the alarm rings once, then switches itself off (mockup J4). */
+    val repeat: Boolean = true,
+    /** The days picked for Repeat. Kept while Repeat is off, so switching it back on brings them back. */
     val days: Set<DayOfWeek> = WEEKDAYS,
     val mode: WakeMode = WakeMode.NORMAL,
     /** Null: any deck (the morning flow picks the first one). */
@@ -43,6 +46,9 @@ data class AlarmEditorState(
     val message: String? = null,
 ) {
     val timeText: String get() = timeText(LocalTime(hour, minute))
+
+    /** What gets saved: no days means a one-time alarm. */
+    val repeatDays: Set<DayOfWeek> get() = if (repeat) days else emptySet()
 }
 
 data class DeckOption(val id: String?, val name: String)
@@ -52,6 +58,7 @@ sealed interface AlarmEditorAction {
     data class OnMinuteStep(val by: Int) : AlarmEditorAction
     data class OnTimePicked(val hour: Int, val minute: Int) : AlarmEditorAction
     data class OnToggleDay(val day: DayOfWeek) : AlarmEditorAction
+    data class OnRepeat(val on: Boolean) : AlarmEditorAction
     data class OnPickMode(val mode: WakeMode) : AlarmEditorAction
     data class OnPickDeck(val deckId: String?) : AlarmEditorAction
     data object OnSave : AlarmEditorAction
@@ -105,7 +112,8 @@ class AlarmEditorViewModel(
                         isNew = false,
                         hour = existing.time.hour,
                         minute = existing.time.minute,
-                        days = existing.repeatDays,
+                        repeat = existing.repeatDays.isNotEmpty(),
+                        days = existing.repeatDays.ifEmpty { WEEKDAYS },
                         mode = existing.mode,
                         deckId = existing.deckId,
                     )
@@ -129,8 +137,12 @@ class AlarmEditorViewModel(
             is AlarmEditorAction.OnMinuteStep -> change { it.copy(minute = (it.minute + action.by).mod(60)) }
             is AlarmEditorAction.OnTimePicked -> change { it.copy(hour = action.hour, minute = action.minute) }
             is AlarmEditorAction.OnToggleDay -> change {
-                it.copy(days = if (action.day in it.days) it.days - action.day else it.days + action.day)
+                val days = if (action.day in it.days) it.days - action.day else it.days + action.day
+                // Unticking the last day means once: Repeat turns itself off.
+                if (days.isEmpty()) it.copy(repeat = false, days = days) else it.copy(days = days)
             }
+            // Back on with no days left: start again from Mon–Fri.
+            is AlarmEditorAction.OnRepeat -> change { it.copy(repeat = action.on, days = it.days.ifEmpty { WEEKDAYS }) }
             is AlarmEditorAction.OnPickMode -> change { it.copy(mode = action.mode) }
             is AlarmEditorAction.OnPickDeck -> change { it.copy(deckId = action.deckId) }
             AlarmEditorAction.OnSave -> save()
@@ -150,7 +162,7 @@ class AlarmEditorViewModel(
         val base = original ?: WakeAlarm(id = id, time = DEFAULT_TIME)
         return base.copy(
             time = LocalTime(state.hour, state.minute),
-            repeatDays = state.days,
+            repeatDays = state.repeatDays,
             mode = state.mode,
             deckId = state.deckId,
             // Saving means "I want this alarm": it's switched on.
