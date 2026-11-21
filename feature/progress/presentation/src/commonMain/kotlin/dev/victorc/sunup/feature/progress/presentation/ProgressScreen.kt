@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
@@ -99,7 +100,13 @@ fun ProgressScreen(state: ProgressState, onAction: (ProgressAction) -> Unit) {
         }
         if (!state.loading) {
             StreakCard(state.streak, state.bestStreak, Modifier.riseIn(0))
-            Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm), modifier = Modifier.riseIn(0)) {
+            // As tall as the taller tile: one may wrap to more lines on a narrow phone.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                modifier = Modifier
+                    .height(IntrinsicSize.Min)
+                    .riseIn(0),
+            ) {
                 Stat(
                     value = "+${state.learned}",
                     label = "cards learned",
@@ -191,6 +198,7 @@ private fun RowScope.Stat(value: String, label: String, detail: String, face: Co
     Column(
         modifier = Modifier
             .weight(1f)
+            .fillMaxHeight()
             .background(face, SunupTheme.shapes.card)
             .padding(horizontal = SunupTheme.spacing.lg, vertical = SunupTheme.spacing.md)
             .clearAndSetSemantics { contentDescription = "$value $label, $detail" },
