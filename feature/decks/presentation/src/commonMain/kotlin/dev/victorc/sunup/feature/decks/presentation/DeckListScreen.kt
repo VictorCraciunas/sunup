@@ -253,7 +253,7 @@ internal fun KindBadge(kind: DeckKind) {
             .background(background, SunupTheme.shapes.button),
         contentAlignment = Alignment.Center,
     ) {
-        Text(kind.badge(), style = SunupTheme.typography.label, color = content)
+        Text(kind.badge(), style = badgeStyle(kind.badge()), color = content)
     }
 }
 

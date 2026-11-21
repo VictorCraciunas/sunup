@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 import dev.victorc.sunup.core.domain.learning.DeckKind
@@ -42,13 +43,21 @@ internal fun Game.example(): String = when (this) {
     else -> ""
 }
 
+/** Maps show a globe, as on Home's deck card and in onboarding. */
+internal const val MAP_BADGE = "🌍"
+
+/** The letters on a badge are small; the globe has to be bigger to read as a globe. */
+@Composable
+internal fun badgeStyle(badge: String): TextStyle =
+    if (badge == MAP_BADGE) SunupTheme.typography.title else SunupTheme.typography.label
+
 internal fun Game.badge(): String = when (this) {
     Game.PICK_MEANING -> "1/4"
     Game.TRUE_FALSE -> "T/F"
     Game.TYPE_IT -> "Aa"
     Game.FILL_THE_GAP -> "_ _"
     Game.MATCH_PAIRS -> "⇄"
-    Game.FIND_ON_MAP, Game.NAME_ON_MAP -> "◎"
+    Game.FIND_ON_MAP, Game.NAME_ON_MAP -> MAP_BADGE
     else -> "?"
 }
 
@@ -75,7 +84,7 @@ internal fun GameBadge(game: Game, size: Dp = SunupTheme.sizes.minTouchTarget) {
             .semantics { contentDescription = game.title() },
         contentAlignment = Alignment.Center,
     ) {
-        Text(game.badge(), style = SunupTheme.typography.label, color = content)
+        Text(game.badge(), style = badgeStyle(game.badge()), color = content)
     }
 }
 
@@ -97,7 +106,7 @@ internal fun DeckKind.badge(): String = when (this) {
     DeckKind.LANGUAGE -> "ABC"
     DeckKind.STUDY -> "?!"
     DeckKind.TRIVIA -> "FUN"
-    DeckKind.GEOGRAPHY -> "◎"
+    DeckKind.GEOGRAPHY -> MAP_BADGE
 }
 
 /** Two lines for a card in the deck list: what it asks, and its answer. */
