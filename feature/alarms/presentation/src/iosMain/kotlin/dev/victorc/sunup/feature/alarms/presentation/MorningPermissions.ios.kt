@@ -13,7 +13,7 @@ import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
 import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
 import platform.EventKit.EKAuthorizationStatusFullAccess
 import platform.EventKit.EKAuthorizationStatusNotDetermined
-import platform.EventKit.EKEntityTypeEvent
+import platform.EventKit.EKEntityType
 import platform.EventKit.EKEventStore
 import platform.darwin.NSObject
 import platform.darwin.dispatch_async
@@ -54,11 +54,11 @@ actual fun rememberMorningPermissions(): MorningPermissions {
 }
 
 private fun calendarAllowed(): Boolean =
-    EKEventStore.authorizationStatusForEntityType(EKEntityTypeEvent) == EKAuthorizationStatusFullAccess
+    EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent) == EKAuthorizationStatusFullAccess
 
 /** [onResult] runs on the main thread. */
 private fun askCalendar(onResult: (Boolean) -> Unit) {
-    if (EKEventStore.authorizationStatusForEntityType(EKEntityTypeEvent) != EKAuthorizationStatusNotDetermined) {
+    if (EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent) != EKAuthorizationStatusNotDetermined) {
         onResult(calendarAllowed())
         return
     }

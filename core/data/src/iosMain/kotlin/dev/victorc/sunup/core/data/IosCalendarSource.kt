@@ -12,7 +12,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import platform.EventKit.EKAuthorizationStatusFullAccess
-import platform.EventKit.EKEntityTypeEvent
+import platform.EventKit.EKEntityType
 import platform.EventKit.EKEvent
 import platform.EventKit.EKEventStore
 import platform.Foundation.NSDate
@@ -26,7 +26,7 @@ import platform.Foundation.timeIntervalSince1970
 class IosCalendarSource(private val clock: Clock) : CalendarSource {
 
     override suspend fun nextEventToday(): CalendarEvent? = withContext(Dispatchers.Default) {
-        if (EKEventStore.authorizationStatusForEntityType(EKEntityTypeEvent) != EKAuthorizationStatusFullAccess) {
+        if (EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent) != EKAuthorizationStatusFullAccess) {
             return@withContext null
         }
         val zone = TimeZone.currentSystemDefault()
