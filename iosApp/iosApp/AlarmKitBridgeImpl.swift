@@ -12,8 +12,8 @@ struct SunupAlarmMetadata: AlarmMetadata {}
 /// `iOSApp` hands it over at start-up.
 ///
 /// Apple shows its own alarm screen. Ours adds a "Wake up with Pip" button that opens the
-/// card (`OpenMorningIntent`). Stop can't be hidden, so Kotlin also sets a soft follow-up
-/// a few minutes later that answering the card cancels.
+/// card (`OpenMorningIntent`). Stop can't be hidden, so Kotlin also sets follow-ups 3, 6 and
+/// 9 minutes later that only answering the card cancels.
 final class AlarmKitBridgeImpl: NSObject, AlarmKitBridge {
 
     private let manager = AlarmManager.shared

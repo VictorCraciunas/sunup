@@ -24,10 +24,10 @@ import dev.victorc.sunup.ios.IosMorning
  * alarm screen ("Wake up with Pip") or Home's preview opens one. Call `startSunup` first.
  */
 fun MainViewController() = ComposeUIViewController {
-    val morning by IosMorning.alarmId.collectAsState()
+    val morning by IosMorning.open.collectAsState()
     Box(Modifier.fillMaxSize()) {
         App(onPreviewMorning = { alarmId -> IosMorning.show(PREVIEW_ALARM_PREFIX + alarmId) })
-        morning?.let { alarmId -> key(alarmId) { Morning(alarmId) } }
+        morning?.let { open -> key(open) { Morning(open.alarmId) } }
     }
 }
 
@@ -44,7 +44,8 @@ private fun Morning(alarmId: String) {
         SunupTheme {
             WakeUpRoot(
                 alarmId = alarmId,
-                // Apple's alarm screen stops the sound when it opens Sunup; the follow-up keeps the user honest.
+                // Only the wake-up check's re-ring uses this. The alarm's sound after "Wake up with
+                // Pip" is Sunup's own (IosMorning), until onStopAlarm.
                 ringing = false,
                 onStopAlarm = { IosMorning.answered(alarmId) },
                 onClose = { IosMorning.close() },

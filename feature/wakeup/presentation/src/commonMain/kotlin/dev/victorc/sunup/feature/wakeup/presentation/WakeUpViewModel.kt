@@ -91,8 +91,8 @@ class WakeUpViewModel(
     // Every touch on this screen pushes it back. If the user leaves Sunup, the alarm engine
     // decides when it fires: busy in another app means awake for now (look again in a minute,
     // until checkUntil); screen off or locked means maybe asleep again, so it rings.
-    private val isFollowUpRing = alarmId.endsWith(FOLLOW_UP_SUFFIX)
-    private val followUpId = if (isFollowUpRing) alarmId else "$alarmId$FOLLOW_UP_SUFFIX"
+    private val isFollowUpRing = alarmId.endsWith(WAKE_CHECK_SUFFIX)
+    private val followUpId = if (isFollowUpRing) alarmId else "$alarmId$WAKE_CHECK_SUFFIX"
     private var checkActive = false
     private var checkUntil: Instant? = null
     private var checkDeadline: Instant? = null
@@ -542,7 +542,8 @@ private val RESCHEDULE_EVERY = 5.seconds
 
 /** How long the wake-up check keeps watching once the user is busy in another app. */
 private val CHECK_WINDOW = 5.minutes
-private const val FOLLOW_UP_SUFFIX = ":check"
+/** Ends the id of the wake-up check's soft re-ring: that ring shows "Still with me?", not a card. */
+const val WAKE_CHECK_SUFFIX = ":check"
 private const val WRONG_PAIR_FLASH_MILLIS = 700L
 
 // TODO(M4): move user-facing text to string resources once localization is set up.

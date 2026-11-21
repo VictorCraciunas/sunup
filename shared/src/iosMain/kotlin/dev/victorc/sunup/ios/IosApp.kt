@@ -30,10 +30,10 @@ private var started = false
 
 /**
  * Starts Sunup on iOS. Called once by `iOSApp.swift` before the first screen, with the Swift
- * AlarmKit bridge. Registers every saved alarm with AlarmKit again (it turns off a one-off
+ * AlarmKit bridge and Sunup's own alarm sound. Registers every saved alarm with AlarmKit again (it turns off a one-off
  * alarm whose time has passed), like Android does after a reboot.
  */
-fun startSunup(alarmKit: AlarmKitBridge) {
+fun startSunup(alarmKit: AlarmKitBridge, sound: MorningSoundBridge) {
     if (started) return
     started = true
 
@@ -59,6 +59,7 @@ fun startSunup(alarmKit: AlarmKitBridge) {
     val store = koin.get<AlarmStore>()
     IosMorning.clock = platform
     IosMorning.store = store
+    IosMorning.sound = sound
     CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
         runCatching { koin.get<AlarmScheduler>().rescheduleAll(reason = "app started") }
     }

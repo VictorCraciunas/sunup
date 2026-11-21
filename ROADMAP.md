@@ -79,12 +79,13 @@ Ticked once it has worked on a real phone (see the test results below); the rest
 - [x] Progress tab (mockup 11): `:feature:progress`. Week/Month toggle; Streak, Learned (new cards right for the first time), Remembered (cards that came back, right first time); cards per morning with the average wake-up; the month's sunrises with ‹ › to earlier months; milestones (7-day and 30-day best streak, 100 cards). Not built: Pip's tip, Friends tab
 
 ## M5 · iOS
-Written without a Mac on `feature/m5-ios`, then merged into `main` before any iOS build: nothing here has been built yet.
+Written without a Mac, then built on one on 2026-11-21: it compiles (after three small fixes) and an alarm rings with Apple's screen. "(untested)" items still need checking on an iPhone.
 - [x] (untested) The app starts on iOS: `startSunup` with Koin, the engine's file, the database, settings; the morning flow shown over the app
 - [x] (untested) AlarmKit in Swift behind `AlarmScheduler` (`AlarmKitBridgeImpl.swift` via `IosPlatformAlarmClock`): one-off and weekly alarms, "Wake up with Pip" opens the card (`OpenMorningIntent`)
-- [x] (untested) Follow-up alarm scheduled up front (3 min after each ring) and cancelled by the card
+- [x] (untested) Follow-up alarms scheduled up front (3, 6 and 9 min after each ring), cancelled only by the card
+- [x] (untested) Sunup's own alarm sound after "Wake up with Pip" (Apple's stops there), until the card is answered
 - [x] (untested) Onboarding asks for AlarmKit
-- [ ] On the Mac: build `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`, then the Xcode project (iOS 26 deployment target), fix what doesn't compile
+- [x] On the Mac: the Xcode project builds and runs (iOS 26 deployment target)
 - [x] (untested) Weather (Core Location + MET Norway) and next event (EventKit) on iOS
 - [x] (untested) File upload for Import on iOS (Files picker)
 - [ ] Test "starts soft, gets louder" (AlarmKit may only use the ringer volume)

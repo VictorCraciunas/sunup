@@ -175,11 +175,13 @@ Users don't write notes for Sunup to turn into games any more; they make **cards
 - A ringing alarm stops on its own after 15 minutes (logged as TIMED_OUT).
 - No ads, upsells or paywalls anywhere in the morning.
 
-## iOS (not tested yet: needs a Mac and an iPhone on iOS 26)
+## iOS (builds and rings since 2026-11-21; most of it still to be tested on an iPhone)
 
 - Alarms go through Apple's **AlarmKit** (iOS 26+). Weekly alarms are repeated by AlarmKit itself, so they keep ringing even if Sunup isn't opened; one-off alarms ring once. Every app start registers all alarms again (a one-off whose time has passed turns off).
 - Apple shows its own alarm screen with **Stop** (can't be hidden) and **Wake up with Pip**, which opens Sunup on the morning flow for that alarm (ringing screen, card, bonus round, "You're up!").
-- **Stop follow-up:** every ring also sets a soft alarm 3 minutes later. Answering the card cancels it and sets the one for the next ring. So pressing Stop and going back to sleep still gets a second ring. A follow-up that's already waiting is kept if the app is opened and closed without answering. If Sunup isn't opened for days, only the next ring has a follow-up.
+- **Both of Apple's buttons silence Apple's sound.** Stop can't be removed, and "Wake up with Pip" also ends Apple's ringing as it opens Sunup. Two things make the card the only real way out:
+  - **Sunup's own sound:** once "Wake up with Pip" opens the morning, Sunup rings itself (a chime, heard in silent mode, soft to loud) until the alarm is stopped in Sunup: the card answered, or the emergency stop. Leaving Sunup pauses it (no background audio); coming back with the card unanswered rings again.
+  - **Stop follow-ups:** every ring also sets alarms 3, 6 and 9 minutes later. Only answering the card cancels them (and sets the ones for the next ring), so Stop just brings the alarm back, three times. Follow-ups that are already waiting are kept if the app is opened and closed without answering. A one-off alarm gets none after it's answered. If Sunup isn't opened for days, only the next ring has follow-ups.
 - AlarmKit may ignore "soft": follow-ups and the wake-up check can ring at the normal alarm volume. The wake-up check can't tell if the phone is in use, so it always rings.
 - Onboarding's checklist has one row on iOS: **Alarms** (Apple's prompt).
 - Import's file button opens Apple's Files picker (JSON or text files, up to 2 MB, as on Android).
