@@ -1,5 +1,13 @@
 package dev.victorc.sunup.feature.decks.presentation
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,10 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,12 +42,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.victorc.sunup.core.designsystem.components.SunupButton
+import dev.victorc.sunup.core.designsystem.components.SunupButtonStyle
+import dev.victorc.sunup.core.designsystem.components.SunupIconButton
+import dev.victorc.sunup.core.designsystem.components.SunupSheet
+import dev.victorc.sunup.core.designsystem.components.SunupTextButton
 import dev.victorc.sunup.core.designsystem.components.SunupRaised
 import dev.victorc.sunup.core.designsystem.components.SunupTextField
 import dev.victorc.sunup.core.designsystem.components.SunupTopBar
 import dev.victorc.sunup.core.designsystem.motion.riseIn
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
-import dev.victorc.sunup.core.domain.learning.DeckKind
 import dev.victorc.sunup.core.domain.learning.Game
 import dev.victorc.sunup.core.domain.learning.GameEligibility
 import org.koin.compose.viewmodel.koinViewModel
@@ -92,7 +101,7 @@ fun DeckDetailScreen(state: DeckDetailState, onAction: (DeckDetailAction) -> Uni
             title = state.name,
             onBack = { onAction(DeckDetailAction.OnBack) },
             actions = {
-                TextButton(onClick = { onAction(DeckDetailAction.OnOpenSettings) }) { Text("Settings", color = colors.indigo) }
+                SunupIconButton(description = "More for this deck", onClick = { onAction(DeckDetailAction.OnOpenSettings) }) { MoreDots() }
             },
         )
 
@@ -153,7 +162,7 @@ fun DeckDetailScreen(state: DeckDetailState, onAction: (DeckDetailAction) -> Uni
         }
     }
 
-    state.settings?.let { settings -> SettingsDialog(settings, kind = state.kind, onAction = onAction) }
+    state.settings?.let { settings -> DeckSheet(settings, deckName = state.name, cardCount = state.cardCount, onAction = onAction) }
 }
 
 @Composable
@@ -245,42 +254,112 @@ private fun CardRow(card: CardRowUi, clickable: Boolean, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Mockup H1: the ⋯ panel. It opens on Rename deck and Delete deck; picking one shows the name
+ * field, or asks before deleting, in the same panel.
+ */
 @Composable
-private fun SettingsDialog(settings: DeckSettingsUi, kind: DeckKind, onAction: (DeckDetailAction) -> Unit) {
+private fun DeckSheet(settings: DeckSettingsUi, deckName: String, cardCount: Int, onAction: (DeckDetailAction) -> Unit) {
     val colors = SunupTheme.colors
-    if (settings.confirmDelete) {
-        AlertDialog(
-            onDismissRequest = { onAction(DeckDetailAction.OnCloseSettings) },
-            title = { Text("Delete this deck?") },
-            text = { Text("All its cards go too. Alarms that used it pick another deck. This can't be undone.") },
-            confirmButton = {
-                TextButton(onClick = { onAction(DeckDetailAction.OnConfirmDelete) }) { Text("Delete", color = colors.wrong) }
-            },
-            dismissButton = { TextButton(onClick = { onAction(DeckDetailAction.OnCloseSettings) }) { Text("Keep it") } },
-        )
-        return
+    val title = when {
+        settings.confirmDelete -> "Delete this deck?"
+        settings.renaming -> "Rename deck"
+        else -> deckName
     }
-    AlertDialog(
-        onDismissRequest = { onAction(DeckDetailAction.OnCloseSettings) },
-        title = { Text("Deck settings") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md)) {
+    SunupSheet(title = title, onDismiss = { onAction(DeckDetailAction.OnCloseSettings) }) {
+        when {
+            settings.confirmDelete -> {
+                val cards = if (cardCount == 1) "Its 1 card goes too." else "Its $cardCount cards go too."
+                Text(
+                    "$cards Alarms that used it pick another deck. This can't be undone.",
+                    style = SunupTheme.typography.body,
+                    color = colors.inkMuted,
+                )
+                SunupButton(
+                    text = "Delete deck",
+                    style = SunupButtonStyle.Danger,
+                    onClick = { close { onAction(DeckDetailAction.OnConfirmDelete) } },
+                )
+                SunupTextButton(text = "Keep it", onClick = { close { onAction(DeckDetailAction.OnCloseSettings) } })
+            }
+            settings.renaming -> {
                 SunupTextField(
                     value = settings.name,
                     onValueChange = { onAction(DeckDetailAction.OnSettingsName(it)) },
                     label = "Name",
                 )
-                TextButton(
-                    onClick = { onAction(DeckDetailAction.OnDeleteDeck) },
-                    modifier = Modifier.semantics { contentDescription = "Delete this deck" },
+                SunupButton(text = "Save", onClick = { close { onAction(DeckDetailAction.OnSaveSettings) } })
+                SunupTextButton(text = "Cancel", onClick = { close { onAction(DeckDetailAction.OnCloseSettings) } })
+            }
+            else -> {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(SunupTheme.shapes.card)
+                        .border(SunupTheme.sizes.border, colors.border, SunupTheme.shapes.card),
                 ) {
-                    Text("Delete deck", color = colors.wrong)
+                    MenuRow("Rename deck", MenuIcon.PENCIL, color = colors.ink) { onAction(DeckDetailAction.OnStartRename) }
+                    HorizontalDivider(thickness = SunupTheme.sizes.border, color = colors.track)
+                    MenuRow("Delete deck", MenuIcon.TRASH, color = colors.wrong) { onAction(DeckDetailAction.OnDeleteDeck) }
+                }
+                SunupTextButton(text = "Close", onClick = { close { onAction(DeckDetailAction.OnCloseSettings) } })
+            }
+        }
+    }
+}
+
+private enum class MenuIcon { PENCIL, TRASH }
+
+@Composable
+private fun MenuRow(text: String, icon: MenuIcon, color: Color, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = SunupTheme.sizes.minTouchTarget + SunupTheme.spacing.md)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = SunupTheme.spacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),
+    ) {
+        LineIcon(icon, if (icon == MenuIcon.PENCIL) SunupTheme.colors.indigo else color)
+        Text(text, style = SunupTheme.typography.title, color = color)
+    }
+}
+
+/** The mockup's pencil and bin, drawn on a 24 × 24 grid. */
+@Composable
+private fun LineIcon(icon: MenuIcon, color: Color) {
+    val stroke = SunupTheme.sizes.border
+    Canvas(Modifier.size(SunupTheme.spacing.xxl)) {
+        val u = size.width / 24f
+        val style = Stroke(width = stroke.toPx() * 1.2f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        val path = Path().apply {
+            when (icon) {
+                MenuIcon.PENCIL -> {
+                    moveTo(4 * u, 20 * u); lineTo(8 * u, 20 * u); lineTo(19 * u, 9 * u); lineTo(15 * u, 5 * u); lineTo(4 * u, 16 * u); close()
+                    moveTo(13.5f * u, 6.5f * u); lineTo(17.5f * u, 10.5f * u)
+                }
+                MenuIcon.TRASH -> {
+                    moveTo(4 * u, 7 * u); lineTo(20 * u, 7 * u)
+                    moveTo(6 * u, 7 * u); lineTo(7 * u, 20 * u); lineTo(17 * u, 20 * u); lineTo(18 * u, 7 * u)
+                    moveTo(9 * u, 7 * u); lineTo(9 * u, 4 * u); lineTo(15 * u, 4 * u); lineTo(15 * u, 7 * u)
+                    moveTo(10 * u, 11 * u); lineTo(10 * u, 17 * u)
+                    moveTo(14 * u, 11 * u); lineTo(14 * u, 17 * u)
                 }
             }
-        },
-        confirmButton = { TextButton(onClick = { onAction(DeckDetailAction.OnSaveSettings) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = { onAction(DeckDetailAction.OnCloseSettings) }) { Text("Cancel") } },
-    )
+        }
+        drawPath(path, color, style = style)
+    }
+}
+
+/** ⋯ in the top bar: opens the deck's panel. */
+@Composable
+private fun MoreDots() {
+    val color = SunupTheme.colors.inkMuted
+    Canvas(Modifier.size(SunupTheme.spacing.xxl)) {
+        val r = size.width / 11f
+        listOf(0.2f, 0.5f, 0.8f).forEach { x -> drawCircle(color, radius = r, center = Offset(size.width * x, size.height / 2)) }
+    }
 }
 
 /** Mockup D4: pick the card's game first. */

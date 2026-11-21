@@ -26,7 +26,8 @@ import androidx.compose.ui.unit.dp
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 import androidx.compose.ui.tooling.preview.Preview
 
-enum class SunupButtonStyle { Primary, Secondary }
+/** Danger: for the one button that deletes something, after asking (e.g. Delete deck). */
+enum class SunupButtonStyle { Primary, Secondary, Danger }
 
 /**
  * The chunky 3D button from the mockups: a colored face over a darker edge.
@@ -60,6 +61,12 @@ fun SunupButton(
             edge = colors.border
             content = colors.indigo
             outline = colors.border
+        }
+        SunupButtonStyle.Danger -> {
+            face = colors.wrong
+            edge = colors.wrongShadow
+            content = colors.onWrong
+            outline = null
         }
     }
 

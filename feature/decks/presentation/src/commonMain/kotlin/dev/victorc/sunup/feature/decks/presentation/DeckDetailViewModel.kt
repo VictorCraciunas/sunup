@@ -49,9 +49,13 @@ data class CardRowUi(
     val playable: Boolean,
 )
 
-/** The settings sheet while it's open. */
+/**
+ * The ⋯ panel while it's open (mockup H1): first Rename deck / Delete deck, then the name field
+ * ([renaming]) or the delete question ([confirmDelete]).
+ */
 data class DeckSettingsUi(
     val name: String,
+    val renaming: Boolean = false,
     val confirmDelete: Boolean = false,
 )
 
@@ -61,6 +65,7 @@ sealed interface DeckDetailAction {
     data class OnOpenCard(val cardId: String) : DeckDetailAction
     data object OnBack : DeckDetailAction
     data object OnOpenSettings : DeckDetailAction
+    data object OnStartRename : DeckDetailAction
     data class OnSettingsName(val name: String) : DeckDetailAction
     data object OnSaveSettings : DeckDetailAction
     data object OnCloseSettings : DeckDetailAction
@@ -149,6 +154,7 @@ class DeckDetailViewModel(
             DeckDetailAction.OnOpenSettings -> _state.update {
                 it.copy(settings = DeckSettingsUi(name = it.name))
             }
+            DeckDetailAction.OnStartRename -> updateSettings { it.copy(renaming = true) }
             is DeckDetailAction.OnSettingsName -> updateSettings { it.copy(name = action.name) }
             DeckDetailAction.OnSaveSettings -> saveSettings()
             DeckDetailAction.OnCloseSettings -> _state.update { it.copy(settings = null) }

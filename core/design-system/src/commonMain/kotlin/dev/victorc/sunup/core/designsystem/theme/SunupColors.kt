@@ -67,6 +67,8 @@ data class SunupColors(
     val onCorrectContainer: Color = Color(0xFF1B6B2E),
     val wrong: Color = Color(0xFFC2410C),
     val wrongShadow: Color = Color(0xFF8A2E08),
+    /** Text on [wrong], e.g. the Delete deck button. */
+    val onWrong: Color = Color(0xFFFFFFFF),
     val wrongContainer: Color = Color(0xFFFFE4D6),
     val onWrongContainer: Color = Color(0xFF8A2E08),
 )

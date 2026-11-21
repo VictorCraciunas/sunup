@@ -6,20 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -36,12 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import dev.victorc.sunup.core.designsystem.motion.reduceMotion
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
 import kotlin.math.abs
@@ -60,7 +50,6 @@ private const val LOOPS = 1000
  * time (the arrows next to the time move minutes by 5). [onDone] gets the picked time;
  * Cancel, a tap outside, or swiping the panel down calls [onDismiss] and changes nothing.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SunupTimeSheet(
     hour: Int,
@@ -69,57 +58,21 @@ fun SunupTimeSheet(
     onDismiss: () -> Unit,
 ) {
     val colors = SunupTheme.colors
-    val spacing = SunupTheme.spacing
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
     var pickedHour by rememberSaveable { mutableIntStateOf(hour) }
     var pickedMinute by rememberSaveable { mutableIntStateOf(minute) }
 
-    // Slides the panel away first, then tells the screen.
-    fun close(then: () -> Unit) {
-        scope.launch { sheetState.hide() }.invokeOnCompletion { then() }
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        shape = SunupTheme.shapes.sheet,
-        containerColor = colors.surface,
-        contentColor = colors.ink,
-        dragHandle = {
-            Box(
-                Modifier
-                    .padding(top = spacing.sm)
-                    .size(width = HANDLE_WIDTH, height = HANDLE_HEIGHT)
-                    .background(colors.border, SunupTheme.shapes.pill),
-            )
-        },
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = spacing.screen, end = spacing.screen, top = spacing.md, bottom = spacing.lg),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(spacing.md),
+    SunupSheet(title = "Set the time", onDismiss = onDismiss) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.xl),
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
-            Text("Set the time", style = SunupTheme.typography.title, color = colors.ink, modifier = Modifier.semantics { heading() })
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xl)) {
-                Wheel(count = 24, value = pickedHour, unit = "hours", onChange = { pickedHour = it })
-                Text(":", style = SunupTheme.typography.display, color = colors.sunOutline)
-                Wheel(count = 60, value = pickedMinute, unit = "minutes", onChange = { pickedMinute = it })
-            }
-            SunupButton(text = "Done", onClick = { close { onDone(pickedHour, pickedMinute) } })
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = SunupTheme.sizes.minTouchTarget)
-                    .background(colors.surface, SunupTheme.shapes.button)
-                    .clickable(role = Role.Button) { close(onDismiss) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Cancel".uppercase(), style = SunupTheme.typography.button, color = colors.indigo)
-            }
+            Wheel(count = 24, value = pickedHour, unit = "hours", onChange = { pickedHour = it })
+            Text(":", style = SunupTheme.typography.display, color = colors.sunOutline)
+            Wheel(count = 60, value = pickedMinute, unit = "minutes", onChange = { pickedMinute = it })
         }
+        SunupButton(text = "Done", onClick = { close { onDone(pickedHour, pickedMinute) } })
+        SunupTextButton(text = "Cancel", onClick = { close(onDismiss) })
     }
 }
 
@@ -208,6 +161,3 @@ private fun Wheel(count: Int, value: Int, unit: String, onChange: (Int) -> Unit)
         }
     }
 }
-
-private val HANDLE_WIDTH = 44.dp
-private val HANDLE_HEIGHT = 5.dp

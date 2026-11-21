@@ -184,11 +184,12 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | `theme/SunupTypography.kt` | Text styles |
 | `theme/SunupDimens.kt` | Spacing, shapes, sizes (touch targets, map circle sizes) |
 | `theme/SunupTheme.kt` | `SunupTheme { }` and the `SunupTheme.colors / typography / spacing / shapes / sizes` accessors |
-| `components/SunupButton.kt` | The chunky 3D button |
+| `components/SunupButton.kt` | The chunky 3D button (Primary, Secondary, Danger for deleting) |
+| `components/SunupSheet.kt` | `SunupSheet`: Sunup's panel from the bottom (handle, title, content; `close { }` slides it away first), and `SunupTextButton` for Cancel / Keep it |
 | `components/SunupNavBar.kt` | The bottom bar (Alarm · Decks · Progress) with drawn icons |
 | `components/SunupFormParts.kt` | `SunupTopBar` (back + title), `SunupBackButton`, `SunupFieldLabel`, `SunupTextField` (labelled text box) |
 | `components/SunupTimeParts.kt` | `SunupStepper` (hours or minutes with arrows and ticking digits), `SunupDayChip`, `SunupIconButton`, `SunupChevron`. Used by the alarm editor and onboarding |
-| `components/SunupTimeSheet.kt` | `SunupTimeSheet`: the panel with an hour wheel and a minute wheel that opens when the time is tapped (mockup G1). Used by the alarm editor and onboarding |
+| `components/SunupTimeSheet.kt` | `SunupTimeSheet`: the `SunupSheet` with an hour wheel and a minute wheel that opens when the time is tapped (mockup G1). Used by the alarm editor and onboarding |
 | `components/SunupRaised.kt` | Any surface with the mockups' darker edge underneath (cards, chips, segments, the + button); tappable ones sink when pressed |
 | `motion/SunupMotion.kt` | `reduceMotion()` (Android "Remove animations" / iOS "Reduce Motion", platform code in `androidMain` / `iosMain`), `Modifier.riseIn(index)` (slide up and fade in, staggered), `Modifier.wobbleWhenOn(on)` (squash and stretch when picked), `Modifier.bob()` (Pip floating), `Modifier.popIn(index)` (pop in from small, staggered) |
 | `components/Pip.kt` | Pip the sun, with moods |
@@ -228,7 +229,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `domain/CardDraft.kt` | `CardDraft` (what a card form holds, one shape for every game), `CardProblem` (why it can't be saved), `CardDrafts.check` / `toNote` (form → card) |
 | `presentation/DeckListViewModel.kt` / `DeckListScreen.kt` | The Decks tab (mockup D1): My decks with card counts and alarms, New deck; Browse packs with the map regions (add = load the region, remove = delete its deck) |
 | `presentation/NewDeckScreen.kt` | New deck (D2): name, Language / Study / Trivia. ViewModel in the same file |
-| `presentation/DeckDetailViewModel.kt` / `DeckDetailScreen.kt` | Deck detail (D3): card count, alarms using it, Add a card, filter by game, card rows (with "can't play yet"), settings dialog (rename, delete). Also `GamePickerScreen` (D4) |
+| `presentation/DeckDetailViewModel.kt` / `DeckDetailScreen.kt` | Deck detail (D3): card count, alarms using it, Add a card, filter by game, card rows (with "can't play yet"), the ⋯ panel (`DeckSheet`, mockup H1: rename, delete after asking). Also `GamePickerScreen` (D4) |
 | `presentation/CardEditorViewModel.kt` / `CardEditorScreen.kt` | The card form for each game (E1–E5), new or editing; Save & add another, Done, Delete card |
 | `presentation/ImportViewModel.kt` / `ImportScreen.kt` | Import a deck (D5): copy the prompt, paste or upload, preview with an editable name and skipped cards, create |
 | `presentation/FilePicker.kt` (+ `androidMain` / `iosMain`) | `rememberTextFilePicker`: the system file picker for the .json file (Android's document picker; Apple's Files picker on iOS) |
