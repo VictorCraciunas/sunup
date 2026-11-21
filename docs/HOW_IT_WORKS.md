@@ -52,14 +52,14 @@ One sunrise is enough for a day, even if another alarm that day was missed. If t
 
 ## Progress
 
-The third tab (mockup 11). A **Week / Month** toggle sets what the boxes count:
+The third tab (mockup 11, laid out as mockup I1). A **Week / Month** toggle sets what the two tiles count:
 
-- **Streak:** the same as Home.
-- **This week / This month:** new cards answered right for the first time in that week or month.
-- **Remembered:** of the cards that came back (seen before), the share answered right the first time; "–" until one has.
+- **Streak:** the same as Home, on its own yellow card with Pip: "12 days", then "in a row · your best yet" or "in a row · best: 20 days"; "No streak yet" at 0.
+- **Cards learned** ("+18 cards learned, this week"): new cards answered right for the first time in that week or month.
+- **Remembered** ("86% remembered, of cards seen before"): of the cards that came back, the share answered right the first time; "–" until one has.
 - **Week: Cards per morning:** a bar per day (bonus included; "–" for none) and "Avg wake-up 7:02", the average time the alarm was answered this week.
 - **Month: November sunrises:** every day as a sun (woke up), beige (missed), blue (day off, no alarm), a ring (today) or pale (still to come); "17 of 20 mornings" = sunrises out of the days an alarm rang. ‹ › go to earlier months (the stat boxes follow).
-- **Milestones:** First week (a 7-day streak), 100 cards (answered in mornings), 30 days (a 30-day streak). The streak ones use the best streak ever, so a broken streak never takes a medal back. Locked ones say what's left ("17 days to go").
+- **Milestones:** a list. Each row has a medal, the name, what it asks and, until it's earned, a bar with "12 / 30": **First week** (wake up 7 days in a row), **100 cards** (answer 100 cards in your mornings), **A month of sunrises** (wake up 30 days in a row). The streak ones are earned once the best streak ever gets there, so a broken streak never takes a medal back; until then their bar shows today's streak. Earned rows show a yellow medal with a tick and "· earned".
 
 Pip's tip from the mockup ("try 5 cards by default") isn't there: card counts are fixed by the wake-up mode.
 

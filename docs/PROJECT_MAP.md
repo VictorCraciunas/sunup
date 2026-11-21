@@ -254,7 +254,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | File | What's in it |
 |---|---|
 | `presentation/ProgressViewModel.kt` | `ProgressState` (stats, `BarUi`, `MonthCellUi`, `MilestoneUi`), `Period`, actions; reads every morning and every answer |
-| `presentation/ProgressScreen.kt` | `ProgressRoot` / `ProgressScreen`: Week/Month toggle, stat boxes, cards-per-morning bars, month grid with ‹ ›, milestone medals |
+| `presentation/ProgressScreen.kt` | `ProgressRoot` / `ProgressScreen`: Week/Month toggle, the streak card with Pip and two stat tiles, cards-per-morning bars, month grid with ‹ ›, the milestone list with progress bars (mockup I1) |
 | `presentation/ProgressModule.kt` | Koin `progressModule` |
 
 ## `feature:wakeup`: the morning flow

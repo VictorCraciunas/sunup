@@ -48,6 +48,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.victorc.sunup.core.designsystem.components.ChevronDirection
 import dev.victorc.sunup.core.designsystem.components.SunupChevron
+import dev.victorc.sunup.core.designsystem.components.PipMood
+import dev.victorc.sunup.core.designsystem.components.Pip
 import dev.victorc.sunup.core.designsystem.components.SunupIconButton
 import dev.victorc.sunup.core.designsystem.motion.popIn
 import dev.victorc.sunup.core.designsystem.motion.reduceMotion
@@ -96,16 +98,22 @@ fun ProgressScreen(state: ProgressState, onAction: (ProgressAction) -> Unit) {
             Text(it, style = SunupTheme.typography.bodySmall, color = colors.onWrongContainer, modifier = Modifier.background(colors.wrongContainer, SunupTheme.shapes.card).padding(spacing.md))
         }
         if (!state.loading) {
+            StreakCard(state.streak, state.bestStreak, Modifier.riseIn(0))
             Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm), modifier = Modifier.riseIn(0)) {
-                Stat("Streak", if (state.streak == 1) "1 day" else "${state.streak} days", colors.sunSoft, colors.sunOutline, colors.onSunSoft)
                 Stat(
-                    if (state.period == Period.WEEK) "This week" else "This month",
-                    "+${state.learned}",
-                    colors.daySky,
-                    colors.indigoSoft,
-                    colors.indigo,
+                    value = "+${state.learned}",
+                    label = "cards learned",
+                    detail = if (state.period == Period.WEEK) "this week" else "this month",
+                    face = colors.daySky,
+                    ink = colors.indigo,
                 )
-                Stat("Remembered", state.remembered, colors.correctContainer, colors.correct, colors.onCorrectContainer)
+                Stat(
+                    value = state.remembered,
+                    label = "remembered",
+                    detail = "of cards seen before",
+                    face = colors.correctContainer,
+                    ink = colors.onCorrectContainer,
+                )
             }
 
             // A new key per period, so the card rises in again when the toggle changes.
@@ -149,19 +157,47 @@ private fun PeriodToggle(period: Period, onPick: (Period) -> Unit) {
     }
 }
 
+/** Mockup I1: the streak on its own card, with Pip. */
 @Composable
-private fun RowScope.Stat(label: String, value: String, face: Color, outline: Color, ink: Color) {
+private fun StreakCard(streak: Int, best: Int, modifier: Modifier) {
+    val colors = SunupTheme.colors
+    val days = if (streak == 1) "1 day" else "$streak days"
+    val line = when {
+        streak == 0 -> "Answer tomorrow's card to start one"
+        streak >= best -> "in a row · your best yet"
+        else -> "in a row · best: $best days"
+    }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colors.sunSoft, SunupTheme.shapes.card)
+            .border(SunupTheme.sizes.border, colors.sun, SunupTheme.shapes.card)
+            .padding(horizontal = SunupTheme.spacing.lg, vertical = SunupTheme.spacing.md)
+            .clearAndSetSemantics { contentDescription = "Streak: $days. $line" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),
+    ) {
+        Pip(if (streak == 0) PipMood.SLEEPY else PipMood.HAPPY, size = SunupTheme.sizes.pipBadge)
+        Column {
+            Text(if (streak == 0) "No streak yet" else days, style = SunupTheme.typography.display, color = colors.onSunSoft)
+            Text(line, style = SunupTheme.typography.body, color = colors.onSunSoft)
+        }
+    }
+}
+
+/** A wide tile: the number, what it is, and over what time. */
+@Composable
+private fun RowScope.Stat(value: String, label: String, detail: String, face: Color, ink: Color) {
     Column(
         modifier = Modifier
             .weight(1f)
             .background(face, SunupTheme.shapes.card)
-            .border(SunupTheme.sizes.border, outline, SunupTheme.shapes.card)
-            .padding(SunupTheme.spacing.md)
-            .clearAndSetSemantics { contentDescription = "$label: $value" },
-        verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.xs),
+            .padding(horizontal = SunupTheme.spacing.lg, vertical = SunupTheme.spacing.md)
+            .clearAndSetSemantics { contentDescription = "$value $label, $detail" },
     ) {
-        Text(label.uppercase(), style = SunupTheme.typography.label, color = ink)
         Text(value, style = SunupTheme.typography.headline, color = ink)
+        Text(label, style = SunupTheme.typography.body, color = ink)
+        Text(detail, style = SunupTheme.typography.bodySmall, color = ink)
     }
 }
 
@@ -341,59 +377,122 @@ private fun Legend(color: Color, label: String, outline: Color? = null) {
     }
 }
 
+/** Mockup I1: one row per milestone, saying what it asks and how far along you are. */
 @Composable
 private fun Milestones(milestones: List<MilestoneUi>, modifier: Modifier) {
+    val colors = SunupTheme.colors
     Card(modifier) {
-        Text("Milestones", style = SunupTheme.typography.title, color = SunupTheme.colors.ink)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            milestones.forEachIndexed { index, milestone -> Medal(milestone, index) }
+        Text("Milestones", style = SunupTheme.typography.title, color = colors.ink, modifier = Modifier.semantics { heading() })
+        Column {
+            milestones.forEachIndexed { index, milestone ->
+                MilestoneRow(milestone, index)
+                if (index < milestones.lastIndex) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SunupTheme.spacing.sm)
+                            .height(SunupTheme.sizes.border)
+                            .background(colors.track),
+                    )
+                }
+            }
         }
     }
 }
 
-/** Earned: a raised coloured medal. Locked: a dashed outline and what's left. */
 @Composable
-private fun Medal(milestone: MilestoneUi, index: Int) {
+private fun MilestoneRow(milestone: MilestoneUi, index: Int) {
     val colors = SunupTheme.colors
-    val size = SunupTheme.sizes.pipBadge * 1.4f
-    val (face, edge, ink) = when {
-        !milestone.earned -> Triple(colors.track, colors.border, colors.inkMuted)
-        milestone.kind == MilestoneKind.STREAK -> Triple(colors.sun, colors.sunShadow, colors.onSun)
-        else -> Triple(colors.indigoSoft, colors.indigo, colors.onIndigo)
+    val streak = milestone.kind == MilestoneKind.STREAK
+    val ink = if (streak) colors.onSunSoft else colors.indigo
+    val fill = if (streak) colors.sun else colors.indigoSoft
+    val spoken = if (milestone.earned) {
+        "${milestone.name}, earned. ${milestone.goal}."
+    } else {
+        "${milestone.name}: ${milestone.goal}. ${milestone.progress} of ${milestone.target}."
     }
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.sm),
+    Row(
         modifier = Modifier
+            .fillMaxWidth()
             .popIn(index, MEDAL_DELAY)
-            .clearAndSetSemantics {
-                contentDescription = if (milestone.earned) "Earned: ${milestone.caption}" else "${milestone.badge}: ${milestone.caption}"
-            },
+            .clearAndSetSemantics { contentDescription = spoken },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SunupTheme.spacing.md),
     ) {
-        Box(Modifier.size(size), contentAlignment = Alignment.Center) {
-            val stroke = SunupTheme.sizes.border
-            val depth = SunupTheme.sizes.pressDepth
-            Canvas(Modifier.fillMaxSize()) {
-                val corner = CornerRadius(this.size.width * 0.3f)
-                if (milestone.earned) {
-                    drawRoundRect(edge, topLeft = Offset(0f, depth.toPx()), size = this.size.copy(height = this.size.height - depth.toPx()), cornerRadius = corner)
-                    drawRoundRect(face, size = this.size.copy(height = this.size.height - depth.toPx()), cornerRadius = corner)
-                } else {
-                    drawRoundRect(face, cornerRadius = corner)
-                    drawRoundRect(
-                        edge,
-                        cornerRadius = corner,
-                        style = Stroke(stroke.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(stroke.toPx() * 2.5f, stroke.toPx() * 2f))),
-                    )
+        Medal(milestone)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.xs)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(milestone.name, style = SunupTheme.typography.body, color = colors.ink, modifier = Modifier.weight(1f))
+                if (!milestone.earned) {
+                    Text("${milestone.progress} / ${milestone.target}", style = SunupTheme.typography.bodySmall, color = ink)
                 }
             }
-            Text(milestone.badge, style = SunupTheme.typography.title, color = ink)
+            if (!milestone.earned) {
+                ProgressLine(milestone.progress.toFloat() / milestone.target, fill)
+            }
+            Text(
+                if (milestone.earned) "${milestone.goal} · earned" else milestone.goal,
+                style = SunupTheme.typography.bodySmall,
+                color = colors.inkMuted,
+            )
         }
-        Text(
-            milestone.caption,
-            style = SunupTheme.typography.label,
-            color = if (milestone.earned) colors.ink else colors.inkMuted,
-            textAlign = TextAlign.Center,
+    }
+}
+
+/** Earned: a raised sun-yellow medal with a tick. Locked: a dashed outline with its number. */
+@Composable
+private fun Medal(milestone: MilestoneUi) {
+    val colors = SunupTheme.colors
+    val size = SunupTheme.sizes.pipBadge
+    val stroke = SunupTheme.sizes.border
+    val depth = SunupTheme.sizes.pressDepth
+    Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val corner = CornerRadius(this.size.width * 0.3f)
+            if (milestone.earned) {
+                val face = this.size.copy(height = this.size.height - depth.toPx())
+                drawRoundRect(colors.sunShadow, topLeft = Offset(0f, depth.toPx()), size = face, cornerRadius = corner)
+                drawRoundRect(colors.sun, size = face, cornerRadius = corner)
+                // The tick.
+                val w = this.size.width
+                val tick = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(w * 0.28f, w * 0.48f)
+                    lineTo(w * 0.44f, w * 0.63f)
+                    lineTo(w * 0.72f, w * 0.33f)
+                }
+                drawPath(tick, colors.onSun, style = Stroke(stroke.toPx() * 1.6f, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            } else {
+                drawRoundRect(colors.track, cornerRadius = corner)
+                drawRoundRect(
+                    colors.border,
+                    cornerRadius = corner,
+                    style = Stroke(stroke.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(stroke.toPx() * 2.5f, stroke.toPx() * 2f))),
+                )
+            }
+        }
+        if (!milestone.earned) {
+            Text(milestone.badge, style = SunupTheme.typography.bodySmall, color = colors.inkMuted)
+        }
+    }
+}
+
+/** A thin bar that fills to [fraction]. */
+@Composable
+private fun ProgressLine(fraction: Float, color: Color) {
+    val colors = SunupTheme.colors
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(SunupTheme.spacing.sm)
+            .clip(SunupTheme.shapes.pill)
+            .background(colors.track),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .clip(SunupTheme.shapes.pill)
+                .background(color),
         )
     }
 }

@@ -31,6 +31,8 @@ data class ProgressState(
     val loading: Boolean = true,
     val period: Period = Period.WEEK,
     val streak: Int = 0,
+    /** The longest streak ever, this one included. */
+    val bestStreak: Int = 0,
     /** New cards answered right for the first time this week / month. */
     val learned: Int = 0,
     /** "91%", or "–" when no card came back yet. */
@@ -54,11 +56,17 @@ data class BarUi(val letter: String, val dayName: String, val cards: Int)
 /** One square of the month grid; null [day] is an empty square before the 1st. */
 data class MonthCellUi(val day: Int?, val mark: DayMark?)
 
+/** One row of the milestone list (mockup I1). */
 data class MilestoneUi(
-    /** What's on the medal: "7", "100", "30". */
+    /** What's on the medal while it's locked: "100", "30". */
     val badge: String,
-    /** "First week", or "17 days to go" while locked. */
-    val caption: String,
+    /** "First week", "100 cards", "A month of sunrises". */
+    val name: String,
+    /** What it asks, in words: "Wake up 30 days in a row". */
+    val goal: String,
+    /** How far along: the streak now, or cards answered so far (at most [target]). */
+    val progress: Int,
+    val target: Int,
     val earned: Boolean,
     val kind: MilestoneKind,
 )
@@ -121,6 +129,7 @@ class ProgressViewModel(
             loading = false,
             period = picked.period,
             streak = streak,
+            bestStreak = best,
             learned = Progress.learned(reviews, statRange, zone),
             remembered = Progress.remembered(reviews, statRange, zone)?.let { "$it%" } ?: "–",
             bars = bars,
@@ -133,14 +142,17 @@ class ProgressViewModel(
             monthSummary = if (alarmDays == 0) "No alarms yet" else "$sunrises of $alarmDays mornings",
             monthsBack = picked.monthsBack,
             milestones = listOf(
-                streakMilestone(days = 7, name = "First week", best = best),
+                streakMilestone(days = 7, name = "First week", streak = streak, best = best),
                 MilestoneUi(
                     badge = "100",
-                    caption = if (cards >= 100) "100 cards" else "${100 - cards} cards to go",
+                    name = "100 cards",
+                    goal = "Answer 100 cards in your mornings",
+                    progress = cards.coerceAtMost(100),
+                    target = 100,
                     earned = cards >= 100,
                     kind = MilestoneKind.CARDS,
                 ),
-                streakMilestone(days = 30, name = "30 days", best = best),
+                streakMilestone(days = 30, name = "A month of sunrises", streak = streak, best = best),
             ),
             message = _state.value.message,
         )
@@ -151,13 +163,16 @@ class ProgressViewModel(
         return blanks + month.days.map { day -> MonthCellUi(day = day.day, mark = Streaks.markFor(day, sessions, today)) }
     }
 
-    private fun streakMilestone(days: Int, name: String, best: Int) = MilestoneUi(
+    /**
+     * Earned once the best streak ever reached [days], so a broken streak never takes it back.
+     * Until then the bar shows today's streak: that's the one that has to get there.
+     */
+    private fun streakMilestone(days: Int, name: String, streak: Int, best: Int) = MilestoneUi(
         badge = "$days",
-        caption = when {
-            best >= days -> name
-            days - best == 1 -> "1 day to go"
-            else -> "${days - best} days to go"
-        },
+        name = name,
+        goal = "Wake up $days days in a row",
+        progress = streak.coerceAtMost(days),
+        target = days,
         earned = best >= days,
         kind = MilestoneKind.STREAK,
     )
