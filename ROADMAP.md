@@ -93,15 +93,55 @@ Written without a Mac, then built on one on 2026-11-21: it compiles (after three
 
 ## M6 · Release prep
 - [ ] Crash reports with Sentry and analytics with PostHog (see decisions); neither may delay the ring
-- [ ] RevenueCat for Plus
 - [ ] Privacy policy and store listings
 - [ ] Closed testing
 
 ## After the MVP
-- v1.1 Accounts, backup and sync (Supabase), Anki/CSV import
-- v1.2 (dropped: AI generator and "Fill in" are replaced by Import with your own AI, see decisions)
-- v1.3 Friends and 1v1
-- v1.4 Squads
+Planned 2026-11-21. Each milestone gets its own branch, a short design note first, and mockups where the canvas has none yet. Rule #1 holds in all of them: backup, Plus and friends never sit on the path from "alarm scheduled" to "alarm rings", and the morning never waits on the network.
+
+### M7 · Accounts and backup (Supabase, v1.1)
+"Don't lose my decks and streak when I change phones." One device per person; no live sync between phones.
+- [ ] Decide how people sign in: email code only, or Apple and Google too (Apple requires Sign in with Apple on iPhone if Google is offered)
+- [ ] Supabase project (you create it; the app gets its URL and public key) and `supabase-kt` in a new `:core:sync` module
+- [ ] Tables mirroring Room's (decks, cards, alarms, review states, mornings), each row with the user's id; row-level security so people only see their own rows
+- [ ] Back up rows changed since the last upload (`updatedAt`, deletions through `deletedAt`), in the background, never while an alarm rings
+- [ ] Restore on a new phone: sign in, download, then set every alarm again through `AlarmService.save`
+- [ ] Mockups first: a small Settings screen (a gear on Home) with the Backup row, and "I'm switching phones, restore my backup" on onboarding's welcome screen
+- [ ] Delete my account (an Edge Function deletes the user and their rows; required by both stores)
+- [ ] Privacy policy updated for accounts
+- [ ] Later in v1.1: Anki and CSV import, through the same importer as Import with your own AI
+
+### M8 · Sunup Plus (mockup 13)
+The alarm and the morning are never paywalled; upgrade prompts only in calm moments, never in the morning.
+- [ ] RevenueCat on both stores (moved here from M6), its "bought Plus" webhook into Supabase through an Edge Function
+- [ ] The Plus screen (mockup 13) and the calm-moment prompts (6th deck, after a 7-day streak)
+- [ ] What Plus unlocks: unlimited decks (free stays at 5), more bonus cards, streak freezes, and the three Plus games
+- [ ] The Plus games: Build the sentence, Listen & pick (native voice), Say it (speech recognition, with "Can't speak now")
+- [ ] Decide the prices to test (PRD: €2.99/month, €19.99/year, €39.99 lifetime, 7-day trial)
+
+### M9 · Friends and 1v1 (mockups 12, 17, 18, 19, v1.3)
+Needs M7's accounts. Build order from the PRD: sending cards first, to see if people want it.
+- [ ] Friends (mockup 12): add by invite link or code, accept or decline, who's up this morning, Cheer and Send a sun
+- [ ] Wake a friend up (mockup 17): Quiz them (cards to learn) and Surprise (one fun card)
+- [ ] Cards from a friend (mockup 18): accepted the night before (questions visible, answers hidden), "always accept from", silent decline, block and report on every card
+- [ ] Friend cards download the night before and play offline in the morning, like the rest
+- [ ] Push to friends' phones: FCM on Android, APNs on iOS, sent from an Edge Function
+- [ ] Morning duel (mockup 19): same cards for both, score and time, Rematch / Send GG / Share
+
+### M10 · Squads (mockup 16, v1.4)
+- [ ] Study squads: a shared card pool with authors and upvotes, the same cards for everyone each morning on their own alarm time
+- [ ] Soft squad streak: holds while most members wake up (e.g. 4 of 5)
+- [ ] Owner approves or removes cards; members flag wrong ones. Free: up to 5 members
+
+### M11 · Pip extras (mockups B1, B2, B3, C4)
+No backend needed, so any of these can come earlier if wanted.
+- [ ] Evening tuck-in (B1): tomorrow's card at bedtime, with a reminder
+- [ ] Pip's sky (B2): every sunrise adds something to the sky; a missed morning leaves a gap, nothing resets
+- [ ] Widgets (B3): next alarm, tonight's card, the streak (Android widget, iOS widget in Swift)
+- [ ] Alarm editor extras (C4): pre-alarm, alarm sound, label
+- [ ] Decide: on iPhone, open "Wake up with Pip" straight on the card (mockups 14 and 15) instead of Sunup's ringing screen
+
+Dropped: the AI deck generator (mockup 10) and "Fill in", replaced by Import with your own AI (see decisions).
 
 ## Decisions since the PRD
 - **Cards, not notes (M4, replaces the level-up path):** each card has **one game**, picked by the user when making it (Pick from 4, True or false, Type it, Fill the gap, Match pairs, Map). No mastery levels. Every morning Sunup picks **random cards** from the deck, never twice in one morning; a hidden rule makes cards you got wrong a bit more likely to come up. Any card can stop the alarm, whatever its game. Pick from 4: the user may write 3 wrong answers; empty ones are borrowed from other cards in the deck. This changes the M2/M3 learning code (levels, `GameEligibility`, the planner) when the deck screens are built.
