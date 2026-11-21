@@ -107,7 +107,9 @@ class DeckDetailViewModel(
                     val (front, back) = note.summary()
                     CardRowUi(
                         id = note.id,
-                        game = note.game,
+                        // A map's countries are saved without a game of their own (each morning picks
+                        // Name the country or Find on the map), so they'd show the default "1/4" badge.
+                        game = if (found.kind == DeckKind.GEOGRAPHY) Game.NAME_ON_MAP else note.game,
                         front = front,
                         back = back,
                         playable = found.kind == DeckKind.GEOGRAPHY ||
