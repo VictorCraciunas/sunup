@@ -280,7 +280,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `androidApp/.../alarm/AlarmRingingActivity.kt` | Shows `WakeUpRoot` over the lock screen; also opens Preview all games and Home's preview of one alarm |
 | `androidApp/.../alarm/AlarmTestBench.kt` | Temporary debug panel: permissions, sample decks, modes, test alarms, ring log |
 | `androidApp/src/main/AndroidManifest.xml` | Activities |
-| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm (Home), Decks and Progress tabs with the bottom bar, every inner screen, the test bench. `from(entry)`: a screen that's no longer in front ignores taps (no double opens) |
+| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm (Home), Decks and Progress tabs with the bottom bar, every inner screen, the test bench. `from(entry)`: a screen that's no longer in front ignores taps (no double opens). `tabEnter` / `tabExit`: tab to tab is a 120 ms fade, not the page slide |
 | `shared/.../MainViewController.kt` | iOS entry into Compose: the app, with the morning flow on top when one is open (its own ViewModel store per morning) |
 | `shared/src/iosMain/.../ios/IosApp.kt` | `startSunup(alarmKit, sound)`: iOS Koin (engine, database, settings, the features), then registers every alarm with AlarmKit again |
 | `shared/src/iosMain/.../ios/AlarmKitBridge.kt` | The Swift-facing interface to AlarmKit (plain types) |

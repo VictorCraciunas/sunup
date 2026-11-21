@@ -1,5 +1,11 @@
 package dev.victorc.sunup
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,7 +163,12 @@ private fun SunupNavHost(
             if (openDecks) navController.switchTab(DeckListRoute)
         }
 
-        composable<HomeRoute> { entry ->
+        composable<HomeRoute>(
+            enterTransition = tabEnter,
+            exitTransition = tabExit,
+            popEnterTransition = tabEnter,
+            popExitTransition = tabExit,
+        ) { entry ->
             HomeRoot(
                 onOpenAlarms = { navController.from(entry) { navigate(AlarmListRoute) } },
                 onNewAlarm = { navController.from(entry) { navigate(AlarmEditorRoute()) } },
@@ -178,11 +189,21 @@ private fun SunupNavHost(
             AlarmEditorRoot(alarmId = route.alarmId, onClose = { navController.from(entry) { popBackStack() } })
         }
 
-        composable<ProgressRoute> {
+        composable<ProgressRoute>(
+            enterTransition = tabEnter,
+            exitTransition = tabExit,
+            popEnterTransition = tabEnter,
+            popExitTransition = tabExit,
+        ) {
             ProgressRoot()
         }
 
-        composable<DeckListRoute> { entry ->
+        composable<DeckListRoute>(
+            enterTransition = tabEnter,
+            exitTransition = tabExit,
+            popEnterTransition = tabEnter,
+            popExitTransition = tabExit,
+        ) { entry ->
             DeckListRoot(
                 onOpenDeck = { id -> navController.from(entry) { navigate(DeckRoute(id)) } },
                 onNewDeck = { navController.from(entry) { navigate(NewDeckRoute) } },
@@ -258,6 +279,22 @@ private inline fun NavHostController.from(entry: NavBackStackEntry, action: NavH
  * Bottom bar tabs: one copy of each tab, and the tab keeps its place when you come back.
  * Home is always the bottom of the stack (the graph's start can be onboarding).
  */
+private fun NavBackStackEntry.isTab(): Boolean =
+    destination.hasRoute<HomeRoute>() || destination.hasRoute<DeckListRoute>() || destination.hasRoute<ProgressRoute>()
+
+/**
+ * Tab to tab is a quick fade, like a tab bar. Without this, iOS slides the new tab in like a
+ * new page (half a second, the old one darkening), and Android fades slowly. Opening a screen
+ * from a tab returns null here, so it keeps the platform's own page transition.
+ */
+private val tabEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition? =
+    { if (initialState.isTab()) fadeIn(tween(TAB_FADE_MILLIS)) else null }
+
+private val tabExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition? =
+    { if (targetState.isTab()) fadeOut(tween(TAB_FADE_MILLIS)) else null }
+
+private const val TAB_FADE_MILLIS = 120
+
 private fun NavHostController.switchTab(route: Any) {
     navigate(route) {
         popUpTo<HomeRoute> { saveState = true }
