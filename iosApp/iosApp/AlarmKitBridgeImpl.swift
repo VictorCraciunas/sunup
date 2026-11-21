@@ -12,11 +12,31 @@ struct SunupAlarmMetadata: AlarmMetadata {}
 /// `iOSApp` hands it over at start-up.
 ///
 /// Apple shows its own alarm screen. Ours adds a "Wake up with Pip" button that opens the
-/// card (`OpenMorningIntent`). Stop can't be hidden, so Kotlin also sets follow-ups 3, 6 and
-/// 9 minutes later that only answering the card cancels.
+/// card (`OpenMorningIntent`). Stop can't be hidden, so Kotlin also sets follow-ups every
+/// 3 minutes that only answering the card cancels; each Stop adds another (`StopAlarmIntent`).
 final class AlarmKitBridgeImpl: NSObject, AlarmKitBridge {
 
+    /// One for the whole app: the stop intent waits on its work (`settle`).
+    static let shared = AlarmKitBridgeImpl()
+
     private let manager = AlarmManager.shared
+
+    /// Alarms on their way to AlarmKit. Kotlin calls from several threads, hence the lock.
+    private let lock = NSLock()
+    private var inFlight: [Task<Void, Never>] = []
+
+    /// Waits until every alarm handed over so far has reached AlarmKit. For code that iOS may
+    /// suspend as soon as it returns (the stop intent, in the background).
+    func settle() async {
+        let tasks = lock.withLock { () -> [Task<Void, Never>] in
+            let waiting = inFlight
+            inFlight.removeAll()
+            return waiting
+        }
+        for task in tasks {
+            await task.value
+        }
+    }
 
     func isAuthorized() -> Bool {
         manager.authorizationState == .authorized
@@ -72,16 +92,24 @@ final class AlarmKitBridgeImpl: NSObject, AlarmKitBridge {
         let configuration = AlarmManager.AlarmConfiguration<SunupAlarmMetadata>.alarm(
             schedule: schedule,
             attributes: attributes,
+            stopIntent: StopAlarmIntent(alarmId: alarmId),
             secondaryIntent: OpenMorningIntent(alarmId: alarmId),
             sound: .default
         )
         // Replace any earlier alarm with this id (Kotlin schedules again after every change).
         try? manager.cancel(id: id)
-        Task {
+        let task = Task {
             do {
                 _ = try await manager.schedule(id: id, configuration: configuration)
             } catch {
                 print("Sunup: AlarmKit couldn't schedule \(alarmId): \(error)")
+            }
+        }
+        lock.withLock {
+            inFlight.append(task)
+            // Old ones finished long ago; only the newest can still be on their way.
+            if inFlight.count > 32 {
+                inFlight.removeFirst(inFlight.count - 32)
             }
         }
     }

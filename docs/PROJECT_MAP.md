@@ -282,8 +282,8 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `shared/.../MainViewController.kt` | iOS entry into Compose: the app, with the morning flow on top when one is open (its own ViewModel store per morning) |
 | `shared/src/iosMain/.../ios/IosApp.kt` | `startSunup(alarmKit, sound)`: iOS Koin (engine, database, settings, the features), then registers every alarm with AlarmKit again |
 | `shared/src/iosMain/.../ios/AlarmKitBridge.kt` | The Swift-facing interface to AlarmKit (plain types) |
-| `shared/src/iosMain/.../ios/IosPlatformAlarmClock.kt` | The engine's `PlatformAlarmClock` on iOS: one-off and weekly alarms, and the "stop follow-ups" 3, 6 and 9 minutes after each ring |
-| `shared/src/iosMain/.../ios/IosMorning.kt` | Which morning is open (from "Wake up with Pip" or Home's preview); starts Sunup's own sound for a real alarm; once the card is answered, stops it and cancels the stop follow-ups |
+| `shared/src/iosMain/.../ios/IosPlatformAlarmClock.kt` | The engine's `PlatformAlarmClock` on iOS: one-off and weekly alarms, and the "stop follow-ups": five set ahead, 3 minutes apart, one more added on every Stop |
+| `shared/src/iosMain/.../ios/IosMorning.kt` | Which morning is open (from "Wake up with Pip" or Home's preview); starts Sunup's own sound for a real alarm; once the card is answered, stops it and cancels the stop follow-ups; `stopped` adds a follow-up when Apple's Stop is used |
 | `shared/src/iosMain/.../ios/MorningSoundBridge.kt` | The Swift-facing interface to Sunup's own alarm sound (start, stop) |
 | `shared/src/iosMain/.../ios/IosStorage.kt` | `IosStateFile` (the engine's JSON file, written atomically) and the app's folders |
 | `core:data/iosMain/IosWeatherSource.kt` | Weather on iOS: approximate location (Core Location), then MET Norway over `NSURLSession`; parsed by `MetNorwayForecast` like Android |
@@ -291,7 +291,8 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `core:data/iosMain/MorningInfoModule.ios.kt` | iOS `morningInfoModule` (the two above) |
 | `feature:alarms:presentation/iosMain/MorningPermissions.ios.kt` | Apple's location and calendar prompts behind Home's "On You're up!" switches |
 | `core:alarm/iosMain/IosAlarmAuthorization.kt` | AlarmKit allowed? / ask: filled in at start-up, read by onboarding |
-| `iosApp/iosApp/iOSApp.swift` | Calls `startSunup` with the AlarmKit bridge and the sound player, then shows Compose |
+| `iosApp/iosApp/iOSApp.swift` | `SunupStartup.run()` (calls `startSunup` once with the AlarmKit bridge and the sound player), then shows Compose |
+| `iosApp/iosApp/StopAlarmIntent.swift` | The App Intent behind Apple's Stop: tells Kotlin, which sets another ring 3 minutes after the last one waiting |
 | `iosApp/iosApp/MorningSoundPlayer.swift` | Sunup's own alarm sound after "Wake up with Pip": a chime made in code, heard in silent mode, soft to loud, rings again when Sunup comes back on screen |
 | `iosApp/iosApp/AlarmKitBridgeImpl.swift` | AlarmKit in Swift: authorization, fixed and weekly schedules, Apple's alarm screen with "Wake up with Pip", stable UUIDs from Sunup's ids |
 | `iosApp/iosApp/OpenMorningIntent.swift` | The App Intent behind "Wake up with Pip": opens Sunup on that alarm's card |

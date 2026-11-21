@@ -16,12 +16,18 @@ import kotlinx.datetime.isoDayNumber
 /** Start of the suffix of the alarms that follow each ring on iOS, in case Apple's Stop was used instead of the card. */
 const val STOP_FOLLOW_UP_SUFFIX = ":stop"
 
-/** How long after the alarm each follow-up rings if the card wasn't answered. Only the card cancels them. */
-private val STOP_FOLLOW_UP_DELAYS = listOf(3.minutes, 6.minutes, 9.minutes)
+/** The alarm comes back this often for as long as the card isn't answered. */
+private val STOP_FOLLOW_UP_EVERY = 3.minutes
+
+/**
+ * How many follow-ups are always set ahead. Each Stop adds one more at the end ([IosPlatformAlarmClock.stoppedWithoutCard]),
+ * so they never run out; these are the safety net if that code doesn't get to run.
+ */
+private const val STOP_FOLLOW_UPS_AHEAD = 5
 
 private val STOP_FOLLOW_UP_PATTERN = Regex(":stop[0-9]*$")
 
-/** ":stop", ":stop2", ":stop3". The first has no number, so one set by an earlier build is still found and cancelled. */
+/** ":stop", ":stop2" … ":stop5". The first has no number, so one set by an earlier build is still found and cancelled. */
 private fun stopFollowUpId(alarmId: String, index: Int): String =
     alarmId + STOP_FOLLOW_UP_SUFFIX + if (index == 0) "" else "${index + 1}"
 
@@ -32,9 +38,10 @@ fun alarmIdOfRing(ringId: String): String = ringId.replace(STOP_FOLLOW_UP_PATTER
  * The alarm engine's platform clock on iOS: AlarmKit through [AlarmKitBridge].
  *
  * Apple's alarm screen always has a Stop button, and the app isn't told when an alarm rings.
- * So every alarm also gets follow-ups 3, 6 and 9 minutes later (PRD, "Android vs iOS"); only
- * answering the card cancels them ([answered]), so Stop just brings the alarm back. Weekly
- * alarms are left to AlarmKit to repeat, so they keep ringing even if the app isn't opened for days.
+ * So every alarm also gets follow-ups every 3 minutes (PRD, "Android vs iOS"): a few are set
+ * ahead, each Stop adds another ([stoppedWithoutCard]), and only answering the card cancels them
+ * ([answered]). Stop just brings the alarm back. Weekly alarms are left to AlarmKit to repeat,
+ * so they keep ringing even if the app isn't opened for days.
  */
 class IosPlatformAlarmClock(
     private val alarmKit: AlarmKitBridge,
@@ -73,14 +80,35 @@ class IosPlatformAlarmClock(
         cancelStopFollowUps(alarmId)
         if (alarm == null || !alarm.enabled || alarm.isOneOff) return
         val next = NextRingTime.after(alarm, clock.now(), timeZone()) ?: return
-        STOP_FOLLOW_UP_DELAYS.forEachIndexed { index, delay ->
-            alarmKit.scheduleOnce(stopFollowUpId(alarmId, index), (next + delay).toEpochMilliseconds(), soft = true)
+        repeat(STOP_FOLLOW_UPS_AHEAD) { index ->
+            alarmKit.scheduleOnce(stopFollowUpId(alarmId, index), followUpTime(next, index), soft = true)
+        }
+    }
+
+    /**
+     * Apple's Stop was used on the alarm or one of its follow-ups, so the card still isn't
+     * answered. Every follow-up that has already rung is set again, 3 minutes after the last one
+     * still waiting: stopping this way never runs out of rings.
+     */
+    fun stoppedWithoutCard(alarmId: String) {
+        if (!alarmKit.isAuthorized()) return
+        val now = clock.now().toEpochMilliseconds()
+        val times = List(STOP_FOLLOW_UPS_AHEAD) { index -> alarmKit.scheduledAt(stopFollowUpId(alarmId, index)) }
+        var last = times.filter { it > now }.maxOrNull() ?: now
+        times.forEachIndexed { index, at ->
+            if (at > now) return@forEachIndexed
+            last += STOP_FOLLOW_UP_EVERY.inWholeMilliseconds
+            alarmKit.scheduleOnce(stopFollowUpId(alarmId, index), last, soft = true)
         }
     }
 
     private fun cancelStopFollowUps(alarmId: String) {
-        STOP_FOLLOW_UP_DELAYS.indices.forEach { index -> alarmKit.cancel(stopFollowUpId(alarmId, index)) }
+        repeat(STOP_FOLLOW_UPS_AHEAD) { index -> alarmKit.cancel(stopFollowUpId(alarmId, index)) }
     }
+
+    /** Follow-up number [index] (0 = the first) for the ring at [ring]. */
+    private fun followUpTime(ring: Instant, index: Int): Long =
+        (ring + STOP_FOLLOW_UP_EVERY * (index + 1)).toEpochMilliseconds()
 
     /**
      * The follow-ups for the ring at [next]. One that's already waiting for an earlier ring (it
@@ -88,11 +116,11 @@ class IosPlatformAlarmClock(
      */
     private fun scheduleStopFollowUps(alarmId: String, next: Instant) {
         val now = clock.now().toEpochMilliseconds()
-        STOP_FOLLOW_UP_DELAYS.forEachIndexed { index, delay ->
+        repeat(STOP_FOLLOW_UPS_AHEAD) { index ->
             val id = stopFollowUpId(alarmId, index)
-            val at = (next + delay).toEpochMilliseconds()
+            val at = followUpTime(next, index)
             val waiting = alarmKit.scheduledAt(id)
-            if (waiting > now && waiting < at) return@forEachIndexed
+            if (waiting > now && waiting < at) return@repeat
             alarmKit.scheduleOnce(id, at, soft = true)
         }
     }
