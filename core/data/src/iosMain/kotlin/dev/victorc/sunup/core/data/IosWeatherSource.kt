@@ -29,6 +29,7 @@ import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.create
 import platform.Foundation.dataTaskWithRequest
 import platform.Foundation.setValue
+import platform.Foundation.timeIntervalSinceNow
 import platform.darwin.NSObject
 
 /**
@@ -86,7 +87,7 @@ class IosWeatherSource(private val clock: Clock) : WeatherSource {
     private suspend fun fetch(url: String): Result<WeatherToday, DataError.Network> {
         val address = NSURL.URLWithString(url) ?: return Result.Error(DataError.Network.UNKNOWN)
         val request = NSMutableURLRequest.requestWithURL(address).apply {
-            timeoutInterval = TIMEOUT_MILLIS / 1000.0
+            setTimeoutInterval(TIMEOUT_MILLIS / 1000.0)
             // MET Norway's terms: identify the app in the User-Agent.
             setValue(USER_AGENT, forHTTPHeaderField = "User-Agent")
         }
