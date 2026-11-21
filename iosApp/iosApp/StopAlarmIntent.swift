@@ -3,8 +3,8 @@ import AppIntents
 import Shared
 
 /// Runs when Apple's Stop (or "slide to stop") is used on a Sunup alarm, usually in the
-/// background. Stopping is allowed, but the card wasn't answered, so Kotlin sets another ring
-/// 3 minutes after the last one waiting (`IosPlatformAlarmClock.stoppedWithoutCard`).
+/// background. Stopping is allowed, but the card wasn't answered, so Kotlin sets the alarm to
+/// come back 3 minutes from now (`IosPlatformAlarmClock.dismissedWithoutCard`).
 ///
 /// If this never runs, the follow-ups that were set ahead still ring.
 struct StopAlarmIntent: LiveActivityIntent {
@@ -26,7 +26,7 @@ struct StopAlarmIntent: LiveActivityIntent {
         try? AlarmManager.shared.stop(id: AlarmKitBridgeImpl.uuid(for: alarmId))
 
         SunupStartup.run()
-        try? await IosMorning.shared.stopped(ringId: alarmId)
+        try? await IosMorning.shared.dismissed(ringId: alarmId)
         // iOS may suspend the app as soon as this returns: wait until AlarmKit has the new rings.
         await AlarmKitBridgeImpl.shared.settle()
         return .result()

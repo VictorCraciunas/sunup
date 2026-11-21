@@ -74,15 +74,16 @@ object IosMorning {
     }
 
     /**
-     * Apple's Stop (or "slide to stop") was used on [ringId], the alarm or one of its follow-ups:
-     * the card wasn't answered, so more rings are set. Called by the stop intent in Swift, which
-     * may run in the background; it returns once every new ring has been handed to AlarmKit.
+     * [ringId] (the alarm or one of its follow-ups) was dismissed on Apple's alarm screen: Stop,
+     * "slide to stop", or "Wake up with Pip". The card isn't answered yet, so the alarm is set to
+     * come back 3 minutes from now. Called by both intents in Swift, possibly in the background;
+     * it returns once every new ring has been handed to AlarmKit.
      */
-    suspend fun stopped(ringId: String) {
+    suspend fun dismissed(ringId: String) {
         val platform = clock ?: return
         // Only saved alarms come back. The test alarm and the wake-up check stop for good.
         val alarm = runCatching { store?.alarm(alarmIdOfRing(ringId)) }.getOrNull() ?: return
-        runCatching { platform.stoppedWithoutCard(alarm.id) }
+        runCatching { platform.dismissedWithoutCard(alarm.id) }
     }
 
     private fun isPreview(alarmId: String) = alarmId.startsWith(PREVIEW_ALARM_PREFIX) || alarmId == PREVIEW_ALARM_ID
