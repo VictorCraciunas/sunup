@@ -35,6 +35,9 @@ data class SunupSizes(
     val minTouchTarget: Dp = 48.dp,
     /** Outline of cards, chips and inputs. */
     val border: Dp = 2.dp,
+    /** One number on the time wheels (SunupTimeSheet); five show at a time. */
+    val wheelRow: Dp = 48.dp,
+    val wheelWidth: Dp = 96.dp,
     /** Soft drop shadow under a button that floats over the screen (Home's New alarm). */
     val floatShadow: Dp = 12.dp,
     /** Pip next to a line of text, e.g. the "next alarm" banner. */

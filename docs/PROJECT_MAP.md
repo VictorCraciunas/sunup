@@ -188,6 +188,7 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | `components/SunupNavBar.kt` | The bottom bar (Alarm · Decks · Progress) with drawn icons |
 | `components/SunupFormParts.kt` | `SunupTopBar` (back + title), `SunupBackButton`, `SunupFieldLabel`, `SunupTextField` (labelled text box) |
 | `components/SunupTimeParts.kt` | `SunupStepper` (hours or minutes with arrows and ticking digits), `SunupDayChip`, `SunupIconButton`, `SunupChevron`. Used by the alarm editor and onboarding |
+| `components/SunupTimeSheet.kt` | `SunupTimeSheet`: the panel with an hour wheel and a minute wheel that opens when the time is tapped (mockup G1). Used by the alarm editor and onboarding |
 | `components/SunupRaised.kt` | Any surface with the mockups' darker edge underneath (cards, chips, segments, the + button); tappable ones sink when pressed |
 | `motion/SunupMotion.kt` | `reduceMotion()` (Android "Remove animations" / iOS "Reduce Motion", platform code in `androidMain` / `iosMain`), `Modifier.riseIn(index)` (slide up and fade in, staggered), `Modifier.wobbleWhenOn(on)` (squash and stretch when picked), `Modifier.bob()` (Pip floating), `Modifier.popIn(index)` (pop in from small, staggered) |
 | `components/Pip.kt` | Pip the sun, with moods |
@@ -214,7 +215,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `presentation/AlarmListViewModel.kt` | List state (`AlarmItemUi`), actions, events; runs the sync when the list opens; ticks every minute for "Rings in…" |
 | `presentation/AlarmListScreen.kt` | `AlarmListRoot` / `AlarmListScreen`: Back, title and +, next-alarm banner, alarm cards with switches, empty state, test bench link |
 | `presentation/AlarmEditorViewModel.kt` | Editor state and actions: time, days, mode, deck, save, delete |
-| `presentation/AlarmEditorScreen.kt` | `AlarmEditorRoot` / `AlarmEditorScreen`: time steppers and time dialog, day chips, mode segments, deck list, delete confirm |
+| `presentation/AlarmEditorScreen.kt` | `AlarmEditorRoot` / `AlarmEditorScreen`: time steppers and the time wheels (`SunupTimeSheet`), day chips, mode segments, deck list, delete confirm |
 | `presentation/AlarmText.kt` | "Mon–Fri", "Rings in 8 h 19 min", mode names and hints |
 | `presentation/AlarmErrors.kt` | Messages for `AlarmError` |
 | `presentation/AlarmsModule.kt` | Koin `alarmsModule` (Home, list, editor) |

@@ -18,11 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +42,7 @@ import dev.victorc.sunup.core.designsystem.components.SunupDayChip
 import dev.victorc.sunup.core.designsystem.components.SunupIconButton
 import dev.victorc.sunup.core.designsystem.components.SunupRaised
 import dev.victorc.sunup.core.designsystem.components.SunupStepper
+import dev.victorc.sunup.core.designsystem.components.SunupTimeSheet
 import dev.victorc.sunup.core.designsystem.motion.riseIn
 import dev.victorc.sunup.core.designsystem.motion.wobbleWhenOn
 import dev.victorc.sunup.core.designsystem.theme.SunupTheme
@@ -150,10 +148,10 @@ fun AlarmEditorScreen(state: AlarmEditorState, onAction: (AlarmEditorAction) -> 
     }
 
     if (pickingTime) {
-        TimeDialog(
+        SunupTimeSheet(
             hour = state.hour,
             minute = state.minute,
-            onPick = { hour, minute ->
+            onDone = { hour, minute ->
                 pickingTime = false
                 onAction(AlarmEditorAction.OnTimePicked(hour, minute))
             },
@@ -215,20 +213,9 @@ private fun TimeCard(
             state.ringsIn?.let {
                 Text(it, style = SunupTheme.typography.bodySmall, color = colors.indigo, textAlign = TextAlign.Center)
             }
+            Text("Tap the time to pick any minute", style = SunupTheme.typography.bodySmall, color = colors.inkMuted, textAlign = TextAlign.Center)
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimeDialog(hour: Int, minute: Int, onPick: (Int, Int) -> Unit, onDismiss: () -> Unit) {
-    val picker = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = true)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = { onPick(picker.hour, picker.minute) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-        text = { TimePicker(state = picker) },
-    )
 }
 
 @Composable

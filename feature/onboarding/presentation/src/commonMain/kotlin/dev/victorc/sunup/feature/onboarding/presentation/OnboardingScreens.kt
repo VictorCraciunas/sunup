@@ -10,12 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +33,7 @@ import dev.victorc.sunup.core.designsystem.components.SunupDayChip
 import dev.victorc.sunup.core.designsystem.components.SunupFieldLabel
 import dev.victorc.sunup.core.designsystem.components.SunupRaised
 import dev.victorc.sunup.core.designsystem.components.SunupStepper
+import dev.victorc.sunup.core.designsystem.components.SunupTimeSheet
 import dev.victorc.sunup.core.designsystem.motion.bob
 import dev.victorc.sunup.core.designsystem.motion.riseIn
 import dev.victorc.sunup.core.designsystem.motion.wobbleWhenOn
@@ -172,6 +168,7 @@ internal fun TimeScreen(state: OnboardingState, onAction: (OnboardingAction) -> 
                 )
             }
         }
+        Hint("Tap the time to pick any minute")
         Column(Modifier.riseIn(2), verticalArrangement = Arrangement.spacedBy(SunupTheme.spacing.sm)) {
             SunupFieldLabel("Repeat on")
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -187,10 +184,10 @@ internal fun TimeScreen(state: OnboardingState, onAction: (OnboardingAction) -> 
     }
 
     if (pickingTime) {
-        TimeDialog(
+        SunupTimeSheet(
             hour = state.hour,
             minute = state.minute,
-            onPick = { hour, minute ->
+            onDone = { hour, minute ->
                 pickingTime = false
                 onAction(OnboardingAction.OnTimePicked(hour, minute))
             },
@@ -504,14 +501,3 @@ private fun Problem(text: String) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimeDialog(hour: Int, minute: Int, onPick: (Int, Int) -> Unit, onDismiss: () -> Unit) {
-    val picker = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = true)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = { onPick(picker.hour, picker.minute) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-        text = { TimePicker(state = picker) },
-    )
-}

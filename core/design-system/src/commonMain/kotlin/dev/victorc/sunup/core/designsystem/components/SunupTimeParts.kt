@@ -67,7 +67,7 @@ fun SunupStepper(
             label = "digit",
             modifier = Modifier
                 .clip(SunupTheme.shapes.button)
-                .clickable(onClickLabel = "Type a time", role = Role.Button, onClick = onTapValue)
+                .clickable(onClickLabel = "Pick any time", role = Role.Button, onClick = onTapValue)
                 .padding(horizontal = SunupTheme.spacing.sm),
         ) { shown ->
             Text(text = shown, style = SunupTheme.typography.clock, color = SunupTheme.colors.ink)

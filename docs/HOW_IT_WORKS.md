@@ -67,7 +67,7 @@ Pip's tip from the mockup ("try 5 cards by default") isn't there: card counts ar
 
 The **alarm list** (from Home's alarm card): each alarm's time, days, deck and mode, with a switch, and a banner saying when the next one rings ("Rings in 8 h 19 min"). Tap an alarm to edit it, or **+** to add one. Back returns to Home.
 
-**The editor:** time (hours step by 1, minutes by 5; tap the time to type an exact one), repeat days (none = rings once, then switches itself off), wake-up mode, and the deck the cards come from (**Any deck** = the first deck). It shows when the alarm will ring. **Save alarm** always switches the alarm on. Existing alarms can be deleted (asks first).
+**The editor:** time (the arrows step hours by 1 and minutes by 5; tapping the time opens a panel from the bottom with an hour wheel and a minute wheel for any minute, then **Done** or **Cancel**, mockup G1; onboarding's time screen works the same), repeat days (none = rings once, then switches itself off), wake-up mode, and the deck the cards come from (**Any deck** = the first deck). It shows when the alarm will ring. **Save alarm** always switches the alarm on. Existing alarms can be deleted (asks first).
 
 **Two copies, engine first:** the alarm engine keeps its own small copy of each alarm (time, days, on/off) that works before the phone is unlocked; the app's database keeps the rest. Saving tells the engine first, so a failed database write never costs an alarm ("The alarm will ring, but its settings didn't save"). Opening the list brings the two in line: a one-off alarm that rang shows as off, and an alarm only the engine knows about is added to the list.
 
