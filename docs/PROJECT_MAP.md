@@ -92,7 +92,7 @@ Most build errors here ("Unresolved reference", "Cannot access class … check y
 2. A `build.gradle.kts` applying a convention plugin (`sunup.kmp.library`, `sunup.kmp.compose`, plus `kotlinSerialization` or `sunup.room` if needed). Never hardcode a version.
 3. Dependencies: `api` for every module whose types are in your public signatures, `implementation` for the rest.
 4. If it has a Koin module: register it in `SunupApplication.kt` **and** add the module to `androidApp/build.gradle.kts`.
-5. If it has screens: add its presentation module to `shared/build.gradle.kts` and a route in `App.kt`.
+5. If it has screens: add its presentation module to `shared/build.gradle.kts` and a route in `App.kt`. Open other screens and go back through `navController.from(entry) { … }`, so a fast double tap can't open a screen twice.
 6. Update this file (module section, the graph and the table above) and the module list in `CLAUDE.md`.
 
 ## `core:domain`: models, rules, interfaces (pure Kotlin)
@@ -278,7 +278,7 @@ Saving goes through `AlarmService` in `core:alarm`.
 | `androidApp/.../alarm/AlarmRingingActivity.kt` | Shows `WakeUpRoot` over the lock screen; also opens Preview all games and Home's preview of one alarm |
 | `androidApp/.../alarm/AlarmTestBench.kt` | Temporary debug panel: permissions, sample decks, modes, test alarms, ring log |
 | `androidApp/src/main/AndroidManifest.xml` | Activities |
-| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm (Home), Decks and Progress tabs with the bottom bar, every inner screen, the test bench |
+| `shared/.../App.kt` | Root composable and navigation: onboarding on first run (otherwise Home), the Alarm (Home), Decks and Progress tabs with the bottom bar, every inner screen, the test bench. `from(entry)`: a screen that's no longer in front ignores taps (no double opens) |
 | `shared/.../MainViewController.kt` | iOS entry into Compose: the app, with the morning flow on top when one is open (its own ViewModel store per morning) |
 | `shared/src/iosMain/.../ios/IosApp.kt` | `startSunup(alarmKit, sound)`: iOS Koin (engine, database, settings, the features), then registers every alarm with AlarmKit again |
 | `shared/src/iosMain/.../ios/AlarmKitBridge.kt` | The Swift-facing interface to AlarmKit (plain types) |

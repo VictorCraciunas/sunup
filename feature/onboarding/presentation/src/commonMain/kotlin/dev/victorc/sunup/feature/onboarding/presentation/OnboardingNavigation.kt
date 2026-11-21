@@ -44,28 +44,48 @@ private data object ModeStep
  */
 fun NavGraphBuilder.onboardingGraph(navController: NavHostController, onFinished: (openDecks: Boolean) -> Unit) {
     navigation<OnboardingRoute>(startDestination = WelcomeStep) {
-        composable<WelcomeStep> {
-            WelcomeScreen(onStart = { navController.navigate(GoalStep) })
+        composable<WelcomeStep> { entry ->
+            WelcomeScreen(onStart = { navController.from(entry) { navigate(GoalStep) } })
         }
         composable<GoalStep> { entry ->
             val viewModel = entry.onboardingViewModel(navController)
             val state by viewModel.state.collectAsStateWithLifecycle()
-            GoalScreen(state, viewModel::onAction, onBack = { navController.popBackStack() }, onContinue = { navController.navigate(TimeStep) })
+            GoalScreen(
+                state,
+                viewModel::onAction,
+                onBack = { navController.from(entry) { popBackStack() } },
+                onContinue = { navController.from(entry) { navigate(TimeStep) } },
+            )
         }
         composable<TimeStep> { entry ->
             val viewModel = entry.onboardingViewModel(navController)
             val state by viewModel.state.collectAsStateWithLifecycle()
-            TimeScreen(state, viewModel::onAction, onBack = { navController.popBackStack() }, onContinue = { navController.navigate(PromiseStep) })
+            TimeScreen(
+                state,
+                viewModel::onAction,
+                onBack = { navController.from(entry) { popBackStack() } },
+                onContinue = { navController.from(entry) { navigate(PromiseStep) } },
+            )
         }
         composable<PromiseStep> { entry ->
             val viewModel = entry.onboardingViewModel(navController)
             val state by viewModel.state.collectAsStateWithLifecycle()
-            PromiseScreen(state, viewModel::onAction, onBack = { navController.popBackStack() }, onContinue = { navController.navigate(PermissionsStep) })
+            PromiseScreen(
+                state,
+                viewModel::onAction,
+                onBack = { navController.from(entry) { popBackStack() } },
+                onContinue = { navController.from(entry) { navigate(PermissionsStep) } },
+            )
         }
         composable<PermissionsStep> { entry ->
             val viewModel = entry.onboardingViewModel(navController)
             val state by viewModel.state.collectAsStateWithLifecycle()
-            PermissionsScreen(state, viewModel::onAction, onBack = { navController.popBackStack() }, onContinue = { navController.navigate(ModeStep) })
+            PermissionsScreen(
+                state,
+                viewModel::onAction,
+                onBack = { navController.from(entry) { popBackStack() } },
+                onContinue = { navController.from(entry) { navigate(ModeStep) } },
+            )
         }
         composable<ModeStep> { entry ->
             val viewModel = entry.onboardingViewModel(navController)
@@ -78,9 +98,18 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController, onFinished
                     }
                 }
             }
-            ModeScreen(state, viewModel::onAction, onBack = { navController.popBackStack() })
+            ModeScreen(state, viewModel::onAction, onBack = { navController.from(entry) { popBackStack() } })
         }
     }
+}
+
+/**
+ * Runs [action] only while [entry]'s screen is still the one in front. Once the first tap has
+ * started opening another screen (or going back), it no longer is, so a fast second tap on the
+ * screen that's sliding away can't open a screen twice or go back two screens.
+ */
+private inline fun NavHostController.from(entry: NavBackStackEntry, action: NavHostController.() -> Unit) {
+    if (currentBackStackEntry?.id == entry.id) action()
 }
 
 /** The ViewModel lives on the graph's own back stack entry, so every step gets the same one. */

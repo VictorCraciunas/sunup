@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -156,70 +157,70 @@ private fun SunupNavHost(
             if (openDecks) navController.switchTab(DeckListRoute)
         }
 
-        composable<HomeRoute> {
+        composable<HomeRoute> { entry ->
             HomeRoot(
-                onOpenAlarms = { navController.navigate(AlarmListRoute) },
-                onNewAlarm = { navController.navigate(AlarmEditorRoute()) },
-                onOpenDeck = { id -> navController.navigate(DeckRoute(id)) },
+                onOpenAlarms = { navController.from(entry) { navigate(AlarmListRoute) } },
+                onNewAlarm = { navController.from(entry) { navigate(AlarmEditorRoute()) } },
+                onOpenDeck = { id -> navController.from(entry) { navigate(DeckRoute(id)) } },
                 onOpenDecks = { navController.switchTab(DeckListRoute) },
                 onPreview = onPreviewMorning,
             )
         }
-        composable<AlarmListRoute> {
+        composable<AlarmListRoute> { entry ->
             AlarmListRoot(
-                onOpenEditor = { id -> navController.navigate(AlarmEditorRoute(id)) },
-                onBack = { navController.popBackStack() },
-                onOpenTestBench = testBench?.let { { navController.navigate(TestBenchRoute) } },
+                onOpenEditor = { id -> navController.from(entry) { navigate(AlarmEditorRoute(id)) } },
+                onBack = { navController.from(entry) { popBackStack() } },
+                onOpenTestBench = testBench?.let { { navController.from(entry) { navigate(TestBenchRoute) } } },
             )
         }
         composable<AlarmEditorRoute> { entry ->
             val route = entry.toRoute<AlarmEditorRoute>()
-            AlarmEditorRoot(alarmId = route.alarmId, onClose = { navController.popBackStack() })
+            AlarmEditorRoot(alarmId = route.alarmId, onClose = { navController.from(entry) { popBackStack() } })
         }
 
         composable<ProgressRoute> {
             ProgressRoot()
         }
 
-        composable<DeckListRoute> {
+        composable<DeckListRoute> { entry ->
             DeckListRoot(
-                onOpenDeck = { id -> navController.navigate(DeckRoute(id)) },
-                onNewDeck = { navController.navigate(NewDeckRoute) },
-                onImport = { navController.navigate(ImportRoute) },
+                onOpenDeck = { id -> navController.from(entry) { navigate(DeckRoute(id)) } },
+                onNewDeck = { navController.from(entry) { navigate(NewDeckRoute) } },
+                onImport = { navController.from(entry) { navigate(ImportRoute) } },
             )
         }
-        composable<ImportRoute> {
+        composable<ImportRoute> { entry ->
             ImportRoot(
                 // The new deck replaces this screen, so Back goes to the deck list.
                 onCreated = { id ->
-                    navController.navigate(DeckRoute(id)) { popUpTo<ImportRoute> { inclusive = true } }
+                    navController.from(entry) { navigate(DeckRoute(id)) { popUpTo<ImportRoute> { inclusive = true } } }
                 },
-                onClose = { navController.popBackStack() },
+                onClose = { navController.from(entry) { popBackStack() } },
             )
         }
-        composable<NewDeckRoute> {
+        composable<NewDeckRoute> { entry ->
             NewDeckRoot(
                 // The new deck replaces this screen, so Back goes to the deck list.
                 onCreated = { id ->
-                    navController.navigate(DeckRoute(id)) { popUpTo<NewDeckRoute> { inclusive = true } }
+                    navController.from(entry) { navigate(DeckRoute(id)) { popUpTo<NewDeckRoute> { inclusive = true } } }
                 },
-                onClose = { navController.popBackStack() },
+                onClose = { navController.from(entry) { popBackStack() } },
             )
         }
         composable<DeckRoute> { entry ->
             val route = entry.toRoute<DeckRoute>()
             DeckDetailRoot(
                 deckId = route.deckId,
-                onAddCard = { id -> navController.navigate(GamePickerRoute(id)) },
-                onOpenCard = { id, game, cardId -> navController.navigate(CardRoute(id, game.name, cardId)) },
-                onClose = { navController.popBackStack() },
+                onAddCard = { id -> navController.from(entry) { navigate(GamePickerRoute(id)) } },
+                onOpenCard = { id, game, cardId -> navController.from(entry) { navigate(CardRoute(id, game.name, cardId)) } },
+                onClose = { navController.from(entry) { popBackStack() } },
             )
         }
         composable<GamePickerRoute> { entry ->
             val route = entry.toRoute<GamePickerRoute>()
             GamePickerScreen(
-                onPick = { game -> navController.navigate(CardRoute(route.deckId, game.name)) },
-                onBack = { navController.popBackStack() },
+                onPick = { game -> navController.from(entry) { navigate(CardRoute(route.deckId, game.name)) } },
+                onBack = { navController.from(entry) { popBackStack() } },
             )
         }
         composable<CardRoute> { entry ->
@@ -230,18 +231,27 @@ private fun SunupNavHost(
                 game = game,
                 cardId = route.cardId,
                 // Back to the game picker, which is right behind a new card.
-                onChangeGame = { navController.popBackStack() },
+                onChangeGame = { navController.from(entry) { popBackStack() } },
                 // Done: back to the deck, past the game picker.
                 onClose = {
-                    if (!navController.popBackStack<DeckRoute>(inclusive = false)) navController.popBackStack()
+                    navController.from(entry) { if (!popBackStack<DeckRoute>(inclusive = false)) popBackStack() }
                 },
             )
         }
 
-        composable<TestBenchRoute> {
-            TestBenchScreen(onBack = { navController.popBackStack() }) { testBench?.invoke() }
+        composable<TestBenchRoute> { entry ->
+            TestBenchScreen(onBack = { navController.from(entry) { popBackStack() } }) { testBench?.invoke() }
         }
     }
+}
+
+/**
+ * Runs [action] only while [entry]'s screen is still the one in front. Once the first tap has
+ * started opening another screen (or going back), it no longer is, so a fast second tap on the
+ * screen that's sliding away can't open a screen twice or go back two screens.
+ */
+private inline fun NavHostController.from(entry: NavBackStackEntry, action: NavHostController.() -> Unit) {
+    if (currentBackStackEntry?.id == entry.id) action()
 }
 
 /**
