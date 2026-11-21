@@ -1,11 +1,17 @@
 package dev.victorc.sunup.core.designsystem.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import dev.victorc.sunup.core.designsystem.resources.Res
+import dev.victorc.sunup.core.designsystem.resources.nunito
+import org.jetbrains.compose.resources.Font
 
 private val LocalSunupColors = staticCompositionLocalOf { SunupColors() }
 private val LocalSunupTypography = staticCompositionLocalOf { SunupTypography() }
@@ -20,7 +26,8 @@ private val LocalSunupSizes = staticCompositionLocalOf { SunupSizes() }
 @Composable
 fun SunupTheme(content: @Composable () -> Unit) {
     val colors = SunupColors()
-    val typography = SunupTypography()
+    val nunito = nunito()
+    val typography = SunupTypography(fontFamily = nunito)
 
     CompositionLocalProvider(
         LocalSunupColors provides colors,
@@ -47,10 +54,43 @@ fun SunupTheme(content: @Composable () -> Unit) {
                 outline = colors.border,
                 error = colors.wrong,
             ),
+            // Material's own text (text field placeholders, dialogs) in Nunito too.
+            typography = Typography().withFont(nunito),
             content = content,
         )
     }
 }
+
+/**
+ * The mockups' font. The file is Google Fonts' variable Nunito: one file, every weight;
+ * each weight below picks its point on the file's weight axis. While the file loads (a moment
+ * on iOS), text shows in the phone's own font.
+ */
+@Composable
+private fun nunito(): FontFamily = FontFamily(
+    Font(Res.font.nunito, FontWeight.SemiBold),
+    Font(Res.font.nunito, FontWeight.Bold),
+    Font(Res.font.nunito, FontWeight.ExtraBold),
+    Font(Res.font.nunito, FontWeight.Black),
+)
+
+private fun Typography.withFont(family: FontFamily) = Typography(
+    displayLarge = displayLarge.copy(fontFamily = family),
+    displayMedium = displayMedium.copy(fontFamily = family),
+    displaySmall = displaySmall.copy(fontFamily = family),
+    headlineLarge = headlineLarge.copy(fontFamily = family),
+    headlineMedium = headlineMedium.copy(fontFamily = family),
+    headlineSmall = headlineSmall.copy(fontFamily = family),
+    titleLarge = titleLarge.copy(fontFamily = family),
+    titleMedium = titleMedium.copy(fontFamily = family),
+    titleSmall = titleSmall.copy(fontFamily = family),
+    bodyLarge = bodyLarge.copy(fontFamily = family),
+    bodyMedium = bodyMedium.copy(fontFamily = family),
+    bodySmall = bodySmall.copy(fontFamily = family),
+    labelLarge = labelLarge.copy(fontFamily = family),
+    labelMedium = labelMedium.copy(fontFamily = family),
+    labelSmall = labelSmall.copy(fontFamily = family),
+)
 
 object SunupTheme {
     val colors: SunupColors

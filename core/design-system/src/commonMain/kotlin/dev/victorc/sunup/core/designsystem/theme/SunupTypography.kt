@@ -8,8 +8,8 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
 /**
- * Type scale from the mockups. They use Nunito (600–900); until the font files are added
- * to composeResources this falls back to the platform font.
+ * Type scale from the mockups, in Nunito ([SunupTheme] passes it in as [fontFamily]; the
+ * default here is only for previews and tests).
  */
 @Immutable
 data class SunupTypography(

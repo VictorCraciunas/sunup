@@ -181,9 +181,10 @@ Nothing on the ring path may touch the network or the database. Alarms and the r
 | File | What's in it |
 |---|---|
 | `theme/SunupColors.kt` | Every color, including night/dawn/day, feedback and map colors |
-| `theme/SunupTypography.kt` | Text styles |
+| `theme/SunupTypography.kt` | Text styles (Nunito, passed in by `SunupTheme`) |
 | `theme/SunupDimens.kt` | Spacing, shapes, sizes (touch targets, map circle sizes) |
-| `theme/SunupTheme.kt` | `SunupTheme { }` and the `SunupTheme.colors / typography / spacing / shapes / sizes` accessors |
+| `theme/SunupTheme.kt` | `SunupTheme { }` and the `SunupTheme.colors / typography / spacing / shapes / sizes` accessors; loads Nunito and gives it to Material's text too |
+| `composeResources/font/nunito.ttf` | Nunito from Google Fonts: the variable file, every weight in one. Licence (SIL OFL 1.1) in `core/design-system/NUNITO_OFL.txt` |
 | `components/SunupButton.kt` | The chunky 3D button (Primary, Secondary, Danger for deleting) |
 | `components/SunupSheet.kt` | `SunupSheet`: Sunup's panel from the bottom (handle, title, content; `close { }` slides it away first), and `SunupTextButton` for Cancel / Keep it |
 | `components/SunupNavBar.kt` | The bottom bar (Alarm · Decks · Progress) with drawn icons |

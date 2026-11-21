@@ -10,7 +10,7 @@ One codebase, released step by step. The MVP is the first public release, not a 
 - [x] `:core:design-system` with tokens from the mockups and `SunupButton`
 - [x] `CLAUDE.md`, this roadmap, PRD copied into `docs/`
 - [ ] Check the iOS build on the Mac
-- [ ] Nunito font files in composeResources (the mockups use it; the theme falls back to the system font for now)
+- [x] (untested) Nunito font in composeResources (Google Fonts' variable file, every weight in one), used by every text style
 - [ ] CI on GitHub Actions, with a macOS runner for the iOS build
 
 ## M1 · Android alarm engine
