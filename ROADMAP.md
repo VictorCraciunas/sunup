@@ -121,7 +121,8 @@ The alarm and the morning are never paywalled; upgrade prompts only in calm mome
 
 ### M9 · Friends and 1v1 (mockups 12, 17, 18, 19, v1.3)
 Needs M7's accounts. Build order from the PRD: sending cards first, to see if people want it.
-- [ ] Friends (mockup 12): add by invite link or code, accept or decline, who's up this morning, Cheer and Send a sun
+- [ ] Friends (mockup 12): add by invite link or code, accept or decline, who woke up this morning, Cheer and Send a sun
+- No live "online" status, on purpose: it needs a constant connection and adds nothing to an alarm app. Friends only see when someone woke up: one small note sent when a morning ends, with "Share my sunrises with friends" to turn it off (mockup M6)
 - [ ] Wake a friend up (mockup 17): Quiz them (cards to learn) and Surprise (one fun card)
 - [ ] Cards from a friend (mockup 18): accepted the night before (questions visible, answers hidden), "always accept from", silent decline, block and report on every card
 - [ ] Friend cards download the night before and play offline in the morning, like the rest
